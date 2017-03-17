@@ -1,5 +1,5 @@
 resolver: lts-8.5
 packages:
     - ./plexams-core
-    - ./plexams-cli
     - ./plexams-gui
+    - ./plexams-example

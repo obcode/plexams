@@ -1,8 +1,8 @@
-module Main where
+module Plexams.GUI where
 
 import           Plexams.Types
 
-main :: IO ()
-main =
+mainGUI :: IO ()
+mainGUI =
   do
       putStrLn "I am the GUI!"
