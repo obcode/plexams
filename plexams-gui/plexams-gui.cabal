@@ -1,0 +1,25 @@
+name:                plexams-gui
+version:             0.9.0.0
+synopsis:            Planning exams
+description:         see readme
+homepage:            https://github.com/obcode/plexams#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Felician Pinkert
+maintainer:          f.pinkert@hm.edu
+copyright:           2017 Felician Pinkert
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable plexams-gui
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base  >= 4.7 && < 5
+                     , plexams-core
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/obcode/plexams
