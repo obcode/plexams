@@ -1,2 +1,6 @@
-main :: IO ()
-main = putStrLn "TODO: test suite for plexams-core not yet implemented"
+module Main where
+
+import           Test.Hspec
+import qualified TypesSpec  (spec)
+
+main = hspec TypesSpec.spec
