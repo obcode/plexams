@@ -17,7 +17,6 @@ executable plexams
                      , .
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  other-modules:       Semester
   build-depends:       base  >= 4.7 && < 5
                      , plexams-core
                      , plexams-gui

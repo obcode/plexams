@@ -4,7 +4,6 @@ import           Plexams
 import           Plexams.Export
 import           Plexams.GUI
 import           Plexams.Types
-import           Semester
 
 main :: IO ()
 main =

@@ -75,6 +75,8 @@ makeEmptyPlan semesterConfig = Plan
 data Exam = Exam
   deriving (Show)
 
+type Persons = [Person]
+
 data Person = Person
     { personID        :: Integer
     , personShortName :: String
