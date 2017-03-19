@@ -5,6 +5,7 @@ import           Control.Applicative  (empty, (<$>), (<*>))
 import           Data.Aeson           (FromJSON, Value (Object), decode,
                                        parseJSON, (.:))
 import qualified Data.ByteString.Lazy as BS
+import qualified Data.Map             as M
 import           Data.Time            (Day)
 import           Data.Time.Format     (defaultTimeLocale, parseTimeM)
 import           Plexams.Types
@@ -34,8 +35,11 @@ instance FromJSON Person where
                             v .: "person_fullname"
     parseJSON _          = empty
 
-importPersonsFromJSONFile :: FilePath -> IO (Maybe [Person])
-importPersonsFromJSONFile file = BS.readFile file >>= return . decodePersonsFromJSON
+importPersonsFromJSONFile :: FilePath -> IO (Maybe Persons)
+importPersonsFromJSONFile file =
+    BS.readFile file >>= return . decodePersonsFromJSON
 
-decodePersonsFromJSON :: BS.ByteString -> Maybe [Person]
-decodePersonsFromJSON = decode
+decodePersonsFromJSON :: BS.ByteString -> Maybe Persons
+decodePersonsFromJSON = fmap personsListToPersons . decode
+  where personsListToPersons :: [Person] -> Persons
+        personsListToPersons = M.fromList . map (\p -> (personID p, p))

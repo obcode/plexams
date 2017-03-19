@@ -8,8 +8,10 @@ module Plexams.Types
     , Exam(..)
     , SemesterConfig(..)
     , Person(..)
+    , Persons
     ) where
 
+import qualified Data.Map                    as M
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate
 
@@ -75,11 +77,12 @@ makeEmptyPlan semesterConfig = Plan
 data Exam = Exam
   deriving (Show)
 
-type Persons = [Person]
+type Persons = M.Map Integer Person
 
 data Person = Person
     { personID        :: Integer
     , personShortName :: String
     , personFullName  :: String
     }
+  deriving (Eq, Show)
 
