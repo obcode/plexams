@@ -1,13 +1,16 @@
 module Main where
 
+import           Plexams
+import           Plexams.Export
 import           Plexams.GUI
 import           Plexams.Types
 import           Semester
 
-emptyPlan = makeEmptyPlan semesterConfig
-
 main :: IO ()
 main =
   do
-      print emptyPlan
+      maybeSemesterConfig <- initSemesterConfigFromFile "./plexams-config.json"
+      case maybeSemesterConfig of
+          Nothing -> putStrLn "no semester config"
+          Just semesterConfig -> putStrLn $ planToMD $ makeEmptyPlan semesterConfig
       mainGUI

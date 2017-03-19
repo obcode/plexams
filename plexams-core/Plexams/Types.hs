@@ -2,10 +2,12 @@ module Plexams.Types
     ( makeEmptyPlan
     , Plan(..)
     , ExamDay(..)
+    , realExamDays
     , isRealExamDay
     , Slot(..)
     , Exam(..)
     , SemesterConfig(..)
+    , Person(..)
     ) where
 
 import           Data.Time.Calendar
@@ -17,12 +19,17 @@ data SemesterConfig = SemesterConfig
     , lastDay     :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. 'fromGregorian 2017 7 21'
     , slotsPerDay :: [String] -- ^ Liste von Slots als Zeitstrings in der Form "HH:MM". Ein Slot ist IMMER 120 Minuten lang
     }
+  deriving (Eq, Show)
 
 data Plan = Plan
-    { semesterName :: String     -- ^ Semester, z.B. "Sommersemester 2017"
-    , examDays     :: [ExamDay]  -- ^ Liste der Prüfungstage, geordnet nach Datum
+    { semesterName     :: String     -- ^ Semester, z.B. "Sommersemester 2017"
+    , examDays         :: [ExamDay]  -- ^ Liste der Tage des gesamten Prüfungszeitraums, geordnet nach Datum
+    , unscheduledExams :: [Exam]     -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
     }
   deriving (Show)
+
+realExamDays :: Plan -> [ExamDay]
+realExamDays = filter isRealExamDay . examDays
 
 data ExamDay = ExamDay
     { dateString :: String           -- ^ "DD.MM.YYYY"
@@ -61,9 +68,16 @@ makeEmptyPlan semesterConfig = Plan
     { semesterName = semester semesterConfig
     , examDays = map (`makeExamDay` slots)
                      [firstDay semesterConfig .. lastDay semesterConfig]
+    , unscheduledExams = []
     }
   where slots = map makeSlot $ slotsPerDay semesterConfig
 
 data Exam = Exam
   deriving (Show)
+
+data Person = Person
+    { personID        :: Integer
+    , personShortName :: String
+    , personFullName  :: String
+    }
 

@@ -6,10 +6,13 @@ import           Test.Hspec
 
 spec :: Spec
 spec =
-    describe "The Plexams Types" $
+    describe "The example plan" $ do
         it "should have 10 real exam days" $
-            length (filter isRealExamDay $ examDays emptyPlan)
+            length (filter isRealExamDay $ examDays examplePlan)
                 `shouldBe` 10
+        it "should have 60 slots" $
+            sum (map (length . slotsOfDay) (examDays examplePlan))
+                `shouldBe` 60
 
 semesterConfig = SemesterConfig
     { semester = "Sommersemester 2017"
@@ -18,5 +21,5 @@ semesterConfig = SemesterConfig
     , slotsPerDay = ["08:30", "10:30", "12:30", "14:30", "16:30", "18:30"]
     }
 
-emptyPlan = makeEmptyPlan semesterConfig
+examplePlan = makeEmptyPlan semesterConfig
 
