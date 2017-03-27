@@ -6,6 +6,7 @@ import           Data.Aeson           (FromJSON, Value (Object), decode,
                                        parseJSON, (.:))
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.Map             as M
+import           Data.Maybe           (fromMaybe)
 import           Data.Time            (Day)
 import           Data.Time.Format     (defaultTimeLocale, parseTimeM)
 import           Plexams.Types
@@ -19,14 +20,13 @@ instance FromJSON SemesterConfig where
     parseJSON _          = empty
 
 makeSemesterConfig :: String -> String -> String -> [String] -> SemesterConfig
-makeSemesterConfig s f l sl = SemesterConfig s (makeDay f) (makeDay l) sl
+makeSemesterConfig s f l = SemesterConfig s (makeDay f) (makeDay l)
     where makeDay :: String -> Day
-          makeDay str = case parseTimeM True defaultTimeLocale "%d.%m.%Y" str of
-                            Nothing  -> error $ "cannot parse date: " ++ str
-                            Just day -> day
+          makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
+             (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
 
 importSemesterConfigFromJSONFile :: FilePath -> IO (Maybe SemesterConfig)
-importSemesterConfigFromJSONFile file = BS.readFile file >>= return . decode
+importSemesterConfigFromJSONFile file = decode <$> BS.readFile file
 
 instance FromJSON Person where
     parseJSON (Object v) = Person <$>
@@ -37,7 +37,7 @@ instance FromJSON Person where
 
 importPersonsFromJSONFile :: FilePath -> IO (Maybe Persons)
 importPersonsFromJSONFile file =
-    BS.readFile file >>= return . decodePersonsFromJSON
+    decodePersonsFromJSON <$> BS.readFile file
 
 decodePersonsFromJSON :: BS.ByteString -> Maybe Persons
 decodePersonsFromJSON = fmap personsListToPersons . decode
