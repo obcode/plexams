@@ -9,6 +9,7 @@ module Plexams.Types
     , SemesterConfig(..)
     , Person(..)
     , Persons
+    , Room(..)
     ) where
 
 import qualified Data.Map                    as M
@@ -75,6 +76,31 @@ makeEmptyPlan semesterConfig = Plan
   where slots = map makeSlot $ slotsPerDay semesterConfig
 
 data Exam = Exam
+    { anCode      :: Integer
+    , moduleName  :: String
+    , lecturer    :: Person
+    , duration    :: Integer
+    , rooms       :: [Room]
+    , plannedByMe :: Bool
+    , reExam      :: Bool
+    , groups      :: Groups
+    , examType    :: String
+    }
+  deriving (Show)
+
+-- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
+
+data Room = Room
+    { roomID               :: String
+    , maxSeats             :: Integer
+    , deltaDuration        :: Integer
+    , invigilator          :: Maybe Integer
+    , reserveRoom          :: Bool
+    , handicapCompensation :: Bool
+    }
+  deriving (Show)
+
+data Groups = Groups
   deriving (Show)
 
 type Persons = M.Map Integer Person
