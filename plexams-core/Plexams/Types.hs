@@ -7,6 +7,7 @@ module Plexams.Types
     , Slot(..)
     , Exam(..)
     , SemesterConfig(..)
+    , Groups(..)
     , Person(..)
     , Persons
     , Room(..)
@@ -18,14 +19,14 @@ import           Data.Time.Calendar.WeekDate
 
 data SemesterConfig = SemesterConfig
     { semester    :: String   -- ^ Semester
-    , firstDay    :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. 'fromGregorian 2017 7 10'
-    , lastDay     :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. 'fromGregorian 2017 7 21'
-    , slotsPerDay :: [String] -- ^ Liste von Slots als Zeitstrings in der Form "HH:MM". Ein Slot ist IMMER 120 Minuten lang
+    , firstDay    :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
+    , lastDay     :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
+    , slotsPerDay :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
     }
   deriving (Eq, Show)
 
 data Plan = Plan
-    { semesterName     :: String     -- ^ Semester, z.B. "Sommersemester 2017"
+    { semesterName     :: String     -- ^ Semester, z.B. @Sommersemester 2017@
     , examDays         :: [ExamDay]  -- ^ Liste der Tage des gesamten Prüfungszeitraums, geordnet nach Datum
     , unscheduledExams :: [Exam]     -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
     }
@@ -35,7 +36,7 @@ realExamDays :: Plan -> [ExamDay]
 realExamDays = filter isRealExamDay . examDays
 
 data ExamDay = ExamDay
-    { dateString :: String           -- ^ "DD.MM.YYYY"
+    { dateString :: String           -- ^ @DD.MM.YYYY@
     , slotsOfDay :: [Slot]           -- ^ Liste der Slots an diesem Tag, geordnet nach Zeiten
     }
   deriving (Show)
@@ -54,7 +55,7 @@ isRealExamDay :: ExamDay -> Bool
 isRealExamDay = not . null . slotsOfDay
 
 data Slot = Slot
-    { timeString         :: String          -- ^ Startzeit des Slots "HH:MM"
+    { timeString         :: String          -- ^ Startzeit des Slots @HH:MM@
     , examsInSlot        :: [Exam]
     , reserveInvigilator :: Maybe Integer  -- ^ Reserveaufsicht für die Prüfung
     }
@@ -76,32 +77,36 @@ makeEmptyPlan semesterConfig = Plan
   where slots = map makeSlot $ slotsPerDay semesterConfig
 
 data Exam = Exam
-    { anCode      :: Integer
-    , moduleName  :: String
-    , lecturer    :: Person
-    , duration    :: Integer
-    , rooms       :: [Room]
-    , plannedByMe :: Bool
-    , reExam      :: Bool
-    , groups      :: Groups
-    , examType    :: String
+    { anCode      :: Integer -- ^ Anmeldecode Prüfungsamt
+    , moduleName  :: String  -- ^ Name der Prüfung
+    , lecturer    :: Person  -- ^ Prüfer
+    , duration    :: Integer -- ^ Dauer der Prüfung in Minuten
+    , rooms       :: [Room]  -- ^ Liste der Räume in denen die Prüfung statt findet
+    , plannedByMe :: Bool    -- ^ @False@ bei Prüfungen, die zwar mit erfasst werden, aber nicht geplant werden
+                             --   können
+    , reExam      :: Bool    -- ^ @True@ bei einer Wiederholungsklausur
+    , groups      :: Groups  -- ^ Studierendengruppen die an der Prüfung teilnehmen
+    , examType    :: String  -- ^ Typ der Prüfung aus ZPA
     }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
 data Room = Room
-    { roomID               :: String
-    , maxSeats             :: Integer
-    , deltaDuration        :: Integer
-    , invigilator          :: Maybe Integer
-    , reserveRoom          :: Bool
-    , handicapCompensation :: Bool
+    { roomID               :: String        -- ^ Raum-Nr, z.B. @"R3.014"@
+    , maxSeats             :: Integer       -- ^ maximale Anzahl an Prüfungsplätzen
+    , deltaDuration        :: Integer       -- ^ falls der Raum für NTA genutzt wird, Anzahl der Minuten
+                                            --   die die Prüfung länger
+                                            --   dauert
+    , invigilator          :: Maybe Integer -- ^ Aufsicht
+    , reserveRoom          :: Bool          -- ^ @True@, Raum ist eingeplant, wird aber nicht im ZPA
+                                            --   veröffentlicht
+    , handicapCompensation :: Bool          -- ^ @True@ Raum für NTA
     }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Groups = Groups
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Persons = M.Map Integer Person
 

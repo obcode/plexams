@@ -22,9 +22,14 @@ spec = do
                 `shouldBe` Just semesterConfig
 
     describe "The persons" $
-        it "should be made from a json bytestring" $
+        it "should be generated from a json bytestring" $
             decodePersonsFromJSON personsJSON
                 `shouldBe` Just persons
+
+    describe "The unscheduled exam list" $
+        it "should be generated from a json bytestring" $
+            decodeExamsFromJSON examsJSON
+                `shouldBe` Just exams
 
 semesterConfig = SemesterConfig
     { semester = "Sommersemester 2017"
@@ -67,3 +72,29 @@ personsJSON =
     `BS.append` "    }"
     `BS.append` "]"
 
+exams = [ Exam 1 "Fach 1" (Person 2 "a" "") 90 [] True False Groups "sp"
+        , Exam 2 "Fach 2" (Person 5 "b" "") 60 [] True True  Groups "sp60"
+        ]
+
+examsJSON =  "["
+ `BS.append` "   {"
+ `BS.append` "     \"exam_type\": \"sp\","
+ `BS.append` "     \"groups\": [ \"GO\", \"IF\" ],"
+ `BS.append` "     \"main_examer\": \"a\","
+ `BS.append` "     \"is_repeater_exam\": false,"
+ `BS.append` "     \"duration\": 90,"
+ `BS.append` "     \"module\": \"Fach 1\","
+ `BS.append` "     \"anCode\": 1,"
+ `BS.append` "     \"main_examer_id\": 2"
+ `BS.append` "   },"
+ `BS.append` "   {"
+ `BS.append` "     \"exam_type\": \"sp60\","
+ `BS.append` "     \"groups\": [ \"IB\", \"IF\" ],"
+ `BS.append` "     \"main_examer\": \"b\","
+ `BS.append` "     \"is_repeater_exam\": true,"
+ `BS.append` "     \"duration\": 60,"
+ `BS.append` "     \"module\": \"Fach 2\","
+ `BS.append` "     \"anCode\": 2,"
+ `BS.append` "     \"main_examer_id\": 5"
+ `BS.append` "   }"
+ `BS.append` "]"

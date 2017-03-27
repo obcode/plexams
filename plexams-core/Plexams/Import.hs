@@ -26,7 +26,7 @@ makeSemesterConfig s f l = SemesterConfig s (makeDay f) (makeDay l)
              (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
 
 importSemesterConfigFromJSONFile :: FilePath -> IO (Maybe SemesterConfig)
-importSemesterConfigFromJSONFile file = decode <$> BS.readFile file
+importSemesterConfigFromJSONFile = fmap decode . BS.readFile
 
 instance FromJSON Person where
     parseJSON (Object v) = Person <$>
@@ -36,10 +36,50 @@ instance FromJSON Person where
     parseJSON _          = empty
 
 importPersonsFromJSONFile :: FilePath -> IO (Maybe Persons)
-importPersonsFromJSONFile file =
-    decodePersonsFromJSON <$> BS.readFile file
+importPersonsFromJSONFile = fmap decodePersonsFromJSON . BS.readFile
 
 decodePersonsFromJSON :: BS.ByteString -> Maybe Persons
 decodePersonsFromJSON = fmap personsListToPersons . decode
   where personsListToPersons :: [Person] -> Persons
         personsListToPersons = M.fromList . map (\p -> (personID p, p))
+
+data ImportExam = ImportExam
+    { ieExamType :: String
+    , ieGroups :: [String]
+    , ieMainExamer :: String
+    , ieIsRepeaterExam :: Bool
+    , ieDuration :: Integer
+    , ieModule :: String
+    , ieAnCode :: Integer
+    , ieMainExamerId :: Integer
+    }
+
+instance FromJSON ImportExam where
+    parseJSON (Object v ) = ImportExam <$>
+                             v .: "exam_type" <*>
+                             v .: "groups" <*>
+                             v .: "main_examer" <*>
+                             v .: "is_repeater_exam" <*>
+                             v .: "duration" <*>
+                             v .: "module" <*>
+                             v .: "anCode" <*>
+                             v .: "main_examer_id"
+    parseJSON _          = empty
+
+importExamsFromJSONFile :: FilePath -> IO (Maybe [Exam])
+importExamsFromJSONFile = fmap decodeExamsFromJSON . BS.readFile
+
+decodeExamsFromJSON :: BS.ByteString -> Maybe [Exam]
+decodeExamsFromJSON = fmap (map importExamToExam) . decode
+  where importExamToExam :: ImportExam -> Exam
+        importExamToExam ie = Exam
+          { anCode = ieAnCode ie
+          , moduleName = ieModule ie
+          , lecturer = Person (ieMainExamerId ie) (ieMainExamer ie) ""
+          , duration = ieDuration ie
+          , rooms = []
+          , plannedByMe = True
+          , reExam = ieIsRepeaterExam ie
+          , groups = Groups -- TODO
+          , examType = ieExamType ie
+          }
