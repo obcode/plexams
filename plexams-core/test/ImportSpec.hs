@@ -21,7 +21,7 @@ spec = do
             decode semesterConfigJSON
                 `shouldBe` Just semesterConfig
 
-    describe "The persons" $ do
+    describe "The persons" $
         it "should be made from a json bytestring" $
             decodePersonsFromJSON personsJSON
                 `shouldBe` Just persons
