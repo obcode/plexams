@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Plexams.Export
   ( planToMD
+  , planToHTMLTable
   , planToJSONForZPA
   ) where
 
@@ -15,10 +16,34 @@ planToMD :: Plan -> String
 planToMD plan =
     "# Prüfungsplan " ++ semesterName plan ++ "\n\n"
     ++ concatMap dayMD (realExamDays plan)
+    ++ "## Noch nicht eingeplante Prüfungen\n\n"
+    ++ concatMap (\eStr -> "-   " ++ eStr ++ "\n\n")
+                 (map examMD (unscheduledExams plan))
   where
     dayMD examDay = "## " ++ dateString examDay ++ "\n\n"
                     ++ concatMap slotMD (slotsOfDay examDay)
     slotMD slot = "- " ++ timeString slot ++ "\n\n"
+    examMD exam = show (anCode exam) ++ " " ++ name exam
+                    ++ " (" ++ personShortName (lecturer exam)  ++ ")"
+
+insideTag :: String -> String -> String
+insideTag tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
+
+planToHTMLTable :: Plan -> String
+planToHTMLTable plan = before ++ planToHTMLTable' ++ after
+  where
+    before =    "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
+                 ++ semesterName plan
+                 ++ "</title><style>\ntable, th, td {\n"
+                 ++ "border: 1px solid black;\n"
+                 ++ "}\n"
+                 ++ "</style></head><body>"
+                 ++ "<h1>Prüfungsplan "
+                 ++ semesterName plan
+                 ++ "</h1>\n"
+    after = "</body></html>"
+    planToHTMLTable' = undefined
+
 
 data ZPAExam = ZPAExam
     { zpaExamAnCode               :: Integer

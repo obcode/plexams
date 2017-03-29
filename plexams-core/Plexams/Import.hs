@@ -74,7 +74,7 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
   where importExamToExam :: ImportExam -> Exam
         importExamToExam ie = Exam
           { anCode = ieAnCode ie
-          , moduleName = ieModule ie
+          , name = ieModule ie
           , lecturer = Person (ieMainExamerId ie) (ieMainExamer ie) ""
           , duration = ieDuration ie
           , rooms = []

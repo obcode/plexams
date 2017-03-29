@@ -1,5 +1,6 @@
 module Plexams.Types
     ( makeEmptyPlan
+    , addUnscheduledExams
     , Plan(..)
     , ExamDay(..)
     , realExamDays
@@ -76,9 +77,12 @@ makeEmptyPlan semesterConfig = Plan
     }
   where slots = map makeSlot $ slotsPerDay semesterConfig
 
+addUnscheduledExams :: Plan -> [Exam] -> Plan
+addUnscheduledExams plan exams = plan { unscheduledExams = exams}
+
 data Exam = Exam
     { anCode      :: Integer -- ^ Anmeldecode Prüfungsamt
-    , moduleName  :: String  -- ^ Name der Prüfung
+    , name        :: String  -- ^ Name der Prüfung
     , lecturer    :: Person  -- ^ Prüfer
     , duration    :: Integer -- ^ Dauer der Prüfung in Minuten
     , rooms       :: [Room]  -- ^ Liste der Räume in denen die Prüfung statt findet
