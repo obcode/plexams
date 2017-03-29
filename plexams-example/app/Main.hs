@@ -23,8 +23,8 @@ config = Config
         )
     <*> switch
         ( long "toHtml"
-       <> short 'h'
-       <> help "Plan in HTML"
+       <> short 't'
+       <> help "Plan as HTML table"
         )
 
 main :: IO ()
