@@ -15,26 +15,37 @@ spec = do
         it "should be made from strings" $
             makeSemesterConfig "Sommersemester 2017" "10.07.2017" "21.07.2017"
                     ["08:30", "10:30", "12:30", "14:30", "16:30", "18:30"]
-                `shouldBe` semesterConfig
+                `shouldBe` mySemesterConfig
 
         it "should be decoded from a json bytestring" $
             decode semesterConfigJSON
-                `shouldBe` Just semesterConfig
+                `shouldBe` Just mySemesterConfig
 
     describe "The persons" $
         it "should be generated from a json bytestring" $
             decodePersonsFromJSON personsJSON
-                `shouldBe` Just persons
+                `shouldBe` Just myPersons
 
     describe "The unscheduled exam list" $
         it "should be generated from a json bytestring" $
             decodeExamsFromJSON examsJSON
-                `shouldBe` Just exams
+                `shouldBe` Just myExams
 
-semesterConfig = SemesterConfig
+mySemesterConfig = SemesterConfig
     { semester = "Sommersemester 2017"
     , firstDay = fromGregorian 2017 7 10
     , lastDay = fromGregorian 2017 7 21
+    , examDays = [ fromGregorian 2017 7 10
+                 , fromGregorian 2017 7 11
+                 , fromGregorian 2017 7 12
+                 , fromGregorian 2017 7 13
+                 , fromGregorian 2017 7 14
+                 , fromGregorian 2017 7 17
+                 , fromGregorian 2017 7 18
+                 , fromGregorian 2017 7 19
+                 , fromGregorian 2017 7 20
+                 , fromGregorian 2017 7 21
+                 ]
     , slotsPerDay = ["08:30", "10:30", "12:30", "14:30", "16:30", "18:30"]
     }
 
@@ -48,10 +59,10 @@ semesterConfigJSON =
     `BS.append` "    ]"
     `BS.append` "}"
 
-persons = M.fromList [ (1, Person 1 "M, T." "Dr. Thomas Mustermann")
-                     , (4, Person 4 "M, J." " Julia Musterfrau")
-                     , (5, Person 5 "M, R." "Dr. Ruth Musterfrau")
-                     ]
+myPersons = M.fromList [ (1, Person 1 "M, T." "Dr. Thomas Mustermann")
+                       , (4, Person 4 "M, J." " Julia Musterfrau")
+                       , (5, Person 5 "M, R." "Dr. Ruth Musterfrau")
+                       ]
 
 personsJSON =
                 "["
@@ -72,7 +83,7 @@ personsJSON =
     `BS.append` "    }"
     `BS.append` "]"
 
-exams = [ Exam 1 "Fach 1" (Person 2 "a" "") 90 [] True False Groups "sp"
+myExams = [ Exam 1 "Fach 1" (Person 2 "a" "") 90 [] True False Groups "sp"
         , Exam 2 "Fach 2" (Person 5 "b" "") 60 [] True True  Groups "sp60"
         ]
 

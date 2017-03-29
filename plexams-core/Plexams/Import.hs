@@ -1,14 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Import where
 
-import           Control.Applicative  (empty, (<$>), (<*>))
-import           Data.Aeson           (FromJSON, Value (Object), decode,
-                                       parseJSON, (.:))
-import qualified Data.ByteString.Lazy as BS
-import qualified Data.Map             as M
-import           Data.Maybe           (fromMaybe)
-import           Data.Time            (Day)
-import           Data.Time.Format     (defaultTimeLocale, parseTimeM)
+import           Control.Applicative         (empty, (<$>), (<*>))
+import           Data.Aeson                  (FromJSON, Value (Object), decode,
+                                              parseJSON, (.:))
+import qualified Data.ByteString.Lazy        as BS
+import qualified Data.Map                    as M
+import           Data.Maybe                  (fromMaybe)
+import           Data.Time                   (Day)
+import           Data.Time.Calendar.WeekDate
+import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
 import           Plexams.Types
 
 instance FromJSON SemesterConfig where
@@ -20,10 +21,14 @@ instance FromJSON SemesterConfig where
     parseJSON _          = empty
 
 makeSemesterConfig :: String -> String -> String -> [String] -> SemesterConfig
-makeSemesterConfig s f l = SemesterConfig s (makeDay f) (makeDay l)
+makeSemesterConfig s f l = SemesterConfig s firstDay lastDay realExamDays
     where makeDay :: String -> Day
           makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
              (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
+          firstDay = makeDay f
+          lastDay = makeDay l
+          realExamDays = filter (notWeekend . toWeekDate) [firstDay..lastDay]
+          notWeekend (_,_,weekday) = weekday <= 5
 
 importSemesterConfigFromJSONFile :: FilePath -> IO (Maybe SemesterConfig)
 importSemesterConfigFromJSONFile = fmap decode . BS.readFile
@@ -44,14 +49,14 @@ decodePersonsFromJSON = fmap personsListToPersons . decode
         personsListToPersons = M.fromList . map (\p -> (personID p, p))
 
 data ImportExam = ImportExam
-    { ieExamType :: String
-    , ieGroups :: [String]
-    , ieMainExamer :: String
+    { ieExamType       :: String
+    , ieGroups         :: [String]
+    , ieMainExamer     :: String
     , ieIsRepeaterExam :: Bool
-    , ieDuration :: Integer
-    , ieModule :: String
-    , ieAnCode :: Integer
-    , ieMainExamerId :: Integer
+    , ieDuration       :: Integer
+    , ieModule         :: String
+    , ieAnCode         :: Integer
+    , ieMainExamerId   :: Integer
     }
 
 instance FromJSON ImportExam where

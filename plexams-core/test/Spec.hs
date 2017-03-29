@@ -2,8 +2,8 @@ module Main where
 
 import qualified ImportSpec (spec)
 import           Test.Hspec
-import qualified TypesSpec  (spec)
+import qualified PlanManipSpec  (spec)
 
 main = do
-    hspec TypesSpec.spec
     hspec ImportSpec.spec
+    hspec PlanManipSpec.spec

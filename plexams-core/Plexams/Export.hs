@@ -6,15 +6,19 @@ module Plexams.Export
   ) where
 
 import           Data.Aeson
-import           Data.Maybe    (fromMaybe)
+import           Data.List          (intercalate, transpose)
+import           Data.Maybe         (fromMaybe)
+import           Data.Time          (Day)
+import           Data.Time.Calendar
 import           GHC.Generics
 import           Plexams.Types
 
 
 -- | Erzeugt eine Markdown-Version des aktuellen Plans
 planToMD :: Plan -> String
-planToMD plan =
-    "# Prüfungsplan " ++ semesterName plan ++ "\n\n"
+planToMD plan = undefined
+{-
+    "# Prüfungsplan " ++ semesterName (semesterConfig plan) ++ "\n\n"
     ++ concatMap dayMD (realExamDays plan)
     ++ "## Noch nicht eingeplante Prüfungen\n\n"
     ++ concatMap (\eStr -> "-   " ++ eStr ++ "\n\n")
@@ -25,12 +29,15 @@ planToMD plan =
     slotMD slot = "- " ++ timeString slot ++ "\n\n"
     examMD exam = show (anCode exam) ++ " " ++ name exam
                     ++ " (" ++ personShortName (lecturer exam)  ++ ")"
+-}
 
 insideTag :: String -> String -> String
 insideTag tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
 
 planToHTMLTable :: Plan -> String
-planToHTMLTable plan = before ++ planToHTMLTable' ++ after
+planToHTMLTable plan = undefined
+{-
+        before ++ planToHTMLTable' ++ unscheduledExamsToList ++ after
   where
     before =    "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
                  ++ semesterName plan
@@ -42,7 +49,25 @@ planToHTMLTable plan = before ++ planToHTMLTable' ++ after
                  ++ semesterName plan
                  ++ "</h1>\n"
     after = "</body></html>"
-    planToHTMLTable' = undefined
+    planToHTMLTable' = let header = "" : (map dateString $ realExamDays plan)
+                           columns = map timeString $ slotsOfDay $ head $ realExamDays plan
+                           transposedPlan = transpose $ map slotsOfDay $ realExamDays plan
+                       in insideTag "table"
+                            $ (insideTag "tr" $ concatMap (insideTag "td") header)
+                              ++ (concatMap (insideTag "tr" . concatMap (insideTag "td")) $ zipWith (:) columns $  map (map show) transposedPlan)
+                          --  ++ concatMap (insideTag "tr" . concatMap (insideTag "td"))
+                          --     (map (zipWith (:) columns) $ transpose $ map (intercalate  "," . (map (map (show . anCode) . examsInSlot)) . slotsOfDay) $ realExamDays plan)
+    unscheduledExamsToList = insideTag "ul"
+            $ concatMap (insideTag "li" . toString) $ unscheduledExams plan
+    toString exam = show (anCode exam) ++ " " ++ name exam
+                    ++ " (" ++ personShortName (lecturer exam)  ++ ")"
+-}
+
+dateString :: Day -> String
+dateString day = let (y, m, d) = toGregorian day
+                     showWith0 n = let s = show n
+                                   in if n < 10 then "0"++s else s
+                 in showWith0 d ++ "." ++ showWith0 m ++ "." ++ show y
 
 
 data ZPAExam = ZPAExam
@@ -88,7 +113,8 @@ roomToZPARoom duration room = ZPARoom
     }
 
 planToZPAExams :: Plan -> [ZPAExam]
-planToZPAExams plan =
+planToZPAExams plan = undefined
+{-
     concatMap
         (\day -> concatMap
             (\slot -> map
@@ -97,6 +123,7 @@ planToZPAExams plan =
                                (fromMaybe 0 $ reserveInvigilator slot)
                 ) $ examsInSlot slot
             ) $ slotsOfDay day) $ examDays plan
+-}
 
 -- | Für das ZPA wird eine JSON-Datei erzeugt, in der Form
 --

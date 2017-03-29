@@ -7,6 +7,7 @@ import           Plexams
 import           Plexams.Export
 import           Plexams.GUI
 import           Plexams.Import
+import           Plexams.PlanManip
 import           Plexams.Types
 
 data Config = Config
@@ -44,8 +45,8 @@ main' config =
       case maybeSemesterConfig of
           Nothing -> putStrLn "no semester config"
           Just semesterConfig -> do
-              let emptyPlan = makeEmptyPlan semesterConfig
-                  plan = maybe emptyPlan (addUnscheduledExams emptyPlan) maybeExams
+              let -- emptyPlan = makeEmptyPlan semesterConfig
+                  plan = makePlan (maybe [] id maybeExams) semesterConfig Nothing
               when (exportToMarkdown config) $ putStrLn $ planToMD plan
               when (exportToHTML config)     $ putStrLn $ planToHTMLTable plan
       -- mainGUI
