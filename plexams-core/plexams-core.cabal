@@ -30,7 +30,7 @@ test-suite plexamscore-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       ImportSpec
-                     , TypesSpec
+                     , PlanManipSpec
   build-depends:       base
                      , hspec
                      , aeson
