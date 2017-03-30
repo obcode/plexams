@@ -7,9 +7,11 @@ module Plexams.Export
 
 import           Data.Aeson
 import           Data.List          (intercalate, transpose)
+import qualified Data.Map           as M
 import           Data.Maybe         (fromMaybe)
 import           Data.Time          (Day)
 import           Data.Time.Calendar
+import           GHC.Exts           (groupWith)
 import           GHC.Generics
 import           Plexams.Types
 
@@ -35,32 +37,36 @@ insideTag :: String -> String -> String
 insideTag tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
 
 planToHTMLTable :: Plan -> String
-planToHTMLTable plan = undefined
-{-
+planToHTMLTable plan =
         before ++ planToHTMLTable' ++ unscheduledExamsToList ++ after
   where
+    sName = semester $ semesterConfig plan
     before =    "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
-                 ++ semesterName plan
+                 ++ sName
                  ++ "</title><style>\ntable, th, td {\n"
                  ++ "border: 1px solid black;\n"
                  ++ "}\n"
+                 ++ "i { font-size: 50%; }"
                  ++ "</style></head><body>"
                  ++ "<h1>Prüfungsplan "
-                 ++ semesterName plan
+                 ++ sName
                  ++ "</h1>\n"
     after = "</body></html>"
-    planToHTMLTable' = let header = "" : (map dateString $ realExamDays plan)
-                           columns = map timeString $ slotsOfDay $ head $ realExamDays plan
-                           transposedPlan = transpose $ map slotsOfDay $ realExamDays plan
+    planToHTMLTable' = let header = "" : (map show $ examDays $ semesterConfig plan)
+                           columns =  slotsPerDay $ semesterConfig plan
+                           showExams (idx@(d,s), slot) = insideTag "i" (show idx)
+                                                       ++ show (map anCode $ examsInSlot slot)
+                           slotsAsMatrix = zipWith (:) columns
+                                             $ map (map showExams)
+                                             $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
                        in insideTag "table"
                             $ (insideTag "tr" $ concatMap (insideTag "td") header)
-                              ++ (concatMap (insideTag "tr" . concatMap (insideTag "td")) $ zipWith (:) columns $  map (map show) transposedPlan)
-                          --  ++ concatMap (insideTag "tr" . concatMap (insideTag "td"))
-                          --     (map (zipWith (:) columns) $ transpose $ map (intercalate  "," . (map (map (show . anCode) . examsInSlot)) . slotsOfDay) $ realExamDays plan)
-    unscheduledExamsToList = insideTag "ul"
+                              ++ concatMap (insideTag "tr" . concatMap (insideTag "td")) slotsAsMatrix
+    unscheduledExamsToList = insideTag "ol"
             $ concatMap (insideTag "li" . toString) $ unscheduledExams plan
     toString exam = show (anCode exam) ++ " " ++ name exam
                     ++ " (" ++ personShortName (lecturer exam)  ++ ")"
+{-
 -}
 
 dateString :: Day -> String
