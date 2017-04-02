@@ -4,12 +4,12 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                echo 'Building..'
+                sh 'stack --no-terminal --install-ghc test --only-dependencies'
             }
         }
         stage('Test') {
             steps {
-                echo 'Testing..'
+                sh 'stack --no-terminal test --haddock --no-haddock-dep'
             }
         }
         stage('Deploy') {
