@@ -10,31 +10,38 @@ import           Plexams.Import
 import           Plexams.PlanManip
 import           Plexams.Types
 
+data OutputFormat = Markdown | HTML
+
 data Config = Config
-    { exportToMarkdown :: Bool
-    , exportToHTML     :: Bool
-    , planManipFile    :: Maybe FilePath
+    { outputFormat  :: OutputFormat
+    , planManipFile :: Maybe FilePath
+    , outfile       :: Maybe FilePath
     }
 
 config :: Parser Config
 config = Config
-    <$> switch
-        ( long "toMd"
-       <> short 'm'
-       <> help "Plan in Markdown"
-        )
-    <*> switch
-        ( long "toHtml"
-       <> short 't'
-       <> help "Plan as HTML table"
+    <$> (flag' Markdown
+            ( long "markdown"
+           <> help "markdown output"
+            )
+        <|>
+         flag' HTML
+            ( long "html"
+           <> help "html output"
+            )
         )
     <*> optional (strOption
         ( long "planManip"
        <> short 'p'
        <> metavar "PLANMANIPFILE"
-       <> help "file containing plan manipulations"
-        )
-        )
+       <> help "import file containing plan manipulations"
+        ))
+    <*> optional (strOption
+        ( long "output"
+       <> short 'o'
+       <> metavar "OUTFILE"
+       <> help "output to file instead of stdout"
+        ))
 
 main :: IO ()
 main = main' =<< execParser opts
@@ -46,18 +53,21 @@ main = main' =<< execParser opts
       )
 
 main' :: Config -> IO ()
-main' config =
-  do
-      maybeSemesterConfig <- initSemesterConfigFromFile "./plexams-config.json"
-      maybeExams <- importExamsFromJSONFile "./initialplan.json"
-      case maybeSemesterConfig of
-          Nothing -> putStrLn "no semester config"
-          Just semesterConfig -> do
-              let -- emptyPlan = makeEmptyPlan semesterConfig
-                  plan' = makePlan (maybe [] id maybeExams) semesterConfig Nothing
-              plan <- maybe (return plan') (applyPlanManipToPlanWithFile plan')
-                             $ planManipFile config
-              when (exportToMarkdown config) $ putStrLn $ planToMD plan
-              when (exportToHTML config)     $ putStrLn $ planToHTMLTable plan
-      -- mainGUI
+main' config = do
+    maybeSemesterConfig <- initSemesterConfigFromFile "./plexams-config.json"
+    maybeExams <- importExamsFromJSONFile "./initialplan.json"
+    case maybeSemesterConfig of
+        Nothing -> putStrLn "no semester config"
+        Just semesterConfig -> do
+            -- generate initial plan
+            let plan' = makePlan (maybe [] id maybeExams) semesterConfig Nothing
+            -- maybe manipulate the plan
+            plan <- maybe (return plan') (applyPlanManipToPlanWithFile plan')
+                           $ planManipFile config
+            -- output in Markdown or HTML
+            let output = case outputFormat config of
+                            Markdown -> planToMD plan
+                            HTML -> planToHTMLTable plan
+            maybe (putStrLn output) (flip writeFile output) $ outfile config
+    -- mainGUI
 

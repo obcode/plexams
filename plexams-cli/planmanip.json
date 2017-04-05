@@ -1,0 +1,27 @@
+[
+    {
+        "anCode": 101,
+        "day": 1,
+        "slot": 1
+    },
+    {
+        "anCode": 103,
+        "day": 2,
+        "slot": 2
+    },
+    {
+        "anCode": 105,
+        "day": 9,
+        "slot": 5
+    },
+    {
+        "anCode": 104,
+        "day": 2,
+        "slot": 2
+    },
+    {
+        "anCode": 101,
+        "day": 7,
+        "slot": 3
+    }
+]

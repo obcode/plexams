@@ -1,0 +1,127 @@
+[
+    {
+        "exam_type": "sp",
+        "groups": [
+            "GO",
+            "IF"
+        ],
+        "main_examer": "B, O.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Management von IT-Projekten",
+        "anCode": 101,
+        "main_examer_id": 177
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "GO",
+            "IB",
+            "IC",
+            "IF"
+        ],
+        "main_examer": "B, A.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Technical Writing in Computer Science",
+        "anCode": 102,
+        "main_examer_id": 170
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "GO2",
+            "IB",
+            "IC2",
+            "IF2C"
+        ],
+        "main_examer": "H, J.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Diskrete Mathematik",
+        "anCode": 103,
+        "main_examer_id": 223
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "IG",
+            "IS"
+        ],
+        "main_examer": "H, J.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Maß- und Wahrscheinlichkeitstheorie",
+        "anCode": 104,
+        "main_examer_id": 223
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "IC4",
+            "IC6",
+            "IF"
+        ],
+        "main_examer": "H, J.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Wahrscheinlichkeitstheorie und Statistik II",
+        "anCode": 105,
+        "main_examer_id": 223
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "GO2",
+            "IC2",
+            "IF2A",
+            "IF2C"
+        ],
+        "main_examer": "H, U.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Softwareentwicklung II",
+        "anCode": 107,
+        "main_examer_id": 212
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "IC",
+            "IF4A"
+        ],
+        "main_examer": "B, O.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Compiler",
+        "anCode": 111,
+        "main_examer_id": 180
+    },
+    {
+        "exam_type": "sp60",
+        "groups": [
+            "IB4B"
+        ],
+        "main_examer": "B, O.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Software Engineering II (IB)",
+        "anCode": 113,
+        "main_examer_id": 180
+    },
+    {
+        "exam_type": "sp",
+        "groups": [
+            "GO6",
+            "IB",
+            "IC",
+            "IF6"
+        ],
+        "main_examer": "N, A.",
+        "is_repeater_exam": false,
+        "duration": 90,
+        "module": "Computergrafik und Bildverarbeitung",
+        "anCode": 117,
+        "main_examer_id": 256
+    }
+]
