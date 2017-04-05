@@ -13,6 +13,7 @@ import           Plexams.Types
 data Config = Config
     { exportToMarkdown :: Bool
     , exportToHTML     :: Bool
+    , planManipFile    :: Maybe FilePath
     }
 
 config :: Parser Config
@@ -26,6 +27,13 @@ config = Config
         ( long "toHtml"
        <> short 't'
        <> help "Plan as HTML table"
+        )
+    <*> optional (strOption
+        ( long "planManip"
+       <> short 'p'
+       <> metavar "PLANMANIPFILE"
+       <> help "file containing plan manipulations"
+        )
         )
 
 main :: IO ()
@@ -46,7 +54,10 @@ main' config =
           Nothing -> putStrLn "no semester config"
           Just semesterConfig -> do
               let -- emptyPlan = makeEmptyPlan semesterConfig
-                  plan = makePlan (maybe [] id maybeExams) semesterConfig Nothing
+                  plan' = makePlan (maybe [] id maybeExams) semesterConfig Nothing
+              plan <- maybe (return plan') (applyPlanManipToPlanWithFile plan')
+                             $ planManipFile config
               when (exportToMarkdown config) $ putStrLn $ planToMD plan
               when (exportToHTML config)     $ putStrLn $ planToHTMLTable plan
       -- mainGUI
+

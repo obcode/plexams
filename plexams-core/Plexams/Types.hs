@@ -8,6 +8,7 @@ module Plexams.Types
     , Person(..)
     , Persons
     , Room(..)
+    , PlanManip(..)
     ) where
 
 import qualified Data.Map                    as M
@@ -79,4 +80,10 @@ data Person = Person
     , personFullName  :: String
     }
   deriving (Eq, Show)
+
+data PlanManip = AddExamToSlot
+    { planManipAnCode :: Integer
+    , planManipDay    :: Int
+    , planManipSlot   :: Int
+    }
 

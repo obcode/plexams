@@ -88,3 +88,13 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
           , groups = Groups -- TODO
           , examType = ieExamType ie
           }
+
+instance FromJSON PlanManip where
+    parseJSON (Object v) = AddExamToSlot <$>
+                            v .: "anCode" <*>
+                            v .: "day" <*>
+                            v .: "slot"
+    parseJSON _          = empty
+
+importPlanManipFromJSONFile :: FilePath -> IO (Maybe [PlanManip])
+importPlanManipFromJSONFile = fmap decode . BS.readFile
