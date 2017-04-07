@@ -37,8 +37,8 @@ mySemesterConfig = SemesterConfig
     , slotsPerDay = ["08:30", "10:30", "12:30", "14:30", "16:30", "18:30"]
     }
 
-exam1 = Exam 1 "Fach 1" (Person 2 "a" "") 90 [] True False Groups "sp"
-exam2 = Exam 2 "Fach 2" (Person 5 "b" "") 60 [] True True  Groups "sp60"
+exam1 = Exam 1 "Fach 1" (Person 2 "a" "") 90 [] True False [] "sp" Nothing
+exam2 = Exam 2 "Fach 2" (Person 5 "b" "") 60 [] True True  [] "sp60" Nothing
 
 myExams = [ exam1
           , exam2
