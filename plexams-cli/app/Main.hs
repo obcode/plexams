@@ -1,6 +1,7 @@
 module Main where
 
 import           Control.Monad       (when)
+import           Data.List           (intercalate)
 import           Data.Semigroup      ((<>))
 import           Options.Applicative
 import           Plexams
@@ -8,28 +9,39 @@ import           Plexams.Export
 import           Plexams.GUI
 import           Plexams.Import
 import           Plexams.PlanManip
+import           Plexams.Query
+import           Plexams.Statistics
 import           Plexams.Types
+import           Plexams.Validation
+import           System.Directory    (doesFileExist)
 
-data OutputFormat = Markdown | HTML
+data Command
+    = Markdown
+    | HTML
+    | Statistics
+    | Validate
+    | Query { byAncode        :: Maybe Integer
+            , byGroup         :: Maybe String
+            , onlyUnscheduled :: Bool
+            }
+  deriving (Eq)
 
 data Config = Config
-    { outputFormat  :: OutputFormat
-    , planManipFile :: Maybe FilePath
-    , outfile       :: Maybe FilePath
+    { optCommand     :: Command
+    , planManipFile' :: Maybe FilePath
+    , outfile        :: Maybe FilePath
+    , configfile     :: FilePath
+    , novalidation   :: Bool
     }
 
 config :: Parser Config
 config = Config
-    <$> (flag' Markdown
-            ( long "markdown"
-           <> help "markdown output"
-            )
-        <|>
-         flag' HTML
-            ( long "html"
-           <> help "html output"
-            )
-        )
+    <$> hsubparser
+          ( command "html"      (info (pure HTML)       (progDesc "the plan as an HTML table"))
+         <> command "stats"     (info (pure Statistics) (progDesc "statistics"))
+         <> command "validate"  (info (pure Validate)   (progDesc "validation of current plan"))
+         <> command "query"     (info  queryOpts        (progDesc "query plan"))
+          )
     <*> optional (strOption
         ( long "planManip"
        <> short 'p'
@@ -42,6 +54,36 @@ config = Config
        <> metavar "OUTFILE"
        <> help "output to file instead of stdout"
         ))
+    <*> strOption
+        ( long "config"
+       <> short 'c'
+       <> showDefault
+       <> value "plexams-config.json"
+       <> metavar "CONFIGFILE"
+       <> help "file containing semesterconfig"
+        )
+    <*> switch
+        ( long "no-validation"
+       <> help "turn of validation"
+        )
+
+queryOpts :: Parser Command
+queryOpts = Query
+    <$> optional (option auto
+        ( long "ancode"
+       <> metavar "EXAMID"
+       <> help "query by exam id"
+        ))
+    <*> optional (strOption
+        ( long "group"
+       <> metavar "GROUP"
+       <> help "query by group"
+        ))
+    <*> switch
+        ( long "unscheduled-only"
+       <> short 'u'
+       <> help "show only unscheduled"
+        )
 
 main :: IO ()
 main = main' =<< execParser opts
@@ -54,20 +96,41 @@ main = main' =<< execParser opts
 
 main' :: Config -> IO ()
 main' config = do
-    maybeSemesterConfig <- initSemesterConfigFromFile "./plexams-config.json"
-    maybeExams <- importExamsFromJSONFile "./initialplan.json"
+    maybeSemesterConfig <- initSemesterConfigFromFile $ configfile config
     case maybeSemesterConfig of
         Nothing -> putStrLn "no semester config"
         Just semesterConfig -> do
+            maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig
             -- generate initial plan
             let plan' = makePlan (maybe [] id maybeExams) semesterConfig Nothing
             -- maybe manipulate the plan
-            plan <- maybe (return plan') (applyPlanManipToPlanWithFile plan')
-                           $ planManipFile config
+            plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
+                          (applyPlanManipToPlanWithFile plan')
+                           $ planManipFile' config
             -- output in Markdown or HTML
-            let output = case outputFormat config of
-                            Markdown -> planToMD plan
-                            HTML -> planToHTMLTable plan
+            let output = case optCommand config of
+                            Markdown    -> planToMD plan
+                            HTML        -> planToHTMLTable plan
+                            Statistics  -> planStatistics plan
+                            Validate    -> show $ validatePlan plan
+                            Query mA mG un -> intercalate "\n" $ map show $ query mA mG un plan
             maybe (putStrLn output) (flip writeFile output) $ outfile config
-    -- mainGUI
+            when (optCommand config /= Validate) $
+              putStrLn $ if novalidation config
+                then ">>> Validation off"
+                else show $ validatePlan plan
+
+query :: Maybe Integer -> Maybe String -> Bool -> Plan -> [Exam]
+query mA mG un plan = case mA of
+    Just a  -> queryByAnCode a plan
+    Nothing -> case mG of
+        Just g  -> queryByGroup g un plan
+        Nothing -> []
+
+applyFileFromConfig :: Plan -> FilePath -> IO Plan
+applyFileFromConfig plan file = do
+    fileExist <- doesFileExist file
+    if fileExist
+      then applyPlanManipToPlanWithFile plan file
+      else return plan
 
