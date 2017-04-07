@@ -2,24 +2,29 @@ module Plexams.Types
     ( Plan(..)
     , Slots
     , Slot(..)
+    , setSlotsOnExams
     , Exam(..)
     , SemesterConfig(..)
-    , Groups(..)
+    , Group(..)
+    , Degree(..)
+    , Subgroup(..)
     , Person(..)
     , Persons
     , Room(..)
     , PlanManip(..)
     ) where
 
-import qualified Data.Map                    as M
+import qualified Data.Map           as M
 import           Data.Time.Calendar
 
 data SemesterConfig = SemesterConfig
-    { semester    :: String   -- ^ Semester
-    , firstDay    :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
-    , lastDay     :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
-    , examDays    :: [Day]    -- ^ vom ersten bis letzten Tag OHNE Wochenende
-    , slotsPerDay :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
+    { semester        :: String   -- ^ Semester
+    , firstDay        :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
+    , lastDay         :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
+    , examDays        :: [Day]    -- ^ vom ersten bis letzten Tag OHNE Wochenende
+    , slotsPerDay     :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
+    , initialPlanFile :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
+    , planManipFile   :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
     }
   deriving (Eq, Show)
 
@@ -31,8 +36,20 @@ data Plan = Plan
     }
   deriving (Show, Eq)
 
-
 type Slots = M.Map (Int, Int) Slot
+
+setSlotsOnExams :: Plan -> Plan
+setSlotsOnExams plan = plan
+    { slots = M.mapWithKey addSlotKeyToExam $ slots plan
+    , unscheduledExams = map (\e -> e { slot = Nothing })
+                             $ unscheduledExams plan
+    }
+
+addSlotKeyToExam :: (Int, Int) -> Slot -> Slot
+addSlotKeyToExam k slot =
+    slot { examsInSlot = map (addSlotKey k) $ examsInSlot slot }
+  where
+    addSlotKey k exam = exam { slot = Just k }
 
 data Slot = Slot
     { examsInSlot        :: [Exam]
@@ -49,10 +66,19 @@ data Exam = Exam
     , plannedByMe :: Bool    -- ^ @False@ bei Prüfungen, die zwar mit erfasst werden, aber nicht geplant werden
                              --   können
     , reExam      :: Bool    -- ^ @True@ bei einer Wiederholungsklausur
-    , groups      :: Groups  -- ^ Studierendengruppen die an der Prüfung teilnehmen
+    , groups      :: [Group]  -- ^ Studierendengruppen die an der Prüfung teilnehmen
     , examType    :: String  -- ^ Typ der Prüfung aus ZPA
+    , slot        :: Maybe (Int, Int) -- ^ (Tag, Slot)
     }
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show Exam where
+    show exam = show (anCode exam) ++ ". "
+                ++ name exam
+                ++ ", " ++ personShortName (lecturer exam)
+                ++ (if reExam exam then ", W " else ", E ")
+                ++ show (groups exam)
+                ++ (maybe "" show $ slot exam)
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
@@ -69,8 +95,23 @@ data Room = Room
     }
   deriving (Show, Eq)
 
-data Groups = Groups
-  deriving (Show, Eq)
+data Group = Group
+    { groupDegree   :: Degree
+    , groupSemester :: Maybe Int
+    , groupSubgroup :: Maybe Subgroup
+    }
+  deriving (Eq, Ord)
+
+instance Show Group where
+    show (Group d mI mS) = show d
+      ++ maybe "" show mI
+      ++ maybe "" show mS
+
+data Degree = IB | IC | IF | GO | IG | IN | IS
+  deriving (Show, Eq, Ord)
+
+data Subgroup = A | B | C
+  deriving (Show, Eq, Ord)
 
 type Persons = M.Map Integer Person
 

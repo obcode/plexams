@@ -1,10 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Plexams.Import where
+module Plexams.Import
+    ( importSemesterConfigFromJSONFile
+    , importPlanManipFromJSONFile
+    , importExamsFromJSONFile
+    , parseGroup
+    ) where
 
 import           Control.Applicative         (empty, (<$>), (<*>))
 import           Data.Aeson                  (FromJSON, Value (Object), decode,
                                               parseJSON, (.:))
 import qualified Data.ByteString.Lazy        as BS
+import           Data.Char                   (digitToInt)
 import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe)
 import           Data.Time                   (Day)
@@ -17,11 +23,15 @@ instance FromJSON SemesterConfig where
                             v .: "semester" <*>
                             v .: "firstDay" <*>
                             v .: "lastDay" <*>
-                            v .: "slotsPerDay"
+                            v .: "slotsPerDay" <*>
+                            v .: "initialPlan" <*>
+                            v .: "planManip"
     parseJSON _          = empty
 
-makeSemesterConfig :: String -> String -> String -> [String] -> SemesterConfig
-makeSemesterConfig s f l = SemesterConfig s firstDay lastDay realExamDays
+makeSemesterConfig :: String -> String -> String -> [String]
+                    -> FilePath -> FilePath -> SemesterConfig
+makeSemesterConfig s f l slots initPlan planManip =
+        SemesterConfig s firstDay lastDay realExamDays slots initPlan planManip
     where makeDay :: String -> Day
           makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
              (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
@@ -85,9 +95,39 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
           , rooms = []
           , plannedByMe = True
           , reExam = ieIsRepeaterExam ie
-          , groups = Groups -- TODO
+          , groups = map read $ ieGroups ie
           , examType = ieExamType ie
+          , slot = Nothing
           }
+
+instance Read Group where
+    readsPrec _ str = [(parseGroup str, "")]
+
+parseGroup :: String -> Group
+parseGroup str = Group
+    { groupDegree = str2Degree $ take 2 str
+    , groupSemester = if length str > 2
+                          then Just (digitToInt $ str !! 2)
+                          else Nothing
+    , groupSubgroup = if length str > 3
+                          then Just (char2Subgroup $ str !! 3)
+                          else Nothing
+    }
+  where
+    str2Degree str = case str of
+                         "IB" -> IB
+                         "IC" -> IC
+                         "IF" -> IF
+                         "GO" -> GO
+                         "IG" -> IG
+                         "IN" -> IN
+                         "IS" -> IS
+                         _    -> error $ "unknown group: " ++ str
+    char2Subgroup c = case c of
+                          'A' -> A
+                          'B' -> B
+                          'C' -> C
+                          _   -> error $ "unknown group: " ++ str
 
 instance FromJSON PlanManip where
     parseJSON (Object v) = AddExamToSlot <$>

@@ -66,8 +66,6 @@ planToHTMLTable plan =
             $ concatMap (insideTag "li" . toString) $ unscheduledExams plan
     toString exam = show (anCode exam) ++ " " ++ name exam
                     ++ " (" ++ personShortName (lecturer exam)  ++ ")"
-{-
--}
 
 dateString :: Day -> String
 dateString day = let (y, m, d) = toGregorian day
