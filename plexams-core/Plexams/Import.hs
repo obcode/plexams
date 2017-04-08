@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Import
     ( importSemesterConfigFromYAMLFile
-    , importPlanManipFromJSONFile
     , importExamsFromJSONFile
+    , importPlanManipFromJSONFile
+    , importPlanManipFromYAMLFile
     , parseGroup
     ) where
 
@@ -19,6 +20,10 @@ import           Data.Time.Calendar.WeekDate
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
 import qualified Data.Yaml                   as Y
 import           Plexams.Types
+
+--------------------------------------------------------------------------------
+-- Semesterconfig from YAML File
+--------------------------------------------------------------------------------
 
 instance Y.FromJSON SemesterConfig where
     parseJSON (Y.Object v) = makeSemesterConfig <$>
@@ -45,6 +50,10 @@ makeSemesterConfig s f l slots initPlan planManip =
 importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
 importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
 
+--------------------------------------------------------------------------------
+-- Persons from JSON File
+--------------------------------------------------------------------------------
+
 instance FromJSON Person where
     parseJSON (Object v) = Person <$>
                             v .: "person_id" <*>
@@ -59,6 +68,10 @@ decodePersonsFromJSON :: BS.ByteString -> Maybe Persons
 decodePersonsFromJSON = fmap personsListToPersons . decode
   where personsListToPersons :: [Person] -> Persons
         personsListToPersons = M.fromList . map (\p -> (personID p, p))
+
+--------------------------------------------------------------------------------
+-- Exams from JSON File
+--------------------------------------------------------------------------------
 
 data ImportExam = ImportExam
     { ieExamType       :: String
@@ -131,6 +144,10 @@ parseGroup str = Group
                           'C' -> C
                           _   -> error $ "unknown group: " ++ str
 
+--------------------------------------------------------------------------------
+-- PlanManip from JSON File
+--------------------------------------------------------------------------------
+
 instance FromJSON PlanManip where
     parseJSON (Object v) = AddExamToSlot <$>
                             v .: "anCode" <*>
@@ -140,3 +157,17 @@ instance FromJSON PlanManip where
 
 importPlanManipFromJSONFile :: FilePath -> IO (Maybe [PlanManip])
 importPlanManipFromJSONFile = fmap decode . BS.readFile
+
+--------------------------------------------------------------------------------
+-- PlanManip from YAML File
+--------------------------------------------------------------------------------
+
+listsToPlanManips :: Maybe [[Integer]] -> Maybe [PlanManip]
+listsToPlanManips = maybe Nothing (Just . map listToPlanManip)
+
+listToPlanManip :: [Integer] -> PlanManip
+listToPlanManip [a,d,s] = AddExamToSlot a (fromInteger d) (fromInteger s)
+listToPlanManip xs      = error $ "cannot decode " ++ show xs
+
+importPlanManipFromYAMLFile :: FilePath -> IO (Maybe [PlanManip])
+importPlanManipFromYAMLFile = fmap (listsToPlanManips . Y.decode) . BSI.readFile

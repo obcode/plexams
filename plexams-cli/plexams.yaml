@@ -9,4 +9,4 @@ slotsPerDay:
   - 16:30
   - 18:30
 initialPlan: initialplan.json
-planManip: planManip.json
+planManip: planmanip.yaml
