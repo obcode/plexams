@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Import
-    ( importSemesterConfigFromJSONFile
+    ( importSemesterConfigFromYAMLFile
     , importPlanManipFromJSONFile
     , importExamsFromJSONFile
     , parseGroup
@@ -9,6 +9,7 @@ module Plexams.Import
 import           Control.Applicative         (empty, (<$>), (<*>))
 import           Data.Aeson                  (FromJSON, Value (Object), decode,
                                               parseJSON, (.:))
+import qualified Data.ByteString             as BSI
 import qualified Data.ByteString.Lazy        as BS
 import           Data.Char                   (digitToInt)
 import qualified Data.Map                    as M
@@ -16,16 +17,17 @@ import           Data.Maybe                  (fromMaybe)
 import           Data.Time                   (Day)
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
+import qualified Data.Yaml                   as Y
 import           Plexams.Types
 
-instance FromJSON SemesterConfig where
-    parseJSON (Object v) = makeSemesterConfig <$>
-                            v .: "semester" <*>
-                            v .: "firstDay" <*>
-                            v .: "lastDay" <*>
-                            v .: "slotsPerDay" <*>
-                            v .: "initialPlan" <*>
-                            v .: "planManip"
+instance Y.FromJSON SemesterConfig where
+    parseJSON (Y.Object v) = makeSemesterConfig <$>
+                            v Y..: "semester" <*>
+                            v Y..: "firstDay" <*>
+                            v Y..: "lastDay" <*>
+                            v Y..: "slotsPerDay" <*>
+                            v Y..: "initialPlan" <*>
+                            v Y..: "planManip"
     parseJSON _          = empty
 
 makeSemesterConfig :: String -> String -> String -> [String]
@@ -40,8 +42,8 @@ makeSemesterConfig s f l slots initPlan planManip =
           realExamDays = filter (notWeekend . toWeekDate) [firstDay..lastDay]
           notWeekend (_,_,weekday) = weekday <= 5
 
-importSemesterConfigFromJSONFile :: FilePath -> IO (Maybe SemesterConfig)
-importSemesterConfigFromJSONFile = fmap decode . BS.readFile
+importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
+importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
 
 instance FromJSON Person where
     parseJSON (Object v) = Person <$>

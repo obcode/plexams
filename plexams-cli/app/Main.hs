@@ -58,7 +58,7 @@ config = Config
         ( long "config"
        <> short 'c'
        <> showDefault
-       <> value "plexams-config.json"
+       <> value "plexams.yaml"
        <> metavar "CONFIGFILE"
        <> help "file containing semesterconfig"
         )

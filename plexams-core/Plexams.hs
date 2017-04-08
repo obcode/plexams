@@ -5,7 +5,7 @@ import           Plexams.PlanManip
 import           Plexams.Types
 
 initSemesterConfigFromFile :: FilePath -> IO (Maybe SemesterConfig)
-initSemesterConfigFromFile = importSemesterConfigFromJSONFile
+initSemesterConfigFromFile = importSemesterConfigFromYAMLFile
 
 applyPlanManipToPlanWithFile :: Plan -> FilePath -> IO Plan
 applyPlanManipToPlanWithFile plan filePath = do
