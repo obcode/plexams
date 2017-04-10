@@ -24,6 +24,7 @@ data Command
             , byGroup         :: Maybe String
             , onlyUnscheduled :: Bool
             }
+    | ExportZPA { zpafile :: FilePath }
   deriving (Eq)
 
 data Config = Config
@@ -41,6 +42,7 @@ config = Config
          <> command "stats"     (info (pure Statistics) (progDesc "statistics"))
          <> command "validate"  (info (pure Validate)   (progDesc "validation of current plan"))
          <> command "query"     (info  queryOpts        (progDesc "query plan"))
+         <> command "zpa"       (info  exportZPAOpts    (progDesc "export current plan for ZPA"))
           )
     <*> optional (strOption
         ( long "planManip"
@@ -83,6 +85,15 @@ queryOpts = Query
         ( long "unscheduled-only"
        <> short 'u'
        <> help "show only unscheduled"
+        )
+
+exportZPAOpts :: Parser Command
+exportZPAOpts = ExportZPA
+    <$> strOption
+        ( long "file"
+       <> short 'f'
+       <> metavar "FILE"
+       <> help "output in JSON file"
         )
 
 main :: IO ()
