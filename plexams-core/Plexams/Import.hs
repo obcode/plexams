@@ -26,13 +26,13 @@ import           Plexams.Types
 --------------------------------------------------------------------------------
 
 instance Y.FromJSON SemesterConfig where
-    parseJSON (Y.Object v) = makeSemesterConfig <$>
-                            v Y..: "semester" <*>
-                            v Y..: "firstDay" <*>
-                            v Y..: "lastDay" <*>
-                            v Y..: "slotsPerDay" <*>
-                            v Y..: "initialPlan" <*>
-                            v Y..: "planManip"
+    parseJSON (Y.Object v) = makeSemesterConfig
+                        <$> v Y..: "semester"
+                        <*> v Y..: "firstDay"
+                        <*> v Y..: "lastDay"
+                        <*> v Y..: "slotsPerDay"
+                        <*> v Y..: "initialPlan"
+                        <*> v Y..: "planManip"
     parseJSON _          = empty
 
 makeSemesterConfig :: String -> String -> String -> [String]
@@ -55,10 +55,10 @@ importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
 --------------------------------------------------------------------------------
 
 instance FromJSON Person where
-    parseJSON (Object v) = Person <$>
-                            v .: "person_id" <*>
-                            v .: "person_shortname" <*>
-                            v .: "person_fullname"
+    parseJSON (Object v) = Person
+                        <$> v .: "person_id"
+                        <*> v .: "person_shortname"
+                        <*> v .: "person_fullname"
     parseJSON _          = empty
 
 importPersonsFromJSONFile :: FilePath -> IO (Maybe Persons)
@@ -85,15 +85,15 @@ data ImportExam = ImportExam
     }
 
 instance FromJSON ImportExam where
-    parseJSON (Object v ) = ImportExam <$>
-                             v .: "exam_type" <*>
-                             v .: "groups" <*>
-                             v .: "main_examer" <*>
-                             v .: "is_repeater_exam" <*>
-                             v .: "duration" <*>
-                             v .: "module" <*>
-                             v .: "anCode" <*>
-                             v .: "main_examer_id"
+    parseJSON (Object v ) = ImportExam
+                         <$> v .: "exam_type"
+                         <*> v .: "groups"
+                         <*> v .: "main_examer"
+                         <*> v .: "is_repeater_exam"
+                         <*> v .: "duration"
+                         <*> v .: "module"
+                         <*> v .: "anCode"
+                         <*> v .: "main_examer_id"
     parseJSON _          = empty
 
 importExamsFromJSONFile :: FilePath -> IO (Maybe [Exam])
@@ -149,10 +149,10 @@ parseGroup str = Group
 --------------------------------------------------------------------------------
 
 instance FromJSON PlanManip where
-    parseJSON (Object v) = AddExamToSlot <$>
-                            v .: "anCode" <*>
-                            v .: "day" <*>
-                            v .: "slot"
+    parseJSON (Object v) = AddExamToSlot
+                        <$> v .: "anCode"
+                        <*> v .: "day"
+                        <*> v .: "slot"
     parseJSON _          = empty
 
 importPlanManipFromJSONFile :: FilePath -> IO (Maybe [PlanManip])
