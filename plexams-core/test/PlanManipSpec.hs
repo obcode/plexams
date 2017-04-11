@@ -7,7 +7,7 @@ import           Test.Hspec
 import           Data.Time.Calendar
 
 spec :: Spec
-spec = do
+spec = undefined {- do
     describe "The plan" $ do
         it "should be generated correctly" $
             makePlan myExams mySemesterConfig Nothing
@@ -114,4 +114,5 @@ semesterConfig = SemesterConfig
     }
 
 examplePlan = makeEmptyPlan semesterConfig
+-}
 -}

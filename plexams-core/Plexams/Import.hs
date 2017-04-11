@@ -33,12 +33,20 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "slotsPerDay"
                         <*> v Y..: "initialPlan"
                         <*> v Y..: "planManip"
+                        <*> v Y..: "rooms"
     parseJSON _          = empty
 
+instance Y.FromJSON AvailableRoom where
+    parseJSON (Y.Object v) = AvailableRoom
+                       <$> v Y..: "name"
+                       <*> v Y..: "seats"
+    parseJSON _            = empty
+
 makeSemesterConfig :: String -> String -> String -> [String]
-                    -> FilePath -> FilePath -> SemesterConfig
-makeSemesterConfig s f l slots initPlan planManip =
-        SemesterConfig s firstDay lastDay realExamDays slots initPlan planManip
+                    -> FilePath -> FilePath -> [AvailableRoom]
+                    -> SemesterConfig
+makeSemesterConfig s f l =
+        SemesterConfig s firstDay lastDay realExamDays
     where makeDay :: String -> Day
           makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
              (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)

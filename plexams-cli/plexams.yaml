@@ -1,6 +1,8 @@
 semester: Sommersemester 2017
+
 firstDay: 10.07.2017
 lastDay: 21.07.2017
+
 slotsPerDay:
   - 08:30
   - 10:30
@@ -8,5 +10,15 @@ slotsPerDay:
   - 14:30
   - 16:30
   - 18:30
+
+rooms:
+  - name: R0.006
+    seats: 27
+  - name: R0.007
+    seats: 24
+  - name: R0.009
+    seats: 25
+
 initialPlan: initialplan.json
 planManip: planmanip.yaml
+

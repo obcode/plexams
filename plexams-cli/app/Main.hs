@@ -73,11 +73,13 @@ queryOpts :: Parser Command
 queryOpts = Query
     <$> optional (option auto
         ( long "ancode"
+       <> short 'a'
        <> metavar "EXAMID"
        <> help "query by exam id"
         ))
     <*> optional (strOption
         ( long "group"
+       <> short 'g'
        <> metavar "GROUP"
        <> help "query by group"
         ))
@@ -114,29 +116,48 @@ main' config = do
             maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig
             -- generate initial plan
             let plan' = makePlan (maybe [] id maybeExams) semesterConfig Nothing
-            -- maybe manipulate the plan
+      -- maybe manipulate the plan
             plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
                           (applyPlanManipToPlanWithFile plan')
                            $ planManipFile' config
-            -- output in Markdown or HTML
-            let output = case optCommand config of
-                            Markdown    -> planToMD plan
-                            HTML        -> planToHTMLTable plan
-                            Statistics  -> planStatistics plan
-                            Validate    -> show $ validatePlan plan
-                            Query mA mG un -> intercalate "\n" $ map show $ query mA mG un plan
-            maybe (putStrLn output) (flip writeFile output) $ outfile config
+            -- call the command function
+            commandFun (optCommand config) config  plan
+                -- Query mA mG un -> intercalate "\n" $ map show $ query mA mG un plan
             when (optCommand config /= Validate) $
               putStrLn $ if novalidation config
                 then ">>> Validation off"
                 else show $ validatePlan plan
 
-query :: Maybe Integer -> Maybe String -> Bool -> Plan -> [Exam]
-query mA mG un plan = case mA of
-    Just a  -> queryByAnCode a plan
-    Nothing -> case mG of
-        Just g  -> queryByGroup g un plan
-        Nothing -> []
+commandFun :: Command -> (Config -> Plan -> IO ())
+commandFun Markdown      = markdown
+commandFun HTML          = html
+commandFun Statistics    = stats
+commandFun Validate      = validate
+commandFun (Query _ _ _) = query
+
+stdoutOrFile :: Config -> String -> IO ()
+stdoutOrFile config output =
+    maybe (putStrLn output) (flip writeFile output) $ outfile config
+
+markdown :: Config -> Plan -> IO ()
+markdown config = stdoutOrFile config . planToMD
+
+html :: Config -> Plan -> IO ()
+html config = stdoutOrFile config . planToHTMLTable
+
+stats :: Config -> Plan -> IO ()
+stats config = stdoutOrFile config . planStatistics
+
+validate :: Config -> Plan -> IO ()
+validate config = stdoutOrFile config . show . validatePlan
+
+query :: Config -> Plan -> IO ()
+query config plan = stdoutOrFile config
+    $ intercalate "\n" $ map show $ query' (optCommand config)
+  where
+    query' (Query (Just a) _ _) = queryByAnCode a plan
+    query' (Query _ (Just g) u) = queryByGroup g u plan
+    query' _                    = []
 
 applyFileFromConfig :: Plan -> FilePath -> IO Plan
 applyFileFromConfig plan file = do

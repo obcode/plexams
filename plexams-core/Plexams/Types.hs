@@ -10,6 +10,7 @@ module Plexams.Types
     , Subgroup(..)
     , Person(..)
     , Persons
+    , AvailableRoom(..)
     , Room(..)
     , PlanManip(..)
     ) where
@@ -25,6 +26,13 @@ data SemesterConfig = SemesterConfig
     , slotsPerDay     :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
     , initialPlanFile :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
     , planManipFile   :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
+    , availableRooms  :: [AvailableRoom]
+    }
+  deriving (Eq, Show)
+
+data AvailableRoom = AvailableRoom
+    { availableRoomName :: String
+    , availableRoomMaxSeats :: Integer
     }
   deriving (Eq, Show)
 
