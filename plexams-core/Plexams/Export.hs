@@ -52,7 +52,7 @@ planToHTMLTable plan =
                  ++ sName
                  ++ "</h1>\n"
     after = "</body></html>"
-    planToHTMLTable' = let header = "" : (map show $ examDays $ semesterConfig plan)
+    planToHTMLTable' = let header = "" : map show (examDays $ semesterConfig plan)
                            columns =  slotsPerDay $ semesterConfig plan
                            showExams (idx@(d,s), slot) = insideTag "i" (show idx)
                                                        ++ show (map anCode $ examsInSlot slot)
@@ -60,7 +60,7 @@ planToHTMLTable plan =
                                              $ map (map showExams)
                                              $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
                        in insideTag "table"
-                            $ (insideTag "tr" $ concatMap (insideTag "td") header)
+                            $ insideTag "tr" (concatMap (insideTag "td") header)
                               ++ concatMap (insideTag "tr" . concatMap (insideTag "td")) slotsAsMatrix
     unscheduledExamsToList = insideTag "ol"
             $ concatMap (insideTag "li" . toString) $ unscheduledExams plan

@@ -55,4 +55,3 @@ examGroupsCorrelation plan =
                 let grps = groups exam
                 in [(g1,g2) | g1 <- grps, g2 <- grps, g1 /= g2]
         in map (\xs@((g1,_):_) -> (g1, nub $ map snd xs)) $ groupWith fst groupsWithSameExam
-

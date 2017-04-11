@@ -2,6 +2,7 @@ module Main where
 
 import           Control.Monad       (when)
 import           Data.List           (intercalate)
+import           Data.Maybe          (fromMaybe)
 import           Data.Semigroup      ((<>))
 import           Options.Applicative
 import           Plexams
@@ -38,11 +39,16 @@ data Config = Config
 config :: Parser Config
 config = Config
     <$> hsubparser
-          ( command "html"      (info (pure HTML)       (progDesc "the plan as an HTML table"))
-         <> command "stats"     (info (pure Statistics) (progDesc "statistics"))
-         <> command "validate"  (info (pure Validate)   (progDesc "validation of current plan"))
-         <> command "query"     (info  queryOpts        (progDesc "query plan"))
-         <> command "zpa"       (info  exportZPAOpts    (progDesc "export current plan for ZPA"))
+          ( command "html"      (info (pure HTML)
+                                  (progDesc "the plan as an HTML table"))
+         <> command "stats"     (info (pure Statistics)
+                                  (progDesc "statistics"))
+         <> command "validate"  (info (pure Validate)
+                                  (progDesc "validation of current plan"))
+         <> command "query"     (info  queryOpts
+                                  (progDesc "query plan"))
+         <> command "zpa"       (info  exportZPAOpts
+                                  (progDesc "export current plan for ZPA"))
           )
     <*> optional (strOption
         ( long "planManip"
@@ -109,35 +115,34 @@ main = main' =<< execParser opts
 
 main' :: Config -> IO ()
 main' config = do
-    maybeSemesterConfig <- initSemesterConfigFromFile $ configfile config
-    case maybeSemesterConfig of
-        Nothing -> putStrLn "no semester config"
-        Just semesterConfig -> do
-            maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig
-            -- generate initial plan
-            let plan' = makePlan (maybe [] id maybeExams) semesterConfig Nothing
-      -- maybe manipulate the plan
-            plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
-                          (applyPlanManipToPlanWithFile plan')
-                           $ planManipFile' config
-            -- call the command function
-            commandFun (optCommand config) config  plan
-                -- Query mA mG un -> intercalate "\n" $ map show $ query mA mG un plan
-            when (optCommand config /= Validate) $
-              putStrLn $ if novalidation config
-                then ">>> Validation off"
-                else show $ validatePlan plan
+  maybeSemesterConfig <- initSemesterConfigFromFile $ configfile config
+  case maybeSemesterConfig of
+    Nothing -> putStrLn "no semester config"
+    Just semesterConfig -> do
+      maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig
+      -- generate initial plan
+      let plan' = makePlan (fromMaybe [] maybeExams) semesterConfig Nothing
+-- maybe manipulate the plan
+      plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
+                    (applyPlanManipToPlanWithFile plan')
+                     $ planManipFile' config
+      -- call the command function
+      commandFun (optCommand config) config  plan
+      when (optCommand config /= Validate) $
+        putStrLn $ if novalidation config
+          then ">>> Validation off"
+          else show $ validatePlan plan
 
 commandFun :: Command -> (Config -> Plan -> IO ())
-commandFun Markdown      = markdown
-commandFun HTML          = html
-commandFun Statistics    = stats
-commandFun Validate      = validate
-commandFun (Query _ _ _) = query
+commandFun Markdown   = markdown
+commandFun HTML       = html
+commandFun Statistics = stats
+commandFun Validate   = validate
+commandFun Query {}   = query
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
-    maybe (putStrLn output) (flip writeFile output) $ outfile config
+    maybe (putStrLn output) (`writeFile` output) $ outfile config
 
 markdown :: Config -> Plan -> IO ()
 markdown config = stdoutOrFile config . planToMD
@@ -165,4 +170,3 @@ applyFileFromConfig plan file = do
     if fileExist
       then applyPlanManipToPlanWithFile plan file
       else return plan
-

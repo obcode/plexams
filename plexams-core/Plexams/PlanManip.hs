@@ -6,6 +6,7 @@ module Plexams.PlanManip
 
 import           Data.List     (partition)
 import qualified Data.Map      as M
+import           Data.Maybe    (fromMaybe)
 import           Plexams.Types
 
 addExamToSlot :: Integer -- ^ Anmeldecode
@@ -65,9 +66,8 @@ makeEmptyPlan semesterConfig maybePers = Plan
    -- examDays = map (`makeExamDay` slots)
    --                  [firstDay semesterConfig .. lastDay semesterConfig]
     , unscheduledExams = []
-    , persons = maybe M.empty id maybePers
+    , persons = fromMaybe M.empty maybePers
     }
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan
 addUnscheduledExams exams plan = plan { unscheduledExams = exams}
-

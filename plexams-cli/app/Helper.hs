@@ -86,6 +86,3 @@ doCommand config@(Config (PrepareRegistrations g) iPath mOPath) = do
         in if null rest
            then [w]
            else w : split (dropWhile (==';') rest)
-
-
-

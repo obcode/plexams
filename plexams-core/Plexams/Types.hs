@@ -13,6 +13,8 @@ module Plexams.Types
     , AvailableRoom(..)
     , Room(..)
     , PlanManip(..)
+    , Registration
+    , Registrations
     ) where
 
 import qualified Data.Map           as M
@@ -86,7 +88,7 @@ instance Show Exam where
                 ++ ", " ++ personShortName (lecturer exam)
                 ++ (if reExam exam then ", W " else ", E ")
                 ++ show (groups exam)
-                ++ (maybe "" show $ slot exam)
+                ++ maybe "" show (slot exam)
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
@@ -136,3 +138,12 @@ data PlanManip = AddExamToSlot
     , planManipSlot   :: Int
     }
 
+data Registrations = Registrations
+    { regsGroup :: String
+    , regs :: [Registration]
+    }
+
+data Registration = Registration
+    { regAnCode :: Integer
+    , regSum :: Integer
+    }

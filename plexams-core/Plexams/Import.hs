@@ -167,11 +167,11 @@ importPlanManipFromJSONFile :: FilePath -> IO (Maybe [PlanManip])
 importPlanManipFromJSONFile = fmap decode . BS.readFile
 
 --------------------------------------------------------------------------------
--- PlanManip from YAML File
+-- PlanManip from YAML file
 --------------------------------------------------------------------------------
 
 listsToPlanManips :: Maybe [[Integer]] -> Maybe [PlanManip]
-listsToPlanManips = maybe Nothing (Just . map listToPlanManip)
+listsToPlanManips = fmap $ map listToPlanManip
 
 listToPlanManip :: [Integer] -> PlanManip
 listToPlanManip [a,d,s] = AddExamToSlot a (fromInteger d) (fromInteger s)
@@ -179,3 +179,14 @@ listToPlanManip xs      = error $ "cannot decode " ++ show xs
 
 importPlanManipFromYAMLFile :: FilePath -> IO (Maybe [PlanManip])
 importPlanManipFromYAMLFile = fmap (listsToPlanManips . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- Registrations from YAML file
+--------------------------------------------------------------------------------
+
+-- listToRegistrations :: (String, [[]]) -> Maybe Registrations
+-- listToRegistrations
+
+-- importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe Registrations)
+-- importRegistrationsFromYAMLFile =
+--    fmap (listToRegistrations . Y.decode) . BSI.readFile
