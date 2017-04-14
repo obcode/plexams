@@ -2,6 +2,7 @@ module Plexams.PlanManip
     ( addExamToSlot
     , applyPlanManipListToPlan
     , makePlan
+    , addRegistrationsListToExams
     ) where
 
 import           Data.List     (partition)
@@ -71,3 +72,22 @@ makeEmptyPlan semesterConfig maybePers = Plan
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan
 addUnscheduledExams exams plan = plan { unscheduledExams = exams}
+
+addRegistrationsListToExams :: [Exam] -> [Registrations] -> [Exam]
+addRegistrationsListToExams = foldr addRegistrationsToExams
+
+addRegistrationsToExams :: Registrations -> [Exam] -> [Exam]
+addRegistrationsToExams registrations = map addRegistrationsToExam
+  where
+    addRegistrationsToExam :: Exam -> Exam
+    addRegistrationsToExam exam =
+        maybe exam (addRegToExam exam) regForExam
+      where regForExam = M.lookup (anCode exam) (regs registrations)
+            (_, otherGroups) =
+              partition ((==regGroup) . groupDegree)
+                      $ groups exam
+            addRegToExam exam regSum = exam
+              { groups = Group regGroup Nothing Nothing (Just regSum)
+                         : otherGroups
+              }
+            regGroup = read $ regsGroup registrations

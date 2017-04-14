@@ -13,8 +13,7 @@ module Plexams.Types
     , AvailableRoom(..)
     , Room(..)
     , PlanManip(..)
-    , Registration
-    , Registrations
+    , Registrations(..)
     ) where
 
 import qualified Data.Map           as M
@@ -33,7 +32,7 @@ data SemesterConfig = SemesterConfig
   deriving (Eq, Show)
 
 data AvailableRoom = AvailableRoom
-    { availableRoomName :: String
+    { availableRoomName     :: String
     , availableRoomMaxSeats :: Integer
     }
   deriving (Eq, Show)
@@ -106,19 +105,21 @@ data Room = Room
   deriving (Show, Eq)
 
 data Group = Group
-    { groupDegree   :: Degree
-    , groupSemester :: Maybe Int
-    , groupSubgroup :: Maybe Subgroup
+    { groupDegree        :: Degree
+    , groupSemester      :: Maybe Int
+    , groupSubgroup      :: Maybe Subgroup
+    , groupRegistrations :: Maybe Integer
     }
   deriving (Eq, Ord)
 
 instance Show Group where
-    show (Group d mI mS) = show d
+    show (Group d mI mS mReg) = show d
       ++ maybe "" show mI
       ++ maybe "" show mS
+      ++ maybe "" (("("++) . (++")") . show) mReg
 
 data Degree = IB | IC | IF | GO | IG | IN | IS
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Read)
 
 data Subgroup = A | B | C
   deriving (Show, Eq, Ord)
@@ -140,10 +141,6 @@ data PlanManip = AddExamToSlot
 
 data Registrations = Registrations
     { regsGroup :: String
-    , regs :: [Registration]
+    , regs      :: M.Map Integer Integer -- Ancode x Sum
     }
-
-data Registration = Registration
-    { regAnCode :: Integer
-    , regSum :: Integer
-    }
+  deriving (Show)

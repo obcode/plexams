@@ -4,6 +4,7 @@ module Plexams.Import
     , importExamsFromJSONFile
     , importPlanManipFromJSONFile
     , importPlanManipFromYAMLFile
+    , importRegistrationsFromYAMLFile
     , parseGroup
     ) where
 
@@ -135,6 +136,7 @@ parseGroup str = Group
     , groupSubgroup = if length str > 3
                           then Just (char2Subgroup $ str !! 3)
                           else Nothing
+    , groupRegistrations = Nothing
     }
   where
     str2Degree str = case str of
@@ -184,9 +186,39 @@ importPlanManipFromYAMLFile = fmap (listsToPlanManips . Y.decode) . BSI.readFile
 -- Registrations from YAML file
 --------------------------------------------------------------------------------
 
--- listToRegistrations :: (String, [[]]) -> Maybe Registrations
--- listToRegistrations
+data ImportRegistrations = ImportRegistrations
+  { iRegGroups :: String
+  , iRegs      :: [ImportRegistration]
+  }
 
--- importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe Registrations)
--- importRegistrationsFromYAMLFile =
---    fmap (listToRegistrations . Y.decode) . BSI.readFile
+instance Y.FromJSON ImportRegistrations where
+  parseJSON (Y.Object v) = ImportRegistrations
+                        <$> v Y..: "group"
+                        <*> v Y..: "registrations"
+  parseJSON _            = empty
+
+data ImportRegistration = ImportRegistration
+  { iRegAncode :: Integer
+  , iRegSum    :: Integer
+  }
+
+instance Y.FromJSON ImportRegistration where
+    parseJSON (Y.Object v) = ImportRegistration
+                          <$> v Y..: "ancode"
+                          <*> v Y..: "sum"
+    parseJSON _            = empty
+
+listToRegistrations :: (String, [(Integer, Integer)]) -> Registrations
+listToRegistrations (g, regs) = Registrations g (M.fromList regs)
+
+iRegsToRegs :: ImportRegistrations -> Registrations
+iRegsToRegs (ImportRegistrations g rs) = Registrations
+  { regsGroup = g
+  , regs = M.fromList $ map (\(ImportRegistration a s) -> (a, s)) rs
+  }
+
+iRegsLToRegsL = map iRegsToRegs
+
+importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe [Registrations])
+importRegistrationsFromYAMLFile =
+    fmap (fmap iRegsLToRegsL . Y.decode) . BSI.readFile

@@ -31,6 +31,7 @@ data Command
 data Config = Config
     { optCommand     :: Command
     , planManipFile' :: Maybe FilePath
+    , regsFile       :: Maybe FilePath
     , outfile        :: Maybe FilePath
     , configfile     :: FilePath
     , novalidation   :: Bool
@@ -39,8 +40,10 @@ data Config = Config
 config :: Parser Config
 config = Config
     <$> hsubparser
-          ( command "html"      (info (pure HTML)
-                                  (progDesc "the plan as an HTML table"))
+          ( command "markdown"    (info (pure Markdown)
+                                  (progDesc "the plan as markdown document"))
+         <> command "html"      (info (pure HTML)
+                                 (progDesc "the plan as an HTML table"))
          <> command "stats"     (info (pure Statistics)
                                   (progDesc "statistics"))
          <> command "validate"  (info (pure Validate)
@@ -56,7 +59,13 @@ config = Config
        <> metavar "PLANMANIPFILE"
        <> help "import file containing plan manipulations"
         ))
-    <*> optional (strOption
+        <*> optional (strOption
+        ( long "registrations"
+       <> short 'r'
+       <> metavar "REGISTRATIONSFILE"
+       <> help "import file containing registrations"
+        ))
+      <*> optional (strOption
         ( long "output"
        <> short 'o'
        <> metavar "OUTFILE"
@@ -119,9 +128,19 @@ main' config = do
   case maybeSemesterConfig of
     Nothing -> putStrLn "no semester config"
     Just semesterConfig -> do
+      -- read exams from file
       maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig
+      -- maybe read registrations from file
+      -- TODO
+      print $ regsFile config
+      maybeRegs <- maybe (return Nothing) importRegistrationsFromYAMLFile
+                              $ regsFile config
+      print maybeRegs
+      let exams = fromMaybe [] maybeExams
+          examsWithRegs = maybe exams
+                                (addRegistrationsListToExams exams) maybeRegs
       -- generate initial plan
-      let plan' = makePlan (fromMaybe [] maybeExams) semesterConfig Nothing
+      let plan' = makePlan examsWithRegs semesterConfig Nothing
 -- maybe manipulate the plan
       plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
                     (applyPlanManipToPlanWithFile plan')
