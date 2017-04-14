@@ -13,12 +13,16 @@ import           Data.Time          (Day)
 import           Data.Time.Calendar
 import           GHC.Exts           (groupWith)
 import           GHC.Generics
+import           Plexams.Query      (allExams)
 import           Plexams.Types
 
 
 -- | Erzeugt eine Markdown-Version des aktuellen Plans
 planToMD :: Plan -> String
-planToMD plan = undefined
+planToMD = ("-   "++)
+          . intercalate "\n-   "
+          . map show
+          . allExams
 {-
     "# Prüfungsplan " ++ semesterName (semesterConfig plan) ++ "\n\n"
     ++ concatMap dayMD (realExamDays plan)
