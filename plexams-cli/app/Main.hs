@@ -131,17 +131,14 @@ main' config = do
       -- read exams from file
       maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig
       -- maybe read registrations from file
-      -- TODO
-      print $ regsFile config
       maybeRegs <- maybe (return Nothing) importRegistrationsFromYAMLFile
                               $ regsFile config
-      print maybeRegs
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
       -- generate initial plan
       let plan' = makePlan examsWithRegs semesterConfig Nothing
--- maybe manipulate the plan
+      -- maybe manipulate the plan
       plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
                     (applyPlanManipToPlanWithFile plan')
                      $ planManipFile' config
@@ -150,7 +147,10 @@ main' config = do
       when (optCommand config /= Validate) $
         putStrLn $ if novalidation config
           then ">>> Validation off"
-          else show $ validatePlan plan
+          else if fst $ validatePlan plan
+               then ">>> Validation ok!"
+               else ">>> Validation NOT ok!\n"
+                 ++ "    See `plexams validate` for more information."
 
 commandFun :: Command -> (Config -> Plan -> IO ())
 commandFun Markdown   = markdown
@@ -173,7 +173,13 @@ stats :: Config -> Plan -> IO ()
 stats config = stdoutOrFile config . planStatistics
 
 validate :: Config -> Plan -> IO ()
-validate config = stdoutOrFile config . show . validatePlan
+validate config = stdoutOrFile config . validatePlan'
+  where
+    validatePlan' plan =
+      let (ok, msgs) = validatePlan plan
+      in intercalate "\n" msgs
+        ++ if ok then "\n# Validation successful."
+                 else "\n# Validation failed."
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config

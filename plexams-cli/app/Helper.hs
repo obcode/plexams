@@ -34,8 +34,6 @@ configP = Config
          )
         )
 
--- TODO: Append to outfile
-
 prepareRegistrationsOpts :: Parser Command
 prepareRegistrationsOpts = PrepareRegistrations
     <$> strOption

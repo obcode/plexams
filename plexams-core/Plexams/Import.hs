@@ -31,6 +31,7 @@ instance Y.FromJSON SemesterConfig where
                         <$> v Y..: "semester"
                         <*> v Y..: "firstDay"
                         <*> v Y..: "lastDay"
+                        <*> v Y..: "goslots"
                         <*> v Y..: "slotsPerDay"
                         <*> v Y..: "initialPlan"
                         <*> v Y..: "planManip"
@@ -43,11 +44,22 @@ instance Y.FromJSON AvailableRoom where
                        <*> v Y..: "seats"
     parseJSON _            = empty
 
-makeSemesterConfig :: String -> String -> String -> [String]
-                    -> FilePath -> FilePath -> [AvailableRoom]
-                    -> SemesterConfig
-makeSemesterConfig s f l =
-        SemesterConfig s firstDay lastDay realExamDays
+data ImportGOSlot = ImportGOSlot
+  { iGOSlotsDay   :: Int
+  , iGOSlotsSlots :: [Int]
+  }
+
+instance Y.FromJSON ImportGOSlot where
+  parseJSON (Y.Object v) = ImportGOSlot
+                      <$> v Y..: "day"
+                      <*> v Y..: "slots"
+  parseJSON _            = empty
+
+makeSemesterConfig :: String -> String -> String -> [ImportGOSlot] -> [String]
+                   -> FilePath -> FilePath -> [AvailableRoom]
+                   -> SemesterConfig
+makeSemesterConfig s f l iGOSlots =
+        SemesterConfig s firstDay lastDay realExamDays goSlots
     where makeDay :: String -> Day
           makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
              (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
@@ -55,6 +67,8 @@ makeSemesterConfig s f l =
           lastDay = makeDay l
           realExamDays = filter (notWeekend . toWeekDate) [firstDay..lastDay]
           notWeekend (_,_,weekday) = weekday <= 5
+          goSlots = concatMap iToGoSlot iGOSlots
+          iToGoSlot (ImportGOSlot day slots) = map (\s -> (day,s)) slots
 
 importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
 importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
