@@ -6,7 +6,7 @@ import           Options.Applicative
 import           System.Environment
 import           System.IO
 
-data Command = PrepareRegistrations { pRGroup :: String }
+newtype Command = PrepareRegistrations { pRGroup :: String }
 
 data Config = Config
     { optCommand :: Command
@@ -17,7 +17,7 @@ data Config = Config
 configP :: Parser Config
 configP = Config
     <$> hsubparser
-          ( command "regs" (info (prepareRegistrationsOpts)
+          ( command "regs" (info prepareRegistrationsOpts
                             (progDesc "prepare a registration file"))
           )
     <*> strOption
@@ -56,26 +56,28 @@ main = main' =<< execParser opts
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
-    maybe (putStrLn output) (flip writeFile output) $ outfile config
+    maybe (putStrLn output) (`appendFile` output) $ outfile config
 
 main' :: Config -> IO ()
-main' config = do
-    doCommand config
+main' = doCommand
 
 doCommand :: Config -> IO ()
 doCommand config@(Config (PrepareRegistrations g) iPath mOPath) = do
     -- read from file and fix newlines
     h <- openFile iPath ReadMode
     hSetEncoding h latin1
-    contents <- fmap (map fixNewline) $ hGetContents h
+    contents <- map fixNewline <$> hGetContents h
     --
     let examLines =
-          map (\e -> "  - ancode: " ++ e!!0 ++ "\n    sum: " ++  e!!4)
+          map (\e -> "    - ancode: " ++ head e
+                ++ "\n      sum: "    ++  e!!4)
             $ filter ((>=5) . length)
             $ map split
             $ tail
             $ lines contents
-    stdoutOrFile config $ g ++ ":\n" ++ intercalate "\n" examLines
+    stdoutOrFile config $ "- group: " ++ g
+                     ++ "\n  registrations:\n" ++ intercalate "\n" examLines
+                     ++ "\n"
   where
     fixNewline '\r' = '\n'
     fixNewline x    = x

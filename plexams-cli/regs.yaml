@@ -1,0 +1,16 @@
+- group: IB
+  registrations:
+    - ancode: 102
+      sum: 11
+    - ancode: 103
+      sum: 83
+    - ancode: 113
+      sum: 33
+    - ancode: 117
+      sum: 22
+- group: GO
+  registrations:
+    - ancode: 102
+      sum: 7
+    - ancode: 107
+      sum: 17
