@@ -3,6 +3,7 @@ module Plexams.PlanManip
     , applyPlanManipListToPlan
     , makePlan
     , addRegistrationsListToExams
+    , addConstraints
     ) where
 
 import           Data.List     (partition)
@@ -68,6 +69,7 @@ makeEmptyPlan semesterConfig maybePers = Plan
    --                  [firstDay semesterConfig .. lastDay semesterConfig]
     , unscheduledExams = []
     , persons = fromMaybe M.empty maybePers
+    , constraints = Nothing
     }
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan
@@ -91,3 +93,6 @@ addRegistrationsToExams registrations = map addRegistrationsToExam
                          : otherGroups
               }
             regGroup = read $ regsGroup registrations
+
+addConstraints :: Plan -> Constraints -> Plan
+addConstraints p c = p { constraints = Just c }

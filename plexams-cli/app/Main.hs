@@ -32,6 +32,7 @@ data Config = Config
     { optCommand     :: Command
     , planManipFile' :: Maybe FilePath
     , regsFile       :: Maybe FilePath
+    , overlapsFile   :: Maybe FilePath
     , outfile        :: Maybe FilePath
     , configfile     :: FilePath
     , novalidation   :: Bool
@@ -53,17 +54,23 @@ config = Config
          <> command "zpa"       (info  exportZPAOpts
                                   (progDesc "export current plan for ZPA"))
           )
-    <*> optional (strOption
+      <*> optional (strOption
         ( long "planManip"
        <> short 'p'
        <> metavar "PLANMANIPFILE"
        <> help "import file containing plan manipulations"
         ))
-        <*> optional (strOption
+      <*> optional (strOption
         ( long "registrations"
        <> short 'r'
        <> metavar "REGISTRATIONSFILE"
        <> help "import file containing registrations"
+        ))
+      <*> optional (strOption
+        ( long "overlaps"
+       <> short 'l'
+       <> metavar "OVERLAPSFILE"
+       <> help "import file containing overlaps"
         ))
       <*> optional (strOption
         ( long "output"
@@ -71,7 +78,7 @@ config = Config
        <> metavar "OUTFILE"
        <> help "output to file instead of stdout"
         ))
-    <*> strOption
+      <*> strOption
         ( long "config"
        <> short 'c'
        <> showDefault
@@ -136,8 +143,12 @@ main' config = do
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
+      maybeOverlaps <- maybe (return Nothing) importOverlapsFromYAMLFile
+                              $ overlapsFile config
       -- generate initial plan
-      let plan' = makePlan examsWithRegs semesterConfig Nothing
+      let plan'' = makePlan examsWithRegs semesterConfig Nothing
+          plan' = maybe plan''
+                        (addConstraints plan'' . Constraints) maybeOverlaps
       -- maybe manipulate the plan
       plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
                     (applyPlanManipToPlanWithFile plan')

@@ -1,0 +1,14 @@
+- group: IB
+  overlapsList:
+    - ancode: 102
+      overlaps:
+        - otherExam: 102
+          noOfStudents: 11
+        - otherExam: 103
+          noOfStudents: 3
+    - ancode: 103
+      overlaps:
+        - otherExam: 102
+          noOfStudents: 3
+        - otherExam: 103
+          noOfStudents: 83

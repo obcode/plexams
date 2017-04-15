@@ -5,6 +5,7 @@ module Plexams.Import
     , importPlanManipFromJSONFile
     , importPlanManipFromYAMLFile
     , importRegistrationsFromYAMLFile
+    , importOverlapsFromYAMLFile
     , parseGroup
     ) where
 
@@ -236,3 +237,54 @@ iRegsLToRegsL = map iRegsToRegs
 importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe [Registrations])
 importRegistrationsFromYAMLFile =
     fmap (fmap iRegsLToRegsL . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- Overlaps from YAML file
+--------------------------------------------------------------------------------
+
+data ImportOverlaps = ImportOverlaps
+  { iOLGroup :: String
+  , iOLList  :: [ImportOverlapsList]
+  }
+
+instance Y.FromJSON ImportOverlaps where
+  parseJSON (Y.Object v) = ImportOverlaps
+                        <$> v Y..: "group"
+                        <*> v Y..: "overlapsList"
+  parseJSON _            = empty
+
+data ImportOverlapsList = ImportOverlapsList
+  { iOLAncode :: Integer
+  , iOL       :: [ImportOverlap]
+  }
+
+instance Y.FromJSON ImportOverlapsList where
+  parseJSON (Y.Object v) = ImportOverlapsList
+                        <$> v Y..: "ancode"
+                        <*> v Y..: "overlaps"
+  parseJSON _            = empty
+
+data ImportOverlap = ImportOverlap
+  { iOLOtherAncode :: Integer
+  , iOLSum         :: Integer
+  }
+
+instance Y.FromJSON ImportOverlap where
+    parseJSON (Y.Object v) = ImportOverlap
+                          <$> v Y..: "otherExam"
+                          <*> v Y..: "noOfStudents"
+    parseJSON _            = empty
+
+iOLToOL :: ImportOverlaps -> Overlaps
+iOLToOL (ImportOverlaps g rs) = Overlaps
+  { olGroup = read g
+  , olOverlaps = M.fromList
+        $ map (\(ImportOverlapsList a s) -> (a, M.fromList $ map toTupel s)) rs
+  }
+  where toTupel (ImportOverlap a s) = (a,s)
+
+iOLToOLList = map iOLToOL
+
+importOverlapsFromYAMLFile :: FilePath -> IO (Maybe [Overlaps])
+importOverlapsFromYAMLFile =
+    fmap (fmap iOLToOLList . Y.decode) . BSI.readFile

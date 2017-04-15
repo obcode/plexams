@@ -14,6 +14,8 @@ module Plexams.Types
     , Room(..)
     , PlanManip(..)
     , Registrations(..)
+    , Constraints(..)
+    , Overlaps(..)
     ) where
 
 import qualified Data.Map           as M
@@ -43,6 +45,7 @@ data Plan = Plan
     , slots            :: Slots
     , unscheduledExams :: [Exam]     -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
     , persons          :: Persons
+    , constraints      :: Maybe Constraints
     }
   deriving (Show, Eq)
 
@@ -145,3 +148,17 @@ data Registrations = Registrations
     , regs      :: M.Map Integer Integer -- Ancode x Sum
     }
   deriving (Show)
+
+newtype Constraints = Constraints
+  { overlaps :: [Overlaps]
+  }
+  deriving (Show, Eq)
+
+data Overlaps = Overlaps
+  { olGroup :: Group
+  , olOverlaps :: M.Map Integer    -- ^ ancode
+                        (M.Map Integer -- ^ otherAncode
+                               Integer -- ^ noOfStudents
+                         )
+  }
+  deriving (Show, Eq)
