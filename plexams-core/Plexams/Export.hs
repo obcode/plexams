@@ -1,19 +1,24 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Plexams.Export
   ( planToMD
   , planToHTMLTable
-  , planToJSONForZPA
+  , planToZPA
+  , semesterConfigAsString
   ) where
 
 import           Data.Aeson
-import           Data.List          (intercalate, transpose)
-import qualified Data.Map           as M
-import           Data.Maybe         (fromMaybe)
-import           Data.Time          (Day)
+import           Data.Aeson.Encode.Pretty
+import           Data.ByteString.Lazy.Char8 (unpack)
+import           Data.List                  (intercalate, transpose)
+import qualified Data.Map                   as M
+import           Data.Maybe                 (fromMaybe)
+import           Data.Time                  (Day)
 import           Data.Time.Calendar
-import           GHC.Exts           (groupWith)
+import qualified Data.Vector                as V
+import           GHC.Exts                   (groupWith, sortWith)
 import           GHC.Generics
-import           Plexams.Query      (allExams)
+import           Plexams.Query              (allExams)
 import           Plexams.Types
 
 
@@ -56,16 +61,18 @@ planToHTMLTable plan =
                  ++ sName
                  ++ "</h1>\n"
     after = "</body></html>"
-    planToHTMLTable' = let header = "" : map show (examDays $ semesterConfig plan)
-                           columns =  slotsPerDay $ semesterConfig plan
-                           showExams (idx@(d,s), slot) = insideTag "i" (show idx)
-                                                       ++ show (map anCode $ examsInSlot slot)
-                           slotsAsMatrix = zipWith (:) columns
-                                             $ map (map showExams)
-                                             $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
-                       in insideTag "table"
-                            $ insideTag "tr" (concatMap (insideTag "td") header)
-                              ++ concatMap (insideTag "tr" . concatMap (insideTag "td")) slotsAsMatrix
+    planToHTMLTable' =
+      let header = "" : map show (examDays $ semesterConfig plan)
+          columns =  slotsPerDay $ semesterConfig plan
+          showExams (idx@(d,s), slot) = insideTag "i" (show idx)
+                                     ++ show (map anCode $ examsInSlot slot)
+          slotsAsMatrix = zipWith (:) columns
+               $ map (map showExams)
+               $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
+      in insideTag "table"
+          $ insideTag "tr" (concatMap (insideTag "td") header)
+            ++ concatMap (insideTag "tr" . concatMap (insideTag "td"))
+                         slotsAsMatrix
     unscheduledExamsToList = insideTag "ol"
             $ concatMap (insideTag "li" . toString) $ unscheduledExams plan
     toString exam = show (anCode exam) ++ " " ++ name exam
@@ -77,6 +84,9 @@ dateString day = let (y, m, d) = toGregorian day
                                    in if n < 10 then "0"++s else s
                  in showWith0 d ++ "." ++ showWith0 m ++ "." ++ show y
 
+--------------------------------------------------------------------------------
+-- Export for ZPA
+--------------------------------------------------------------------------------
 
 data ZPAExam = ZPAExam
     { zpaExamAnCode               :: Integer
@@ -88,16 +98,28 @@ data ZPAExam = ZPAExam
   deriving (Generic)
 
 instance ToJSON ZPAExam where
-    toEncoding = genericToEncoding defaultOptions
+  toJSON (ZPAExam anCode date time reserveInvigilator rooms) =
+    object [ "anCode" .= anCode
+           , "date"   .= date
+           , "time"   .= time
+           , "reserveInvigilator_id" .= reserveInvigilator
+           , "rooms"  .= V.fromList (map toJSON rooms)
+           ]
 
-examToZPAExam :: String -> String -> Integer -> Exam -> ZPAExam
-examToZPAExam date time reserveInvigilator exam = ZPAExam
+examToZPAExam :: SemesterConfig -> Maybe Integer -> Exam -> ZPAExam
+examToZPAExam semesterConfig reserveInvigilator exam = ZPAExam
     { zpaExamAnCode = anCode exam
     , zpaExamDate = date
     , zpaExamTime = time
-    , zpaExamReserveInvigilatorId = reserveInvigilator
+    , zpaExamReserveInvigilatorId = fromMaybe 0 reserveInvigilator
     , zpaExamRooms = map (roomToZPARoom $ duration exam) $ rooms exam
     }
+  where
+    slotOfExam = slot exam
+    days = examDays semesterConfig
+    date = maybe "" (dateString . (days!!) . fst) slotOfExam
+    times = slotsPerDay semesterConfig
+    time = maybe "" ((times!!) . snd) slotOfExam
 
 data ZPARoom = ZPARoom
     { zpaRoomNumber               :: String
@@ -109,7 +131,13 @@ data ZPARoom = ZPARoom
   deriving (Generic)
 
 instance ToJSON ZPARoom where
-    toEncoding = genericToEncoding defaultOptions
+    toJSON (ZPARoom number invigilator reserve handicap duration) =
+      object [ "number"               .= number
+             , "invigilator_id"       .= invigilator
+             , "reserveRoom"          .= reserve
+             , "handicapCompensation" .= handicap
+             , "duration"             .= duration
+             ]
 
 roomToZPARoom :: Integer -> Room -> ZPARoom
 roomToZPARoom duration room = ZPARoom
@@ -121,17 +149,19 @@ roomToZPARoom duration room = ZPARoom
     }
 
 planToZPAExams :: Plan -> [ZPAExam]
-planToZPAExams plan = undefined
-{-
-    concatMap
-        (\day -> concatMap
-            (\slot -> map
-                (examToZPAExam (dateString day)
-                               (timeString slot)
-                               (fromMaybe 0 $ reserveInvigilator slot)
-                ) $ examsInSlot slot
-            ) $ slotsOfDay day) $ examDays plan
--}
+planToZPAExams plan = map (uncurry (examToZPAExam (semesterConfig plan)))
+               $ scheduledExamsWithReserveInvigilator plan
+
+scheduledExamsWithReserveInvigilator :: Plan -> [(Maybe Integer, Exam)]
+scheduledExamsWithReserveInvigilator =
+    sortWith (anCode . snd)
+    . concatMap (reserveAndExams . snd)
+    . M.toList
+    . slots
+    . setSlotsOnExams
+  where reserveAndExams slot =
+          map (\exam -> (reserveInvigilator slot, exam))
+              $ examsInSlot slot
 
 -- | Für das ZPA wird eine JSON-Datei erzeugt, in der Form
 --
@@ -162,5 +192,26 @@ planToZPAExams plan = undefined
 -- ]
 -- @
 --
-planToJSONForZPA :: Plan -> Encoding
-planToJSONForZPA = undefined
+planToZPA :: Plan -> String
+planToZPA = unpack . encodePretty' config . planToZPAExams
+  where
+    config = defConfig { confCompare = keyOrder [ "anCode"
+                                                , "date"
+                                                , "time"
+                                                , "reserveInvigilator_id"
+                                                -- , "rooms"
+                                                ]
+                       }
+
+--------------------------------------------------------------------------------
+-- Print SemesterConfig
+--------------------------------------------------------------------------------
+
+instance ToJSON SemesterConfig where
+    toEncoding = genericToEncoding defaultOptions
+
+instance ToJSON AvailableRoom where
+    toEncoding = genericToEncoding defaultOptions
+
+semesterConfigAsString :: Plan -> String
+semesterConfigAsString = unpack . encodePretty . semesterConfig

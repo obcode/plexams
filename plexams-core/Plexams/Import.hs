@@ -15,6 +15,7 @@ import           Data.Aeson                  (FromJSON, Value (Object), decode,
 import qualified Data.ByteString             as BSI
 import qualified Data.ByteString.Lazy        as BS
 import           Data.Char                   (digitToInt)
+import           Data.List                   (elemIndex)
 import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe)
 import           Data.Time                   (Day)
@@ -32,7 +33,7 @@ instance Y.FromJSON SemesterConfig where
                         <$> v Y..: "semester"
                         <*> v Y..: "firstDay"
                         <*> v Y..: "lastDay"
-                        <*> v Y..: "goslots"
+                        <*> v Y..: "goDay0"
                         <*> v Y..: "slotsPerDay"
                         <*> v Y..: "initialPlan"
                         <*> v Y..: "planManip"
@@ -45,21 +46,10 @@ instance Y.FromJSON AvailableRoom where
                        <*> v Y..: "seats"
     parseJSON _            = empty
 
-data ImportGOSlot = ImportGOSlot
-  { iGOSlotsDay   :: Int
-  , iGOSlotsSlots :: [Int]
-  }
-
-instance Y.FromJSON ImportGOSlot where
-  parseJSON (Y.Object v) = ImportGOSlot
-                      <$> v Y..: "day"
-                      <*> v Y..: "slots"
-  parseJSON _            = empty
-
-makeSemesterConfig :: String -> String -> String -> [ImportGOSlot] -> [String]
+makeSemesterConfig :: String -> String -> String -> String -> [String]
                    -> FilePath -> FilePath -> [AvailableRoom]
                    -> SemesterConfig
-makeSemesterConfig s f l iGOSlots =
+makeSemesterConfig s f l goDay0 =
         SemesterConfig s firstDay lastDay realExamDays goSlots
     where makeDay :: String -> Day
           makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
@@ -68,8 +58,18 @@ makeSemesterConfig s f l iGOSlots =
           lastDay = makeDay l
           realExamDays = filter (notWeekend . toWeekDate) [firstDay..lastDay]
           notWeekend (_,_,weekday) = weekday <= 5
-          goSlots = concatMap iToGoSlot iGOSlots
-          iToGoSlot (ImportGOSlot day slots) = map (\s -> (day,s)) slots
+          goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays
+          goSlots = map (\(d,t) -> (d+goDay0Index, t)) rawGOSlots
+          rawGOSlots =  [ (0,0), (0,1) -- Tag 0
+                        , (1,3), (1,4), (1,5)
+                        , (2,0), (2,1)
+                        , (3,3), (3,4), (3,5)
+                        , (4,0), (4,1)
+                        , (5,3), (5,4), (5,5)
+                        , (6,0), (6,1)
+                        , (9,3), (9,4), (9,5)
+                        ]
+
 
 importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
 importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile

@@ -22,20 +22,4 @@ rooms:
 initialPlan: initialplan.json
 planManip: planmanip.yaml
 
-goslots:
-  - day: 0
-    slots: [0,1]
-  - day: 1
-    slots: [3,4,5]
-  - day: 2
-    slots: [0,1]
-  - day: 3
-    slots: [3,4,5]
-  - day: 4
-    slots: [0,1]
-  - day: 5
-    slots: [3,4,5]
-  - day: 6
-    slots: [0,1]
-  - day: 9
-    slots: [3,4,5]
+goDay0: 10.07.2017

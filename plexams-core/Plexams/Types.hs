@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Plexams.Types
     ( Plan(..)
     , Slots
@@ -20,6 +21,7 @@ module Plexams.Types
 
 import qualified Data.Map           as M
 import           Data.Time.Calendar
+import           GHC.Generics
 
 data SemesterConfig = SemesterConfig
     { semester        :: String   -- ^ Semester
@@ -32,13 +34,13 @@ data SemesterConfig = SemesterConfig
     , planManipFile   :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
     , availableRooms  :: [AvailableRoom]
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data AvailableRoom = AvailableRoom
     { availableRoomName     :: String
     , availableRoomMaxSeats :: Integer
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data Plan = Plan
     { semesterConfig   :: SemesterConfig

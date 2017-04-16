@@ -25,7 +25,8 @@ data Command
             , byGroup         :: Maybe String
             , onlyUnscheduled :: Bool
             }
-    | ExportZPA { zpafile :: FilePath }
+    | ExportZPA
+    | PrintConfig
   deriving (Eq)
 
 data Config = Config
@@ -51,8 +52,10 @@ config = Config
                                   (progDesc "validation of current plan"))
          <> command "query"     (info  queryOpts
                                   (progDesc "query plan"))
-         <> command "zpa"       (info  exportZPAOpts
+         <> command "exportzpa" (info  (pure ExportZPA)
                                   (progDesc "export current plan for ZPA"))
+         <> command "config"    (info  (pure PrintConfig)
+                                  (progDesc "print the current config"))
           )
       <*> optional (strOption
         ( long "planManip"
@@ -111,15 +114,6 @@ queryOpts = Query
        <> help "show only unscheduled"
         )
 
-exportZPAOpts :: Parser Command
-exportZPAOpts = ExportZPA
-    <$> strOption
-        ( long "file"
-       <> short 'f'
-       <> metavar "FILE"
-       <> help "output in JSON file"
-        )
-
 main :: IO ()
 main = main' =<< execParser opts
   where
@@ -164,11 +158,13 @@ main' config = do
                  ++ "    See `plexams validate` for more information."
 
 commandFun :: Command -> (Config -> Plan -> IO ())
-commandFun Markdown   = markdown
-commandFun HTML       = html
-commandFun Statistics = stats
-commandFun Validate   = validate
-commandFun Query {}   = query
+commandFun Markdown     = markdown
+commandFun HTML         = html
+commandFun Statistics   = stats
+commandFun Validate     = validate
+commandFun Query {}     = query
+commandFun ExportZPA {} = exportZPA
+commandFun PrintConfig  = printConfig
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
@@ -199,6 +195,12 @@ query config plan = stdoutOrFile config
     query' (Query (Just a) _ _) = queryByAnCode a plan
     query' (Query _ (Just g) u) = queryByGroup g u plan
     query' _                    = []
+
+exportZPA :: Config -> Plan -> IO ()
+exportZPA config = stdoutOrFile config . planToZPA
+
+printConfig :: Config -> Plan -> IO ()
+printConfig config = stdoutOrFile config . semesterConfigAsString
 
 applyFileFromConfig :: Plan -> FilePath -> IO Plan
 applyFileFromConfig plan file = do

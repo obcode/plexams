@@ -23,10 +23,12 @@ library
                      , Plexams.Validation
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , aeson-pretty
                      , bytestring
                      , containers
                      , mtl
                      , time
+                     , vector
                      , yaml
   default-language:    Haskell2010
 
