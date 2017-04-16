@@ -156,9 +156,9 @@ newtype Constraints = Constraints
 
 data Overlaps = Overlaps
   { olGroup :: Group
-  , olOverlaps :: M.Map Integer    -- ^ ancode
-                        (M.Map Integer -- ^ otherAncode
-                               Integer -- ^ noOfStudents
+  , olOverlaps :: M.Map Integer    -- ancode
+                        (M.Map Integer -- otherAncode
+                               Integer -- noOfStudents
                          )
   }
   deriving (Show, Eq)
