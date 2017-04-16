@@ -5,6 +5,7 @@ module Plexams.Validation
 import           Control.Monad.Writer
 import qualified Data.Map             as M
 import           Data.Maybe           (mapMaybe)
+import           Plexams.Query
 import           Plexams.Types
 
 validatePlan :: Plan -> (Bool, [String])
@@ -14,8 +15,12 @@ validatePlan' :: Plan -> Writer [String] Bool
 validatePlan' plan = do
   goSlotsOk <- validateGOSlots plan
   regsAndOverlapsOK <- validateRegsAndOverlaps plan
+  lecturersMax3ExamDays <- validateLecturersMax3ExamDays plan
   tell ["# no more validations implemented yet"]
-  return $ goSlotsOk && regsAndOverlapsOK && False
+  return $ goSlotsOk
+        && regsAndOverlapsOK
+        && lecturersMax3ExamDays
+        && False
 
 validateGOSlots :: Plan -> Writer [String] Bool
 validateGOSlots plan = do
@@ -38,13 +43,12 @@ validateGOSlots plan = do
 validateRegsAndOverlaps :: Plan -> Writer [String] Bool
 validateRegsAndOverlaps plan = do
   let maybeOverlaps = overlaps <$> constraints plan
-  overlapsForGroupOk <- case maybeOverlaps of
+  case maybeOverlaps of
     Nothing -> do
       tell ["# no constraints for plan defined"]
       return True
     Just overlaps ->
       and <$> mapM validateOverlapsForGroup overlaps
-  return overlapsForGroupOk
 
 -- Überprüft die Symmetrie der Overlaps
 validateOverlapsForGroup :: Overlaps -> Writer [String] Bool
@@ -62,6 +66,20 @@ findSymm :: String -> [(Integer, Integer, Integer)]
 findSymm group flatOverlaps o@(a,b,c) = do
   let found = (b,a,c) `elem` flatOverlaps
   unless found $
-      tell ["Overlaps for " ++ group
+      tell ["- Overlaps for " ++ group
             ++ " are not symmetric " ++ show o ++ " "]
   return found
+
+validateLecturersMax3ExamDays :: Plan -> Writer [String] Bool
+validateLecturersMax3ExamDays plan = do
+  let lecturerWithMoreThan3ExamDays =
+          filter ((>3) . length . snd) $ lecturerExamDays plan
+      ok = null lecturerWithMoreThan3ExamDays
+  tell ["# Checking amount of exam days for each lecturer"]
+  unless ok $
+    mapM_ (\(l,d) ->
+              tell ["- More than 3 days of exams: "
+                    ++ personShortName l
+                    ++ ": " ++ show d])
+          lecturerWithMoreThan3ExamDays
+  return ok

@@ -137,7 +137,7 @@ data Person = Person
     , personShortName :: String
     , personFullName  :: String
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data PlanManip = AddExamToSlot
     { planManipAnCode :: Integer

@@ -12,6 +12,7 @@ import           Plexams.Types
 planStatistics plan = concat -- Map toString
     [ shortGroupStatsToString plan
     , examGroupsCorrelationToString plan
+    , lecturerExamDaysToString plan
     ]
 
 shortGroupStatsToString :: Plan -> String
@@ -36,7 +37,8 @@ shortGroupStatsToString =
 groupStats :: Plan -> [(Group, [[Exam]])]
 groupStats plan =
     let crossProduct = [ (g, e) | e <- allExams plan, g <- groups e ]
-        groupList = map (\l -> (fst $ head l, groupWith reExam $ map snd l)) $ groupWith fst crossProduct
+        groupList = map (\l -> (fst $ head l, groupWith reExam $ map snd l))
+                        $ groupWith fst crossProduct
     in groupList
 
 examGroupsCorrelationToString :: Plan -> String
@@ -54,4 +56,14 @@ examGroupsCorrelation plan =
             groupGroups exam =
                 let grps = groups exam
                 in [(g1,g2) | g1 <- grps, g2 <- grps, g1 /= g2]
-        in map (\xs@((g1,_):_) -> (g1, nub $ map snd xs)) $ groupWith fst groupsWithSameExam
+        in map (\xs@((g1,_):_) -> (g1, nub $ map snd xs))
+               $ groupWith fst groupsWithSameExam
+
+lecturerExamDaysToString :: Plan -> String
+lecturerExamDaysToString = ("\n## Prüfungstage der Prüfer\n\n"++)
+    . intercalate "\n"
+    . map (\(person, listOfDays) -> "-   "
+                                    ++ personShortName person
+                                    ++ ": "
+                                    ++ intercalate ", " (map show listOfDays))
+    . lecturerExamDays

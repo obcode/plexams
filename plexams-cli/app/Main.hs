@@ -184,9 +184,9 @@ validate config = stdoutOrFile config . validatePlan'
   where
     validatePlan' plan =
       let (ok, msgs) = validatePlan plan
-      in intercalate "\n" msgs
-        ++ if ok then "\n# Validation successful."
-                 else "\n# Validation failed."
+      in intercalate "\n\n" msgs
+        ++ if ok then "\n\n# Validation successful."
+                 else "\n\n# Validation failed."
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config

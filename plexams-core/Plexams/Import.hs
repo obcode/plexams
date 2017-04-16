@@ -70,7 +70,6 @@ makeSemesterConfig s f l goDay0 =
                         , (9,3), (9,4), (9,5)
                         ]
 
-
 importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
 importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
 
