@@ -2,10 +2,12 @@ module Plexams.Query
     ( allExams
     , scheduledExams
     , queryByAnCode
+    , queryByName
     , queryByGroup
     , lecturerExamDays
     ) where
 
+import           Data.List      (isInfixOf)
 import qualified Data.Map       as M
 import           GHC.Exts       (groupWith)
 import           Plexams.Import
@@ -21,6 +23,9 @@ scheduledExams plan =
 
 queryByAnCode :: Integer -> Plan -> [Exam]
 queryByAnCode ac = filter ((==ac) . anCode) . allExams
+
+queryByName :: String -> Plan -> [Exam]
+queryByName str = filter (isInfixOf str . name) . allExams
 
 queryByGroup :: String -> Bool -> Plan -> [Exam]
 queryByGroup group unscheduledOnly =

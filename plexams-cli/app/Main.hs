@@ -19,9 +19,13 @@ import           System.Directory    (doesFileExist)
 data Command
     = Markdown
     | HTML
-    | Statistics
+    | Statistics { initialStatistics :: Bool
+                 }
+    | Dot { groupDependencies :: Bool
+          }
     | Validate
     | Query { byAncode        :: Maybe Integer
+            , byName          :: Maybe String
             , byGroup         :: Maybe String
             , onlyUnscheduled :: Bool
             }
@@ -46,7 +50,7 @@ config = Config
                                   (progDesc "the plan as markdown document"))
          <> command "html"      (info (pure HTML)
                                  (progDesc "the plan as an HTML table"))
-         <> command "stats"     (info (pure Statistics)
+         <> command "stats"     (info statisticsOpts
                                   (progDesc "statistics"))
          <> command "validate"  (info (pure Validate)
                                   (progDesc "validation of current plan"))
@@ -103,6 +107,12 @@ queryOpts = Query
        <> help "query by exam id"
         ))
     <*> optional (strOption
+        ( long "name"
+       <> short 'n'
+       <> metavar "NAME"
+       <> help "query by name (substring of name)"
+        ))
+    <*> optional (strOption
         ( long "group"
        <> short 'g'
        <> metavar "GROUP"
@@ -112,6 +122,14 @@ queryOpts = Query
         ( long "unscheduled-only"
        <> short 'u'
        <> help "show only unscheduled"
+        )
+
+statisticsOpts :: Parser Command
+statisticsOpts = Statistics
+    <$> switch
+        ( long "initial"
+       <> short 'i'
+       <> help "statistics for initial plan"
         )
 
 main :: IO ()
@@ -137,6 +155,11 @@ main' config = do
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
+      -- Statistics for the initial plan
+      case optCommand config of
+        Statistics True -> stdoutOrFile config $ initialPlanStatistics exams
+        _               -> return ()
+
       maybeOverlaps <- maybe (return Nothing) importOverlapsFromYAMLFile
                               $ overlapsFile config
       -- generate initial plan
@@ -158,13 +181,13 @@ main' config = do
                  ++ "    See `plexams validate` for more information."
 
 commandFun :: Command -> (Config -> Plan -> IO ())
-commandFun Markdown     = markdown
-commandFun HTML         = html
-commandFun Statistics   = stats
-commandFun Validate     = validate
-commandFun Query {}     = query
-commandFun ExportZPA {} = exportZPA
-commandFun PrintConfig  = printConfig
+commandFun Markdown      = markdown
+commandFun HTML          = html
+commandFun Statistics {} = stats
+commandFun Validate      = validate
+commandFun Query {}      = query
+commandFun ExportZPA {}  = exportZPA
+commandFun PrintConfig   = printConfig
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
@@ -192,9 +215,10 @@ query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config
     $ intercalate "\n" $ map show $ query' (optCommand config)
   where
-    query' (Query (Just a) _ _) = queryByAnCode a plan
-    query' (Query _ (Just g) u) = queryByGroup g u plan
-    query' _                    = []
+    query' (Query (Just a) _ _ _) = queryByAnCode a plan
+    query' (Query _ (Just n) _ _) = queryByName n plan
+    query' (Query _ _ (Just g) u) = queryByGroup g u plan
+    query' _                      = []
 
 exportZPA :: Config -> Plan -> IO ()
 exportZPA config = stdoutOrFile config . planToZPA

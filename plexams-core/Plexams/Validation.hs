@@ -2,9 +2,12 @@ module Plexams.Validation
     ( validatePlan
     ) where
 
+import           Control.Arrow        ((&&&))
 import           Control.Monad.Writer
+import           Data.List            (nub)
 import qualified Data.Map             as M
 import           Data.Maybe           (mapMaybe)
+import           GHC.Exts             (groupWith)
 import           Plexams.Query
 import           Plexams.Types
 
@@ -16,10 +19,12 @@ validatePlan' plan = do
   goSlotsOk <- validateGOSlots plan
   regsAndOverlapsOK <- validateRegsAndOverlaps plan
   lecturersMax3ExamDays <- validateLecturersMax3ExamDays plan
+  sameNameSameSlot <- validateSameNameSameSlot plan
   tell ["# no more validations implemented yet"]
   return $ goSlotsOk
         && regsAndOverlapsOK
         && lecturersMax3ExamDays
+        && sameNameSameSlot
         && False
 
 validateGOSlots :: Plan -> Writer [String] Bool
@@ -82,4 +87,22 @@ validateLecturersMax3ExamDays plan = do
                     ++ personShortName l
                     ++ ": " ++ show d])
           lecturerWithMoreThan3ExamDays
+  return ok
+
+validateSameNameSameSlot :: Plan -> Writer [String] Bool
+validateSameNameSameSlot plan = do
+  let examsGroupedByNameWithDifferentSlots =
+            filter ((>1) . length . nub . map slot)
+            $ groupWith name
+            $ allExams plan
+      ok = null examsGroupedByNameWithDifferentSlots
+  tell ["# Checking exams with same name in same slot"]
+  unless ok $
+    mapM_ ( tell
+            . (:[])
+            . ("- exams with same name but different slots: "++)
+            . show
+            . map (anCode &&& slot)
+          )
+          examsGroupedByNameWithDifferentSlots
   return ok
