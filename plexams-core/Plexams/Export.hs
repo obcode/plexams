@@ -22,7 +22,7 @@ import           Plexams.Query              (allExams)
 import           Plexams.Types
 
 
--- | Erzeugt eine Markdown-Version des aktuellen Plans
+-- | TODO: Erzeugt eine Markdown-Version des aktuellen Plans
 planToMD :: Plan -> String
 planToMD = ("-   "++)
           . intercalate "\n-   "
