@@ -17,6 +17,7 @@ module Plexams.Types
     , Registrations(..)
     , Constraints(..)
     , Overlaps(..)
+    , setFK10Exam
     ) where
 
 import qualified Data.Map           as M
@@ -33,6 +34,7 @@ data SemesterConfig = SemesterConfig
     , initialPlanFile :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
     , planManipFile   :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
     , availableRooms  :: [AvailableRoom]
+    , fk10Exams       :: [[Integer]]
     }
   deriving (Eq, Show, Generic)
 
@@ -86,6 +88,10 @@ data Exam = Exam
     , slot        :: Maybe (Int, Int) -- ^ (Tag, Slot)
     }
   deriving (Eq)
+
+setFK10Exam :: [Integer] -> Exam -> Exam
+setFK10Exam ancodes exam =
+  exam { plannedByMe = anCode exam `notElem` ancodes }
 
 instance Show Exam where
     show exam = show (anCode exam) ++ ". "

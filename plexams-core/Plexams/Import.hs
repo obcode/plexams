@@ -38,6 +38,7 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "initialPlan"
                         <*> v Y..: "planManip"
                         <*> v Y..: "rooms"
+                        <*> v Y..: "fk10Exams"
     parseJSON _          = empty
 
 instance Y.FromJSON AvailableRoom where
@@ -47,7 +48,7 @@ instance Y.FromJSON AvailableRoom where
     parseJSON _            = empty
 
 makeSemesterConfig :: String -> String -> String -> String -> [String]
-                   -> FilePath -> FilePath -> [AvailableRoom]
+                   -> FilePath -> FilePath -> [AvailableRoom] -> [[Integer]]
                    -> SemesterConfig
 makeSemesterConfig s f l goDay0 =
         SemesterConfig s firstDay lastDay realExamDays goSlots

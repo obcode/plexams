@@ -23,3 +23,6 @@ initialPlan: initialplan.json
 planManip: planmanip.yaml
 
 goDay0: 10.07.2017
+
+fk10Exams:
+  - [0]

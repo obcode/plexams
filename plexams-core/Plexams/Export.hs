@@ -10,7 +10,7 @@ module Plexams.Export
 import           Data.Aeson
 import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
-import           Data.List                  (intercalate, transpose)
+import           Data.List                  (intercalate, partition, transpose)
 import qualified Data.Map                   as M
 import           Data.Maybe                 (fromMaybe)
 import           Data.Time                  (Day)
@@ -47,7 +47,13 @@ insideTag tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
 
 planToHTMLTable :: Plan -> String
 planToHTMLTable plan =
-        before ++ planToHTMLTable' ++ unscheduledExamsToList ++ after
+        before
+        ++ planToHTMLTable'
+        ++ insideTag "h2" "Noch zu planen"
+        ++ unscheduledExamsToList
+        ++ insideTag "h2" "Nicht von mir zu planen"
+        ++ unscheduledExamsPlannedByOthers
+        ++ after
   where
     sName = semester $ semesterConfig plan
     before =    "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
@@ -73,8 +79,12 @@ planToHTMLTable plan =
           $ insideTag "tr" (concatMap (insideTag "td") header)
             ++ concatMap (insideTag "tr" . concatMap (insideTag "td"))
                          slotsAsMatrix
+    (unscheduledExams', plannedByOtherExams) =
+        partition plannedByMe $ unscheduledExams plan
     unscheduledExamsToList = insideTag "ol"
-            $ concatMap (insideTag "li" . toString) $ unscheduledExams plan
+            $ concatMap (insideTag "li" . toString) unscheduledExams'
+    unscheduledExamsPlannedByOthers = insideTag "ul"
+            $ concatMap (insideTag "li" . toString) plannedByOtherExams
     toString exam = show (anCode exam) ++ " " ++ name exam
                     ++ " (" ++ personShortName (lecturer exam)  ++ ")"
 

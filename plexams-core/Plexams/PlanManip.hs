@@ -9,6 +9,7 @@ module Plexams.PlanManip
 import           Data.List     (partition)
 import qualified Data.Map      as M
 import           Data.Maybe    (fromMaybe)
+import           Plexams.Query (allExams)
 import           Plexams.Types
 
 addExamToSlot :: Integer -- ^ Anmeldecode
@@ -17,6 +18,17 @@ addExamToSlot :: Integer -- ^ Anmeldecode
               -> Plan
               -> Plan
 addExamToSlot ancode dayIdx slotIdx plan =
+  let exams = filter ((==ancode) . anCode) $ allExams plan
+  in if not (null exams) && all plannedByMe exams
+     then addExamToSlot' ancode dayIdx slotIdx plan
+     else plan
+
+addExamToSlot' :: Integer -- ^ Anmeldecode
+              -> Int     -- ^ Index des Prüfungstages, beginnend bei 0
+              -> Int     -- ^ Index des Prüfungsslots, beginnend bei 0
+              -> Plan
+              -> Plan
+addExamToSlot' ancode dayIdx slotIdx plan =
     let config = semesterConfig plan
         dayIdxOutOfBounds = dayIdx < 0 || dayIdx >= length (examDays config)
         slotIndexOutOfBounds = slotIdx < 0 || slotIdx >= length (slotsPerDay config)
@@ -55,22 +67,33 @@ emptySlot = Slot
     }
 
 makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Plan
-makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
+-- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 
-makeEmptyPlan :: SemesterConfig -> Maybe Persons -> Plan
-makeEmptyPlan semesterConfig maybePers = Plan
-    { semesterConfig = semesterConfig
-    , slots = M.fromList
-            $ zip [ (d,t) | d <- [0..length (examDays semesterConfig) - 1]
-                      , t <- [0..length (slotsPerDay semesterConfig) - 1]
-                  ]
-                  $ repeat emptySlot
-   -- examDays = map (`makeExamDay` slots)
-   --                  [firstDay semesterConfig .. lastDay semesterConfig]
-    , unscheduledExams = []
-    , persons = fromMaybe M.empty maybePers
-    , constraints = Nothing
-    }
+-- makePlan :: SemesterConfig -> Maybe Persons -> Plan
+makePlan exams semesterConfig maybePers =
+  foldr addExamFromListToSlot
+        Plan
+          { semesterConfig = semesterConfig
+          , slots = slots'
+          , unscheduledExams = unscheduledExams' ++ examsPlannedNotByMe
+          , persons = fromMaybe M.empty maybePers
+          , constraints = Nothing
+          }
+        (fk10Exams semesterConfig)
+  where slots' = M.fromList
+              $ zip [ (d,t) | d <- [0..length (examDays    semesterConfig) - 1]
+                            , t <- [0..length (slotsPerDay semesterConfig) - 1]
+                    ]
+                    $ repeat emptySlot
+        (examsPlannedNotByMe', unscheduledExams') =
+                    partition ((`elem` (map head $ fk10Exams semesterConfig))
+                              . anCode) exams
+        examsPlannedNotByMe = map (\e -> e { plannedByMe = False })
+                                  examsPlannedNotByMe'
+        addExamFromListToSlot [a,d,t] plan =
+                addExamToSlot' a (fromInteger d) (fromInteger t) plan
+        addExamFromListToSlot _       plan = plan
+
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan
 addUnscheduledExams exams plan = plan { unscheduledExams = exams}
