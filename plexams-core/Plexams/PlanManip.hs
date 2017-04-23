@@ -78,6 +78,7 @@ makePlan exams semesterConfig maybePers =
           , unscheduledExams = unscheduledExams' ++ examsPlannedNotByMe
           , persons = fromMaybe M.empty maybePers
           , constraints = Nothing
+          , initialPlan = exams
           }
         (fk10Exams semesterConfig)
   where slots' = M.fromList

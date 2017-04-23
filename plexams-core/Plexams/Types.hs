@@ -50,6 +50,7 @@ data Plan = Plan
     , unscheduledExams :: [Exam]     -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
     , persons          :: Persons
     , constraints      :: Maybe Constraints
+    , initialPlan      :: [Exam]
     }
   deriving (Show, Eq)
 

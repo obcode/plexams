@@ -76,6 +76,7 @@ examGroupsCorrelation plan =
 examsForLecturerers :: [Exam] -> String
 examsForLecturerers =
   ("## Anzahl Prüfungen pro Prüfer\n\n"++)
+  . (++"\n\n")
   . intercalate "\n"
   . map (\es -> "-   "
                 ++ personShortName (fst (head es))
@@ -100,7 +101,7 @@ lecturerExamDaysToString =
 
 examsWithSameName :: [Exam] -> String
 examsWithSameName =
-  ("\n## Prüfungen mit gleichem Namen\n\n"++)
+  ("\n\n## Prüfungen mit gleichem Namen\n\n"++)
   . intercalate "\n"
   . map (\exams -> "-   " ++ name (head exams)
                 ++ ": " ++ show (map anCode exams))

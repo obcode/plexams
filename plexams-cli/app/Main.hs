@@ -155,10 +155,6 @@ main' config = do
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
-      -- Statistics for the initial plan
-      case optCommand config of
-        Statistics True -> stdoutOrFile config $ initialPlanStatistics exams
-        _               -> return ()
 
       maybeOverlaps <- maybe (return Nothing) importOverlapsFromYAMLFile
                               $ overlapsFile config
@@ -200,7 +196,12 @@ html :: Config -> Plan -> IO ()
 html config = stdoutOrFile config . planToHTMLTable
 
 stats :: Config -> Plan -> IO ()
-stats config = stdoutOrFile config . planStatistics
+stats config plan =
+  let initialStats = case optCommand config of
+          Statistics True -> initialPlanStatistics $ initialPlan plan
+          _               -> ""
+      currentStats = planStatistics plan
+  in  stdoutOrFile config $ initialStats ++ currentStats
 
 validate :: Config -> Plan -> IO ()
 validate config = stdoutOrFile config . validatePlan'
