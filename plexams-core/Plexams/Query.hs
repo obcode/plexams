@@ -19,7 +19,7 @@ allExams plan = let plan' = setSlotsOnExams plan
 
 scheduledExams :: Plan -> [Exam]
 scheduledExams plan =
-    concatMap (examsInSlot . snd) $ M.toList $ slots plan
+    concatMap (M.elems . examsInSlot . snd) $ M.toList $ slots plan
 
 queryByAnCode :: Integer -> Plan -> [Exam]
 queryByAnCode ac = filter ((==ac) . anCode) . allExams
@@ -45,5 +45,5 @@ lecturerExamDays =
   . groupWith fst
   . concatMap (\((d,_), lecturers) -> map (\l -> (l, d)) lecturers )
   . M.toList
-  . M.map (map lecturer . examsInSlot)
+  . M.map (map lecturer . M.elems . examsInSlot)
   . slots

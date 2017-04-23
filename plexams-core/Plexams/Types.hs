@@ -65,12 +65,12 @@ setSlotsOnExams plan = plan
 
 addSlotKeyToExam :: (Int, Int) -> Slot -> Slot
 addSlotKeyToExam k slot =
-    slot { examsInSlot = map (addSlotKey k) $ examsInSlot slot }
+    slot { examsInSlot = M.map (addSlotKey k) $ examsInSlot slot }
   where
     addSlotKey k exam = exam { slot = Just k }
 
 data Slot = Slot
-    { examsInSlot        :: [Exam]
+    { examsInSlot        :: M.Map Integer Exam -- Ancode -> Exam
     , reserveInvigilator :: Maybe Integer  -- ^ Reserveaufsicht für die Prüfung
     }
   deriving (Show, Eq)

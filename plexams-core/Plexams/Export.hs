@@ -71,7 +71,7 @@ planToHTMLTable plan =
       let header = "" : map show (examDays $ semesterConfig plan)
           columns =  slotsPerDay $ semesterConfig plan
           showExams (idx@(d,s), slot) = insideTag "i" (show idx)
-                                     ++ show (map anCode $ examsInSlot slot)
+              ++ show (map anCode $ M.elems $ examsInSlot slot)
           slotsAsMatrix = zipWith (:) columns
                $ map (map showExams)
                $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
@@ -171,7 +171,7 @@ scheduledExamsWithReserveInvigilator =
     . setSlotsOnExams
   where reserveAndExams slot =
           map (\exam -> (reserveInvigilator slot, exam))
-              $ examsInSlot slot
+              $ M.elems $ examsInSlot slot
 
 -- | Für das ZPA wird eine JSON-Datei erzeugt, in der Form
 --

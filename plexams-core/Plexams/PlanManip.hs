@@ -8,7 +8,7 @@ module Plexams.PlanManip
 
 import           Data.List     (partition)
 import qualified Data.Map      as M
-import           Data.Maybe    (fromMaybe)
+import           Data.Maybe    (fromJust, fromMaybe)
 import           Plexams.Query (allExams)
 import           Plexams.Types
 
@@ -27,6 +27,7 @@ addExamToSlot ancode dayIdx slotIdx plan =
      then addExamToSlot' ancode dayIdx slotIdx plan
      else plan
 
+-- TODO: working, but has to be refactored
 addExamToSlot' :: Integer -- ^ Anmeldecode
               -> Int     -- ^ Index des Prüfungstages, beginnend bei 0
               -> Int     -- ^ Index des Prüfungsslots, beginnend bei 0
@@ -34,21 +35,37 @@ addExamToSlot' :: Integer -- ^ Anmeldecode
               -> Plan
 addExamToSlot' ancode dayIdx slotIdx plan =
     let config = semesterConfig plan
-        dayIdxOutOfBounds = dayIdx < 0 || dayIdx >= length (examDays config)
-        slotIndexOutOfBounds = slotIdx < 0 || slotIdx >= length (slotsPerDay config)
+        dayIdxOutOfBounds = dayIdx < 0
+                          || dayIdx >= length (examDays config)
+        slotIndexOutOfBounds = slotIdx < 0
+                            || slotIdx >= length (slotsPerDay config)
         -- noch unscheduled?
-        (examL, unscheduledExams') = partition ((ancode==) . anCode) $ unscheduledExams plan
+        (examL, unscheduledExams') =
+              partition ((ancode==) . anCode) $ unscheduledExams plan
         examUnscheduled = not $ null examL
-        newSlots ex = M.update (\slot -> Just $ slot { examsInSlot = ex : examsInSlot slot })
+        newSlots ex =
+          M.update (\slot -> Just $
+                              slot { examsInSlot =
+                                        M.insert (anCode ex) ex
+                                        $ examsInSlot slot })
                             (dayIdx, slotIdx) $ slots plan
         -- bereits verplant
-        slotsWithExam = filter (\((_,_),slot) -> ancode `elem` map anCode (examsInSlot slot))
+        slotsWithExam = filter (\((_,_),slot)
+                                  -> ancode `elem` M.keys (examsInSlot slot))
                                             $ M.toList $ slots plan
+        slotWithExam = head slotsWithExam
         examInOtherSlot = not $ null slotsWithExam
-        ((oldDay, oldSlot), oldSlotExams) = head slotsWithExam
-        (examsFromOldSlot, restFromOldSlot) = partition ((==ancode) . anCode) $ examsInSlot oldSlotExams
-        changedSlots = M.update (\slot -> Just slot { examsInSlot = restFromOldSlot})
-                            (oldDay, oldSlot) $ newSlots $ head examsFromOldSlot
+        oldSlotWithoutExam = (\(k,s) -> ( k
+                                        , s { examsInSlot = M.delete ancode
+                                                            $ examsInSlot s}))
+                             slotWithExam
+        exam = fromJust $ M.lookup ancode $ examsInSlot $ snd slotWithExam
+        changedSlots = M.update (\slot -> Just $
+                                            slot { examsInSlot =
+                                              M.insert (anCode exam) exam
+                                              $ examsInSlot slot })
+                                (dayIdx, slotIdx)
+                     $ uncurry M.insert oldSlotWithoutExam $ slots plan
     in if dayIdxOutOfBounds || slotIndexOutOfBounds
        then plan
        else if examUnscheduled
@@ -107,7 +124,7 @@ makePlan exams semesterConfig maybePers =
                     ]
                     $ repeat emptySlot
         emptySlot = Slot
-            { examsInSlot = []
+            { examsInSlot = M.empty
             , reserveInvigilator = Nothing
             }
         (examsPlannedNotByMe', unscheduledExams') =

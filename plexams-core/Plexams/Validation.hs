@@ -32,7 +32,7 @@ validateGOSlots plan = do
   tell ["# Checking GO-Slots!"]
   let allowedSlots = goSlots $ semesterConfig plan
       examsInOtherSlots = filter (elem GO . map groupDegree . groups)
-                        $ concatMap examsInSlot
+                        $ concatMap (M.elems . examsInSlot)
                         $ mapMaybe (`M.lookup` slots plan)
                         $ filter (not . (`elem` allowedSlots))
                         $ M.keys $ slots plan
