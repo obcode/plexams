@@ -12,6 +12,10 @@ import           Data.Maybe    (fromMaybe)
 import           Plexams.Query (allExams)
 import           Plexams.Types
 
+--------------------------------------------------------------------------------
+-- Add exam to slot
+--------------------------------------------------------------------------------
+
 addExamToSlot :: Integer -- ^ Anmeldecode
               -> Int     -- ^ Index des Prüfungstages, beginnend bei 0
               -> Int     -- ^ Index des Prüfungsslots, beginnend bei 0
@@ -55,16 +59,32 @@ addExamToSlot' ancode dayIdx slotIdx plan =
                  then plan { slots = changedSlots }
                  else plan
 
+
+-- TODO: works only for AddExamToSlot now
 applyPlanManipListToPlan :: Plan -> [PlanManip] -> Plan
 applyPlanManipListToPlan plan planManips =
        foldr applyPlanManipToPlan plan $ reverse planManips
     where
         applyPlanManipToPlan (AddExamToSlot a d s) = addExamToSlot a d s
 
-emptySlot = Slot
-    { examsInSlot = []
-    , reserveInvigilator = Nothing
-    }
+--------------------------------------------------------------------------------
+-- Add room to exam
+--------------------------------------------------------------------------------
+-- Add room NOT before the exam schedule is frozen
+
+addRoomToExam :: Integer -> String -> Plan -> Plan
+addRoomToExam ancode roomName plan =
+  if ancode `elem` map anCode (unscheduledExams plan)
+  then plan -- a room cannot be added to an unscheduled exam
+  else -- exam is scheduled (or unknown)
+    -- step 1: find exam by ancode
+    -- step 2: find room by name
+    -- step 3: add room to exam and put new exam into correct slot
+    undefined
+
+--------------------------------------------------------------------------------
+-- Make the initial plan
+--------------------------------------------------------------------------------
 
 makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Plan
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
@@ -86,6 +106,10 @@ makePlan exams semesterConfig maybePers =
                             , t <- [0..length (slotsPerDay semesterConfig) - 1]
                     ]
                     $ repeat emptySlot
+        emptySlot = Slot
+            { examsInSlot = []
+            , reserveInvigilator = Nothing
+            }
         (examsPlannedNotByMe', unscheduledExams') =
                     partition ((`elem` (map head $ fk10Exams semesterConfig))
                               . anCode) exams

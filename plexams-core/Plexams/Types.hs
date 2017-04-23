@@ -146,11 +146,16 @@ data Person = Person
     }
   deriving (Eq, Show, Ord)
 
-data PlanManip = AddExamToSlot
-    { planManipAnCode :: Integer
-    , planManipDay    :: Int
-    , planManipSlot   :: Int
-    }
+data PlanManip =
+    AddExamToSlot
+      { planManipAnCode :: Integer
+      , planManipDay    :: Int
+      , planManipSlot   :: Int
+      }
+  | AddRoomToExam
+      { addRoomAnCode   :: Integer
+      , addRoomRoomName :: String
+      }
 
 data Registrations = Registrations
     { regsGroup :: String
