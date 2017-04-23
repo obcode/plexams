@@ -3,3 +3,4 @@ packages:
     - ./plexams-core
     - ./plexams-cli
     - ./plexams-gui
+    - ./plexams-generators
