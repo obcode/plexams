@@ -198,7 +198,7 @@ html config = stdoutOrFile config . planToHTMLTable
 stats :: Config -> Plan -> IO ()
 stats config plan =
   let initialStats = case optCommand config of
-          Statistics True -> initialPlanStatistics $ initialPlan plan
+          Statistics True -> initialPlanStatistics plan
           _               -> ""
       currentStats = planStatistics plan
   in  stdoutOrFile config $ initialStats ++ currentStats

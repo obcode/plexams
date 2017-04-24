@@ -9,16 +9,16 @@ import           GHC.Exts      (groupWith, sortWith)
 import           Plexams.Query
 import           Plexams.Types
 
-initialPlanStatistics :: [Exam] -> String
-initialPlanStatistics exams =
+initialPlanStatistics :: Plan -> String
+initialPlanStatistics plan =
   "# Statistiken für den initialen Plan\n\n"
-    ++ concatMap ($ exams)
+    ++ concatMap ($ plan)
         [ shortGroupStatsToString
         , examsForLecturerers
-        , examsWithSameName
+        , examsWithSameNameString
         ]
 
--- planStatistics :: Plan -> String
+planStatistics :: Plan -> String
 planStatistics plan =
   "\n\n# Statistiken für den aktuellen Plan\n\n"
     ++ concatMap ($ plan)
@@ -26,7 +26,7 @@ planStatistics plan =
         , lecturerExamDaysToString
         ]
 
-shortGroupStatsToString :: [Exam] -> String
+shortGroupStatsToString :: Plan -> String
 shortGroupStatsToString =
     (header++)
     . (++footer)
@@ -45,9 +45,9 @@ shortGroupStatsToString =
                                                   else " Prüfungen"
                                                  ) ++ myShowExams rest
 
-groupStats :: [Exam] -> [(Group, [[Exam]])]
-groupStats exams =
-    let crossProduct = [ (g, e) | e <- exams, g <- groups e ]
+groupStats :: Plan -> [(Group, [[Exam]])]
+groupStats plan =
+    let crossProduct = [ (g, e) | e <- initialPlan plan, g <- groups e ]
         groupList = map (\l -> (fst $ head l, groupWith reExam $ map snd l))
                         $ groupWith fst crossProduct
     in groupList
@@ -73,7 +73,7 @@ examGroupsCorrelation plan =
         in map (\xs@((g1,_):_) -> (g1, nub $ map snd xs))
                $ groupWith fst groupsWithSameExam
 
-examsForLecturerers :: [Exam] -> String
+examsForLecturerers :: Plan -> String
 examsForLecturerers =
   ("## Anzahl Prüfungen pro Prüfer\n\n"++)
   . (++"\n\n")
@@ -88,6 +88,7 @@ examsForLecturerers =
   . sortWith length
   . groupWith fst
   . map (\e -> (lecturer e, e))
+  . initialPlan
 
 lecturerExamDaysToString :: Plan -> String
 lecturerExamDaysToString =
@@ -99,11 +100,15 @@ lecturerExamDaysToString =
                                     ++ intercalate ", " (map show listOfDays))
     . lecturerExamDays
 
-examsWithSameName :: [Exam] -> String
-examsWithSameName =
+examsWithSameNameString :: Plan -> String
+examsWithSameNameString =
   ("\n\n## Prüfungen mit gleichem Namen\n\n"++)
   . intercalate "\n"
   . map (\exams -> "-   " ++ name (head exams)
                 ++ ": " ++ show (map anCode exams))
-  . filter ((>1) . length)
-  . groupWith name
+  . examsWithSameName
+
+examsWithSameName :: Plan -> [[Exam]]
+examsWithSameName =  filter ((>1) . length)
+                  . groupWith name
+                  . initialPlan
