@@ -18,9 +18,12 @@ module Plexams.Types
     , Constraints(..)
     , Overlaps(..)
     , setFK10Exam
+    , isScheduled
+    , isUnscheduled
     ) where
 
 import qualified Data.Map           as M
+import           Data.Maybe         (isJust)
 import           Data.Time.Calendar
 import           GHC.Generics
 
@@ -55,6 +58,24 @@ data Plan = Plan
     }
   deriving (Show, Eq)
 
+isScheduledAncode :: Ancode -> Plan -> Bool
+isScheduledAncode ancode =
+  elem ancode
+  . concatMap (M.keys . examsInSlot)
+  . M.elems
+  . slots
+
+isUnscheduledAncode :: Ancode -> Plan -> Bool
+isUnscheduledAncode ancode =
+  elem ancode
+  . M.keys
+  . unscheduledExams
+
+isUnknownExamAncode :: Ancode -> Plan -> Bool
+isUnknownExamAncode ancode plan =
+     not (isScheduledAncode ancode plan)
+  && not (isUnscheduledAncode ancode plan)
+
 type Slots = M.Map (Int, Int) Slot
 
 setSlotsOnExams :: Plan -> Plan
@@ -76,20 +97,30 @@ data Slot = Slot
     }
   deriving (Show, Eq)
 
+type Ancode = Integer
+type Duration = Integer
+type ExamType = String
+
 data Exam = Exam
-    { anCode      :: Integer -- ^ Anmeldecode Prüfungsamt
+    { anCode      :: Ancode -- ^ Anmeldecode Prüfungsamt
     , name        :: String  -- ^ Name der Prüfung
     , lecturer    :: Person  -- ^ Prüfer
-    , duration    :: Integer -- ^ Dauer der Prüfung in Minuten
+    , duration    :: Duration -- ^ Dauer der Prüfung in Minuten
     , rooms       :: [Room]  -- ^ Liste der Räume in denen die Prüfung statt findet
     , plannedByMe :: Bool    -- ^ @False@ bei Prüfungen, die zwar mit erfasst werden, aber nicht geplant werden
                              --   können
     , reExam      :: Bool    -- ^ @True@ bei einer Wiederholungsklausur
     , groups      :: [Group]  -- ^ Studierendengruppen die an der Prüfung teilnehmen
-    , examType    :: String  -- ^ Typ der Prüfung aus ZPA
+    , examType    :: ExamType  -- ^ Typ der Prüfung aus ZPA
     , slot        :: Maybe (Int, Int) -- ^ (Tag, Slot)
     }
   deriving (Eq)
+
+isScheduled :: Exam -> Bool
+isScheduled = isJust . slot
+
+isUnscheduled :: Exam -> Bool
+isUnscheduled = not . isScheduled
 
 setFK10Exam :: [Integer] -> Exam -> Exam
 setFK10Exam ancodes exam =

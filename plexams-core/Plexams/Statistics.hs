@@ -107,8 +107,3 @@ examsWithSameNameString =
   . map (\exams -> "-   " ++ name (head exams)
                 ++ ": " ++ show (map anCode exams))
   . examsWithSameName
-
-examsWithSameName :: Plan -> [[Exam]]
-examsWithSameName =  filter ((>1) . length)
-                  . groupWith name
-                  . initialPlan

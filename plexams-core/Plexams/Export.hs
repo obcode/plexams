@@ -5,6 +5,7 @@ module Plexams.Export
   , planToHTMLTable
   , planToZPA
   , semesterConfigAsString
+  , exportPlanManips
   ) where
 
 import           Data.Aeson
@@ -225,3 +226,14 @@ instance ToJSON AvailableRoom where
 
 semesterConfigAsString :: Plan -> String
 semesterConfigAsString = unpack . encodePretty . semesterConfig
+
+--------------------------------------------------------------------------------
+-- Export PlanManips to Yaml
+--------------------------------------------------------------------------------
+
+exportPlanManips :: [PlanManip] -> String
+exportPlanManips = intercalate "\n" . map exportPlanManip
+
+exportPlanManip :: PlanManip -> String
+exportPlanManip (AddExamToSlot a d s) =
+  "- [" ++ show a ++ ", " ++ show d ++ ", " ++ show s ++ "]"

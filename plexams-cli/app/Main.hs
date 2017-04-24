@@ -1,12 +1,13 @@
 module Main where
 
-import           Control.Monad       (when)
-import           Data.List           (intercalate)
-import           Data.Maybe          (fromMaybe)
-import           Data.Semigroup      ((<>))
+import           Control.Monad               (when)
+import           Data.List                   (intercalate)
+import           Data.Maybe                  (fromMaybe)
+import           Data.Semigroup              ((<>))
 import           Options.Applicative
 import           Plexams
 import           Plexams.Export
+import           Plexams.Generators.Schedule
 import           Plexams.GUI
 import           Plexams.Import
 import           Plexams.PlanManip
@@ -14,7 +15,7 @@ import           Plexams.Query
 import           Plexams.Statistics
 import           Plexams.Types
 import           Plexams.Validation
-import           System.Directory    (doesFileExist)
+import           System.Directory            (doesFileExist)
 
 data Command
     = Markdown
@@ -31,6 +32,8 @@ data Command
             }
     | ExportZPA
     | PrintConfig
+    | Generate { scheduleSameNames :: Bool
+               }
   deriving (Eq)
 
 data Config = Config
@@ -60,6 +63,8 @@ config = Config
                                   (progDesc "export current plan for ZPA"))
          <> command "config"    (info  (pure PrintConfig)
                                   (progDesc "print the current config"))
+         <> command "generate"  (info generateOpts
+                                  (progDesc "generate part of the plan"))
           )
       <*> optional (strOption
         ( long "planManip"
@@ -132,6 +137,15 @@ statisticsOpts = Statistics
        <> help "statistics for initial plan"
         )
 
+generateOpts :: Parser Command
+generateOpts = Generate
+    <$> switch
+        ( long "schedule-same-name"
+       <> short 'n'
+       <> help ("schedule unscheduled exams with same name "
+                ++ " than the ONE already scheduled")
+        )
+
 main :: IO ()
 main = main' =<< execParser opts
   where
@@ -184,6 +198,7 @@ commandFun Validate      = validate
 commandFun Query {}      = query
 commandFun ExportZPA {}  = exportZPA
 commandFun PrintConfig   = printConfig
+commandFun Generate {}   = generate
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
@@ -233,3 +248,13 @@ applyFileFromConfig plan file = do
     if fileExist
       then applyPlanManipToPlanWithFile plan file
       else return plan
+
+generate :: Config -> Plan -> IO ()
+generate config plan = do
+  stdoutOrFile config $ generate' (optCommand config)
+    where
+      generate' (Generate True) =
+        ("# Slots for exams with same name --- generated\n"++)
+        $ exportPlanManips
+        $ snd
+        $ scheduleExamsWithSameName plan

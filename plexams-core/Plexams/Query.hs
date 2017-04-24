@@ -5,6 +5,7 @@ module Plexams.Query
     , queryByName
     , queryByGroup
     , lecturerExamDays
+    , examsWithSameName
     ) where
 
 import           Data.List      (isInfixOf)
@@ -49,3 +50,8 @@ lecturerExamDays =
   . M.toList
   . M.map (map lecturer . M.elems . examsInSlot)
   . slots
+
+examsWithSameName :: Plan -> [[Exam]]
+examsWithSameName =  filter ((>1) . length)
+                  . groupWith name
+                  . allExams

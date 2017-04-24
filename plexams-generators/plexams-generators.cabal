@@ -14,6 +14,7 @@ cabal-version:         >=1.10
 
 library
   exposed-modules:     Plexams.Generators.Rooms
+                     , Plexams.Generators.Schedule
   build-depends:       base
                      , plexams-core
   default-language:    Haskell2010

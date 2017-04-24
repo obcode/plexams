@@ -20,6 +20,7 @@ executable plexams
                      , directory
                      , optparse-applicative
                      , plexams-core
+                     , plexams-generators
                      , plexams-gui
                      , time
   default-language:    Haskell2010
