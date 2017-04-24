@@ -16,6 +16,7 @@ import           Plexams.Statistics
 import           Plexams.Types
 import           Plexams.Validation
 import           System.Directory            (doesFileExist)
+import           System.IO                   (hPutStrLn, stderr)
 
 data Command
     = Markdown
@@ -183,7 +184,7 @@ main' config = do
       -- call the command function
       commandFun (optCommand config) config  plan
       when (optCommand config /= Validate) $
-        putStrLn $ if novalidation config
+        hPutStrLn stderr $ if novalidation config
           then ">>> Validation off"
           else if fst $ validatePlan plan
                then ">>> Validation ok!"
@@ -250,7 +251,7 @@ applyFileFromConfig plan file = do
       else return plan
 
 generate :: Config -> Plan -> IO ()
-generate config plan = do
+generate config plan =
   stdoutOrFile config $ generate' (optCommand config)
     where
       generate' (Generate True) =
