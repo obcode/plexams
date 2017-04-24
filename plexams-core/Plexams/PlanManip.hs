@@ -40,9 +40,6 @@ addExamToSlot' ancode dayIdx slotIdx plan =
         slotIndexOutOfBounds = slotIdx < 0
                             || slotIdx >= length (slotsPerDay config)
         -- noch unscheduled?
-        (examL, unscheduledExams') =
-              partition ((ancode==) . anCode) $ unscheduledExams plan
-        examUnscheduled = not $ null examL
         newSlots ex =
           M.update (\slot -> Just $
                               slot { examsInSlot =
@@ -68,13 +65,14 @@ addExamToSlot' ancode dayIdx slotIdx plan =
                      $ uncurry M.insert oldSlotWithoutExam $ slots plan
     in if dayIdxOutOfBounds || slotIndexOutOfBounds
        then plan
-       else if examUnscheduled
-            then plan { unscheduledExams = unscheduledExams'
-                      , slots = newSlots $ head examL
-                      }
-            else if examInOtherSlot
-                 then plan { slots = changedSlots }
-                 else plan
+       else case M.lookup ancode $ unscheduledExams plan of
+            Just exam -> plan { unscheduledExams = M.delete ancode
+                                                    $ unscheduledExams plan
+                              , slots = newSlots exam
+                              }
+            Nothing -> if examInOtherSlot
+                       then plan { slots = changedSlots }
+                       else plan
 
 
 -- TODO: works only for AddExamToSlot now
@@ -91,7 +89,7 @@ applyPlanManipListToPlan plan planManips =
 
 addRoomToExam :: Integer -> String -> Plan -> Plan
 addRoomToExam ancode roomName plan =
-  if ancode `elem` map anCode (unscheduledExams plan)
+  if ancode `M.member` unscheduledExams plan
   then plan -- a room cannot be added to an unscheduled exam
   else -- exam is scheduled (or unknown)
     -- step 1: find exam by ancode
@@ -112,7 +110,7 @@ makePlan exams semesterConfig maybePers =
         Plan
           { semesterConfig = semesterConfig
           , slots = slots'
-          , unscheduledExams = unscheduledExams' ++ examsPlannedNotByMe
+          , unscheduledExams = unscheduledExams''
           , persons = fromMaybe M.empty maybePers
           , constraints = Nothing
           , initialPlan = exams
@@ -130,6 +128,9 @@ makePlan exams semesterConfig maybePers =
         (examsPlannedNotByMe', unscheduledExams') =
                     partition ((`elem` (map head $ fk10Exams semesterConfig))
                               . anCode) exams
+        unscheduledExams'' = M.fromList $ map (\e -> (anCode e, e))
+                                              $ unscheduledExams'
+                                              ++ examsPlannedNotByMe
         examsPlannedNotByMe = map (\e -> e { plannedByMe = False })
                                   examsPlannedNotByMe'
         addExamFromListToSlot [a,d,t] plan =
@@ -138,7 +139,8 @@ makePlan exams semesterConfig maybePers =
 
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan
-addUnscheduledExams exams plan = plan { unscheduledExams = exams}
+addUnscheduledExams exams plan =
+  plan { unscheduledExams = M.fromList $ map (\e -> (anCode e, e)) exams}
 
 addRegistrationsListToExams :: [Exam] -> [Registrations] -> [Exam]
 addRegistrationsListToExams = foldr addRegistrationsToExams

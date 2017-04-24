@@ -80,7 +80,7 @@ planToHTMLTable plan =
             ++ concatMap (insideTag "tr" . concatMap (insideTag "td"))
                          slotsAsMatrix
     (unscheduledExams', plannedByOtherExams) =
-        partition plannedByMe $ unscheduledExams plan
+        partition plannedByMe $ M.elems $ unscheduledExams plan
     unscheduledExamsToList = insideTag "ol"
             $ concatMap (insideTag "li" . toString) unscheduledExams'
     unscheduledExamsPlannedByOthers = insideTag "ul"

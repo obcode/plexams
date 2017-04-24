@@ -15,7 +15,7 @@ import           Plexams.Types
 
 allExams :: Plan -> [Exam]
 allExams plan = let plan' = setSlotsOnExams plan
-                in unscheduledExams plan' ++ scheduledExams plan'
+                in M.elems (unscheduledExams plan') ++ scheduledExams plan'
 
 scheduledExams :: Plan -> [Exam]
 scheduledExams plan =
@@ -30,7 +30,9 @@ queryByName str = filter (isInfixOf str . name) . allExams
 queryByGroup :: String -> Bool -> Plan -> [Exam]
 queryByGroup group unscheduledOnly =
     filter (not . null . elemOrSubGroup (parseGroup group) . groups)
-            . (if unscheduledOnly then unscheduledExams else allExams)
+            . (if unscheduledOnly
+                  then M.elems . unscheduledExams
+                  else allExams)
   where
     elemOrSubGroup :: Group -> [Group] -> [Group]
     elemOrSubGroup (Group degree Nothing Nothing _) groups =

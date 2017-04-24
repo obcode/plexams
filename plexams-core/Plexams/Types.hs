@@ -47,7 +47,8 @@ data AvailableRoom = AvailableRoom
 data Plan = Plan
     { semesterConfig   :: SemesterConfig
     , slots            :: Slots
-    , unscheduledExams :: [Exam]     -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
+    , unscheduledExams :: M.Map Integer Exam  -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
+                                              -- Ancode -> Exam
     , persons          :: Persons
     , constraints      :: Maybe Constraints
     , initialPlan      :: [Exam]
@@ -59,7 +60,7 @@ type Slots = M.Map (Int, Int) Slot
 setSlotsOnExams :: Plan -> Plan
 setSlotsOnExams plan = plan
     { slots = M.mapWithKey addSlotKeyToExam $ slots plan
-    , unscheduledExams = map (\e -> e { slot = Nothing })
+    , unscheduledExams = M.map (\e -> e { slot = Nothing })
                              $ unscheduledExams plan
     }
 
