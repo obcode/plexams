@@ -50,7 +50,7 @@ data AvailableRoom = AvailableRoom
 data Plan = Plan
     { semesterConfig   :: SemesterConfig
     , slots            :: Slots
-    , unscheduledExams :: M.Map Integer Exam  -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
+    , unscheduledExams :: M.Map Ancode Exam  -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
                                               -- Ancode -> Exam
     , persons          :: Persons
     , constraints      :: Maybe Constraints
@@ -76,7 +76,10 @@ isUnknownExamAncode ancode plan =
      not (isScheduledAncode ancode plan)
   && not (isUnscheduledAncode ancode plan)
 
-type Slots = M.Map (Int, Int) Slot
+type DayIndex = Int
+type SlotIndex = Int
+
+type Slots = M.Map (DayIndex, SlotIndex) Slot
 
 setSlotsOnExams :: Plan -> Plan
 setSlotsOnExams plan = plan
@@ -85,14 +88,14 @@ setSlotsOnExams plan = plan
                              $ unscheduledExams plan
     }
 
-addSlotKeyToExam :: (Int, Int) -> Slot -> Slot
+addSlotKeyToExam :: (DayIndex, SlotIndex) -> Slot -> Slot
 addSlotKeyToExam k slot =
     slot { examsInSlot = M.map (addSlotKey k) $ examsInSlot slot }
   where
     addSlotKey k exam = exam { slot = Just k }
 
 data Slot = Slot
-    { examsInSlot        :: M.Map Integer Exam -- Ancode -> Exam
+    { examsInSlot        :: M.Map Ancode Exam -- Ancode -> Exam
     , reserveInvigilator :: Maybe Integer  -- ^ Reserveaufsicht für die Prüfung
     }
   deriving (Show, Eq)
@@ -122,7 +125,7 @@ isScheduled = isJust . slot
 isUnscheduled :: Exam -> Bool
 isUnscheduled = not . isScheduled
 
-setFK10Exam :: [Integer] -> Exam -> Exam
+setFK10Exam :: [Ancode] -> Exam -> Exam
 setFK10Exam ancodes exam =
   exam { plannedByMe = anCode exam `notElem` ancodes }
 
@@ -139,7 +142,7 @@ instance Show Exam where
 data Room = Room
     { roomID               :: String        -- ^ Raum-Nr, z.B. @"R3.014"@
     , maxSeats             :: Integer       -- ^ maximale Anzahl an Prüfungsplätzen
-    , deltaDuration        :: Integer       -- ^ falls der Raum für NTA genutzt wird, Anzahl der Minuten
+    , deltaDuration        :: Duration      -- ^ falls der Raum für NTA genutzt wird, Anzahl der Minuten
                                             --   die die Prüfung länger
                                             --   dauert
     , invigilator          :: Maybe Integer -- ^ Aufsicht

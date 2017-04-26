@@ -32,7 +32,4 @@ scheduleExamsWithSameName plan =
                                                   (slotScheduled scheduled))
             unscheduled
       planManips = concatMap makePlanManips exams
-  in --error $ show $ map (filter isScheduled &&& filter isUnscheduled)
-     --              $ examsWithSameName
-      --            $ setSlotsOnExams plan
-     (applyPlanManipListToPlan plan planManips, planManips)
+  in (applyPlanManipListToPlan plan planManips, planManips)

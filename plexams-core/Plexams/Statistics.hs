@@ -60,8 +60,8 @@ examGroupsCorrelationToString =
                               ++ intercalate " -> " (map show grps) ++ "\n")
     . examGroupsCorrelation
   where header = "## Gemeinsame Klausuren verschiedener Gruppen\n\n"
-                ++ "digraph groups {\n"
-        footer = "\n}\n\n"
+                ++ "~~~~\ndigraph groups {\n"
+        footer = "\n}\n~~~~\n\n"
 
 examGroupsCorrelation :: Plan -> [(Group, [Group])]
 examGroupsCorrelation plan =
