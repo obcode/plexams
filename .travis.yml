@@ -17,7 +17,13 @@ language: generic
 # Caching so the next build will be fast too.
 cache:
   directories:
+  - $HOME/.ghc
+  - $HOME/.cabal
   - $HOME/.stack
+
+os:
+  - linux
+  - osx
 
 # Ensure necessary system libraries are present
 addons:
@@ -26,10 +32,15 @@ addons:
       - libgmp-dev
 
 before_install:
-# Download and unpack the stack executable
-- mkdir -p ~/.local/bin
-- export PATH=$HOME/.local/bin:$PATH
-- travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+- |
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]];
+    mkdir -p ~/.local/bin
+    export PATH=$HOME/.local/bin:$PATH
+    travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | \
+        tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack';
+  elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
+    then brew update && brew install graphviz;
+  fi
 
 install:
 # Build dependencies
