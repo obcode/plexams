@@ -22,7 +22,6 @@ import           GHC.Generics
 import           Plexams.Query              (allExams)
 import           Plexams.Types
 
-
 -- | TODO: Erzeugt eine Markdown-Version des aktuellen Plans
 planToMD :: Plan -> String
 planToMD = ("-   "++)
