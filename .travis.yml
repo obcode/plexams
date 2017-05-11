@@ -33,13 +33,15 @@ addons:
 
 before_install:
 - |
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]];
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]]
+  then
     mkdir -p ~/.local/bin
     export PATH=$HOME/.local/bin:$PATH
     travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | \
-        tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack';
-  elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
-    then brew update && brew install graphviz;
+        tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]
+  then
+    brew update && brew install graphviz;
   fi
 
 install:
