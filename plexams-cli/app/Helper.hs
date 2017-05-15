@@ -65,14 +65,16 @@ doCommand :: Config -> IO ()
 doCommand config@(Config PrepareRegistrations g iPath mOPath) = do
     contents <- getContents' iPath
     let examLines =
-          map (\e -> "    - ancode: " ++ head e
-                ++ "\n      sum: "    ++  e!!4)
+          map (\e -> if null $ e!!4 then "" else
+                     "  - ancode: " ++ head e
+                ++ "\n    sum: "    ++  e!!4)
             $ filter ((>=5) . length)
             $ map split
             $ tail
             $ lines contents
     stdoutOrFile config $ "- group: " ++ g
-                     ++ "\n  registrations:\n" ++ intercalate "\n" examLines
+                     ++ "\n  registrations:\n"
+                     ++ intercalate "\n" (filter (not . null) examLines)
                      ++ "\n"
 doCommand config@(Config PrepareOverlaps g iPath mOPath) = do
     contents <- getContents' iPath
