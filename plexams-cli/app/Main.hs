@@ -1,8 +1,8 @@
 module Main where
 
-import           Control.Monad               (when)
+import           Control.Monad               (unless, when)
 import           Data.List                   (intercalate)
-import           Data.Maybe                  (fromMaybe)
+import           Data.Maybe                  (fromMaybe, isJust)
 import           Data.Semigroup              ((<>))
 import           Options.Applicative
 import           Plexams
@@ -14,7 +14,7 @@ import           Plexams.PlanManip
 import           Plexams.Query
 import           Plexams.Statistics
 import           Plexams.Types
-import           Plexams.Validation
+import qualified Plexams.Validation          as P (validate)
 import           System.Directory            (doesFileExist)
 import           System.IO                   (hPutStrLn, stderr)
 
@@ -28,6 +28,7 @@ data Command
     | Validate
     | Query { byAncode        :: Maybe Integer
             , byName          :: Maybe String
+            , byLecturer      :: Maybe String
             , byGroup         :: Maybe String
             , onlyUnscheduled :: Bool
             }
@@ -38,13 +39,14 @@ data Command
   deriving (Eq)
 
 data Config = Config
-    { optCommand     :: Command
-    , planManipFile' :: Maybe FilePath
-    , regsFile       :: Maybe FilePath
-    , overlapsFile   :: Maybe FilePath
-    , outfile        :: Maybe FilePath
-    , configfile     :: FilePath
-    , novalidation   :: Bool
+    { optCommand      :: Command
+    , planManipFile'  :: Maybe FilePath
+    , regsFile        :: Maybe FilePath
+    , overlapsFile    :: Maybe FilePath
+    , constraintsFile :: Maybe FilePath
+    , outfile         :: Maybe FilePath
+    , configfile      :: FilePath
+    , novalidation    :: Bool
     }
 
 config :: Parser Config
@@ -86,6 +88,12 @@ config = Config
        <> help "import file containing overlaps"
         ))
       <*> optional (strOption
+        ( long "constraints"
+       <> short 's'
+       <> metavar "CONSTRAINTSFILE"
+       <> help "import file containing constraints"
+        ))
+      <*> optional (strOption
         ( long "output"
        <> short 'o'
        <> metavar "OUTFILE"
@@ -117,6 +125,12 @@ queryOpts = Query
        <> short 'n'
        <> metavar "NAME"
        <> help "query by name (substring of name)"
+        ))
+    <*> optional (strOption
+        ( long "lecturer"
+       <> short 'l'
+       <> metavar "LECTURERID"
+       <> help "query by lecturer name (substring of name)"
         ))
     <*> optional (strOption
         ( long "group"
@@ -170,13 +184,18 @@ main' config = do
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
-
+      unless (null examsWithRegs) $ hPutStrLn stderr ">>> Adding registrations"
       maybeOverlaps <- maybe (return Nothing) importOverlapsFromYAMLFile
                               $ overlapsFile config
+      when (isJust maybeOverlaps) $ hPutStrLn stderr ">>> Adding overlaps"
+      maybeConstraints <- maybe (return Nothing) importConstraintsFromYAMLFile
+                                $ constraintsFile config
+      when (isJust maybeConstraints) $ hPutStrLn stderr ">>> Adding constraints"
       -- generate initial plan
-      let plan'' = makePlan examsWithRegs semesterConfig Nothing
-          plan' = maybe plan''
-                        (addConstraints plan'' . Constraints) maybeOverlaps
+      let constraints' = fromMaybe noConstraints maybeConstraints
+          constraints = constraints' { overlaps = fromMaybe [] maybeOverlaps }
+          plan'' = makePlan examsWithRegs semesterConfig Nothing
+          plan' = addConstraints plan'' constraints
       -- maybe manipulate the plan
       plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
                     (applyPlanManipToPlanWithFile plan')
@@ -186,7 +205,7 @@ main' config = do
       when (optCommand config /= Validate) $
         hPutStrLn stderr $ if novalidation config
           then ">>> Validation off"
-          else if fst $ validatePlan plan
+          else if fst $ P.validate plan
                then ">>> Validation ok!"
                else ">>> Validation NOT ok!\n"
                  ++ "    See `plexams validate` for more information."
@@ -220,10 +239,10 @@ stats config plan =
   in  stdoutOrFile config $ initialStats ++ currentStats
 
 validate :: Config -> Plan -> IO ()
-validate config = stdoutOrFile config . validatePlan'
+validate config = stdoutOrFile config . validate'
   where
-    validatePlan' plan =
-      let (ok, msgs) = validatePlan plan
+    validate' plan =
+      let (ok, msgs) = P.validate plan
       in intercalate "\n\n" msgs
         ++ if ok then "\n\n# Validation successful."
                  else "\n\n# Validation failed."
@@ -232,10 +251,11 @@ query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config
     $ intercalate "\n" $ map show $ query' (optCommand config)
   where
-    query' (Query (Just a) _ _ _) = queryByAnCode a plan
-    query' (Query _ (Just n) _ _) = queryByName n plan
-    query' (Query _ _ (Just g) u) = queryByGroup g u plan
-    query' _                      = []
+    query' (Query (Just a) _ _ _ _) = queryByAnCode a plan
+    query' (Query _ (Just n) _ _ _) = queryByName n plan
+    query' (Query _ _ (Just l) _ _) = queryByLecturer l plan
+    query' (Query _ _ _ (Just g) u) = queryByGroup g u plan
+    query' _                        = []
 
 exportZPA :: Config -> Plan -> IO ()
 exportZPA config = stdoutOrFile config . planToZPA
