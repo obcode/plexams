@@ -24,23 +24,22 @@ import           Plexams.Types
 
 -- | TODO: Erzeugt eine Markdown-Version des aktuellen Plans
 planToMD :: Plan -> String
-planToMD = ("-   "++)
-          . intercalate "\n-   "
-          . map show
-          . allExams
-{-
-    "# Prüfungsplan " ++ semesterName (semesterConfig plan) ++ "\n\n"
-    ++ concatMap dayMD (realExamDays plan)
-    ++ "## Noch nicht eingeplante Prüfungen\n\n"
-    ++ concatMap (\eStr -> "-   " ++ eStr ++ "\n\n")
-                 (map examMD (unscheduledExams plan))
+planToMD plan =
+          -- ("-   "++)
+          -- . intercalate "\n-   "
+          -- . map show
+          -- . allExams
+    "# Prüfungsplan " ++ semester (semesterConfig plan) ++ "\n\n"
+    ++ intercalate "\n\n" (map slotToMD slotList)
+
   where
-    dayMD examDay = "## " ++ dateString examDay ++ "\n\n"
-                    ++ concatMap slotMD (slotsOfDay examDay)
-    slotMD slot = "- " ++ timeString slot ++ "\n\n"
-    examMD exam = show (anCode exam) ++ " " ++ name exam
-                    ++ " (" ++ personShortName (lecturer exam)  ++ ")"
--}
+    slotList = M.toAscList $ slots plan
+    slotToMD (ds, slot) = dayAndSlotToString ds ++ "\n\n"
+      ++ intercalate "\n\n" (map examToMD $ M.elems $ examsInSlot slot)
+    dayAndSlotToString (d,s) = "- " ++ dayStr ++ ": " ++ slotStr ++ " Uhr"
+      where dayStr = show $ (!!d) $ examDays $ semesterConfig plan
+            slotStr = (!!s) $ slotsPerDay $ semesterConfig plan
+    examToMD exam = "    - " ++ show exam
 
 insideTag :: String -> String -> String
 insideTag tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
