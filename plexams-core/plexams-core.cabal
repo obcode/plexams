@@ -21,6 +21,8 @@ library
                      , Plexams.Query
                      , Plexams.Statistics
                      , Plexams.Validation
+  other-modules:       Plexams.Validation.ScheduledExams
+                     , Plexams.Validation.Sources
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , aeson-pretty
