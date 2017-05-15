@@ -5,17 +5,21 @@ module Plexams.Types
     , Slot(..)
     , setSlotsOnExams
     , Exam(..)
+    , registrations
+    , Ancode
     , SemesterConfig(..)
     , Group(..)
     , Degree(..)
     , Subgroup(..)
     , Person(..)
+    , PersonID
     , Persons
     , AvailableRoom(..)
     , Room(..)
     , PlanManip(..)
     , Registrations(..)
     , Constraints(..)
+    , noConstraints
     , Overlaps(..)
     , setFK10Exam
     , isScheduled
@@ -23,7 +27,7 @@ module Plexams.Types
     ) where
 
 import qualified Data.Map           as M
-import           Data.Maybe         (isJust)
+import           Data.Maybe         (isJust, mapMaybe)
 import           Data.Time.Calendar
 import           GHC.Generics
 
@@ -125,6 +129,9 @@ isScheduled = isJust . slot
 isUnscheduled :: Exam -> Bool
 isUnscheduled = not . isScheduled
 
+registrations :: Exam -> Integer
+registrations = sum . mapMaybe groupRegistrations . groups
+
 setFK10Exam :: [Ancode] -> Exam -> Exam
 setFK10Exam ancodes exam =
   exam { plannedByMe = anCode exam `notElem` ancodes }
@@ -173,9 +180,10 @@ data Subgroup = A | B | C
   deriving (Show, Eq, Ord)
 
 type Persons = M.Map Integer Person
+type PersonID = Integer
 
 data Person = Person
-    { personID        :: Integer
+    { personID        :: PersonID
     , personShortName :: String
     , personFullName  :: String
     }
@@ -198,10 +206,18 @@ data Registrations = Registrations
     }
   deriving (Show)
 
-newtype Constraints = Constraints
-  { overlaps :: [Overlaps]
+data Constraints = Constraints
+  { overlaps                    :: [Overlaps]
+  , notOnSameDay                :: [[Ancode]]
+  , onOneOfTheseDays            :: [(Ancode, [Int])]
+  , fixedSlot                   :: [(Ancode, (Int,Int))]
+  , invigilatesExam             :: [(Ancode, PersonID)]
+  , impossibleInvigilationSlots :: [(PersonID, [(Int, Int)])]
   }
   deriving (Show, Eq)
+
+noConstraints :: Constraints
+noConstraints = Constraints [] [] [] [] [] []
 
 data Overlaps = Overlaps
   { olGroup :: Group
