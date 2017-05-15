@@ -56,7 +56,7 @@ main = main' =<< execParser opts
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
-    maybe (putStrLn output) (`appendFile` output) $ outfile config
+    maybe (putStrLn output) (`writeFile` output) $ outfile config
 
 main' :: Config -> IO ()
 main' = doCommand
