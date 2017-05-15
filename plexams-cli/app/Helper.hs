@@ -7,11 +7,12 @@ import           System.Environment
 import           System.IO
 
 data Command =
-  PrepareRegistrations { pRGroup :: String }
-  | PrepareOverlaps { pOGroup :: String }
+  PrepareRegistrations -- { pRGroup :: String }
+  | PrepareOverlaps --  { pOGroup :: String }
 
 data Config = Config
     { optCommand :: Command
+    , group      :: String
     , infile     :: FilePath
     , outfile    :: Maybe FilePath
     }
@@ -19,11 +20,17 @@ data Config = Config
 configP :: Parser Config
 configP = Config
     <$> hsubparser
-          ( command "regs" (info prepareRegistrationsOpts
+          ( command "regs" (info (pure PrepareRegistrations)
                             (progDesc "prepare a registration file"))
-         <> command "overlaps" (info prepareOverlapsOpts
+         <> command "overlaps" (info (pure PrepareOverlaps)
                             (progDesc "prepare a overlaps file"))
           )
+    <*> strOption
+        ( long "group"
+       <> short 'g'
+       <> metavar "GROUP"
+       <> help "student group (one of IB, IC, IF, IG, IN, IS, GO)"
+        )
     <*> strOption
         ( long "infile"
        <> short 'i'
@@ -36,25 +43,6 @@ configP = Config
         <> metavar "OUTFILE"
         <> help "write to file (instead of stdout)"
          )
-        )
-
-prepareRegistrationsOpts :: Parser Command
-prepareRegistrationsOpts = PrepareRegistrations
-    <$> strOption
-        ( long "group"
-       <> short 'g'
-       <> metavar "GROUP"
-       <> help "student group (one of IB, IC, IF, IG, IN, IS, GO)"
-        )
-
-
-prepareOverlapsOpts :: Parser Command
-prepareOverlapsOpts = PrepareOverlaps
-    <$> strOption
-        ( long "group"
-       <> short 'g'
-       <> metavar "GROUP"
-       <> help "student group (one of IB, IC, IF, IG, IN, IS, GO)"
         )
 
 main :: IO ()
@@ -74,7 +62,7 @@ main' :: Config -> IO ()
 main' = doCommand
 
 doCommand :: Config -> IO ()
-doCommand config@(Config (PrepareRegistrations g) iPath mOPath) = do
+doCommand config@(Config PrepareRegistrations g iPath mOPath) = do
     contents <- getContents' iPath
     let examLines =
           map (\e -> "    - ancode: " ++ head e
@@ -86,7 +74,7 @@ doCommand config@(Config (PrepareRegistrations g) iPath mOPath) = do
     stdoutOrFile config $ "- group: " ++ g
                      ++ "\n  registrations:\n" ++ intercalate "\n" examLines
                      ++ "\n"
-doCommand config@(Config (PrepareOverlaps g) iPath mOPath) = do
+doCommand config@(Config PrepareOverlaps g iPath mOPath) = do
     contents <- getContents' iPath
     let (header : overlapsLines) = map split $ lines contents
         overlapsTupels =
