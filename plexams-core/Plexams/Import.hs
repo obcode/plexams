@@ -7,6 +7,7 @@ module Plexams.Import
     , importRegistrationsFromYAMLFile
     , importOverlapsFromYAMLFile
     , parseGroup
+    , importConstraintsFromYAMLFile
     ) where
 
 import           Control.Applicative         (empty, (<$>), (<*>))
@@ -288,3 +289,57 @@ iOLToOLList = map iOLToOL
 importOverlapsFromYAMLFile :: FilePath -> IO (Maybe [Overlaps])
 importOverlapsFromYAMLFile =
     fmap (fmap iOLToOLList . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- Constraints from YAML file
+--------------------------------------------------------------------------------
+
+data ImportConstraints = ImportConstraints
+  { iCNotOnSameDay                :: [[Ancode]]
+  , iCOnOneOfTheseDays            :: [[Int]]
+  , iCFixedSlot                   :: [[Int]]
+  , iCInvigilatesExam             :: [[Integer]]
+  , iCImpossibleInvigilationSlots :: [ImpossibleInvigilation]
+  }
+
+instance Y.FromJSON ImportConstraints where
+  parseJSON (Y.Object v) = ImportConstraints
+                        <$> v Y..: "notOnSameDay"
+                        <*> v Y..: "onOneOfTheseDays"
+                        <*> v Y..: "fixedSlot"
+                        <*> v Y..: "invigilatesExam"
+                        <*> v Y..: "impossibleInvigilationSlots"
+  parseJSON _            = empty
+
+data ImpossibleInvigilation = ImpossibleInvigilation
+  { iCPersonID :: Integer
+  , iCSlots    :: [[Int]]
+  }
+
+instance Y.FromJSON ImpossibleInvigilation where
+  parseJSON (Y.Object v) = ImpossibleInvigilation
+                        <$> v Y..: "examer"
+                        <*> v Y..: "slots"
+  parseJSON _            = empty
+
+importConstraintsToConstraints :: ImportConstraints -> Constraints
+importConstraintsToConstraints
+  (ImportConstraints iCNotOnSameDay iCOnOneOfTheseDays iCFixedSlot
+                     iCInvigilatesExam iCImpossibleInvigilationSlots
+  ) =
+  Constraints
+    { overlaps = []
+    , notOnSameDay =  iCNotOnSameDay
+    , onOneOfTheseDays = map (\(x:xs) -> (toInteger x, xs)) iCOnOneOfTheseDays
+    , fixedSlot =  map (\[a,d,s] -> (toInteger a, (d,s))) iCFixedSlot
+    , invigilatesExam = map (\[a,p] -> (a,p)) iCInvigilatesExam
+    , impossibleInvigilationSlots = map iIToSlots iCImpossibleInvigilationSlots
+    }
+
+iIToSlots :: ImpossibleInvigilation -> (PersonID, [(Int, Int)])
+iIToSlots (ImpossibleInvigilation p ss) =
+  (p, map (\[d,s] -> (d,s))  ss)
+
+importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
+importConstraintsFromYAMLFile =
+    fmap (fmap importConstraintsToConstraints . Y.decode) . BSI.readFile
