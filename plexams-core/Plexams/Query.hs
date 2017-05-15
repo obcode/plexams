@@ -3,12 +3,13 @@ module Plexams.Query
     , scheduledExams
     , queryByAnCode
     , queryByName
+    , queryByLecturer
     , queryByGroup
     , lecturerExamDays
     , examsWithSameName
     ) where
 
-import           Data.List      (isInfixOf)
+import           Data.List      (isInfixOf, sortBy)
 import qualified Data.Map       as M
 import           GHC.Exts       (groupWith)
 import           Plexams.Import
@@ -28,11 +29,18 @@ queryByAnCode ac = filter ((==ac) . anCode) . allExams
 queryByName :: String -> Plan -> [Exam]
 queryByName str = filter (isInfixOf str . name) . allExams
 
+queryByLecturer :: String -> Plan -> [Exam]
+queryByLecturer str =
+  filter (isInfixOf str . personShortName . lecturer) . allExams
+
 queryByGroup :: String -> Bool -> Plan -> [Exam]
 queryByGroup group unscheduledOnly =
     filter (not . null . elemOrSubGroup (parseGroup group) . groups)
             . (if unscheduledOnly
-                  then M.elems . unscheduledExams
+                  then sortBy (\e1 e2 -> compare (registrations e2)
+                                                 (registrations e1)
+                              )
+                       . M.elems . unscheduledExams
                   else allExams)
   where
     elemOrSubGroup :: Group -> [Group] -> [Group]
