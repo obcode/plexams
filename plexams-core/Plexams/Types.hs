@@ -142,7 +142,10 @@ instance Show Exam where
                 ++ ", " ++ personShortName (lecturer exam)
                 ++ (if reExam exam then ", W " else ", E ")
                 ++ show (groups exam)
-                ++ maybe "" show (slot exam)
+                ++ (if registrations exam > 0
+                    then "=" ++ show (registrations exam)
+                    else "")
+                ++ maybe "" ((", "++) . show) (slot exam)
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 

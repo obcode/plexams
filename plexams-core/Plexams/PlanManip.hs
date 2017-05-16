@@ -142,24 +142,34 @@ addUnscheduledExams :: [Exam] -> Plan -> Plan
 addUnscheduledExams exams plan =
   plan { unscheduledExams = M.fromList $ map (\e -> (anCode e, e)) exams}
 
+--------------------------------------------------------------------------------
+-- Add registrations
+--------------------------------------------------------------------------------
+
 addRegistrationsListToExams :: [Exam] -> [Registrations] -> [Exam]
 addRegistrationsListToExams = foldr addRegistrationsToExams
 
 addRegistrationsToExams :: Registrations -> [Exam] -> [Exam]
-addRegistrationsToExams registrations = map addRegistrationsToExam
-  where
-    addRegistrationsToExam :: Exam -> Exam
-    addRegistrationsToExam exam =
-        maybe exam (addRegToExam exam) regForExam
-      where regForExam = M.lookup (anCode exam) (regs registrations)
-            (_, otherGroups) =
-              partition ((==regGroup) . groupDegree)
-                      $ groups exam
-            addRegToExam exam regSum = exam
-              { groups = Group regGroup Nothing Nothing (Just regSum)
-                         : otherGroups
-              }
-            regGroup = read $ regsGroup registrations
+addRegistrationsToExams registrations =
+  map $ addRegistrationsToExam registrations
+
+addRegistrationsToExam :: Registrations -> Exam -> Exam
+addRegistrationsToExam registrations exam =
+  if examNotForGroup
+  then exam
+  else maybe exam (addRegToExam exam) regForExam
+  where regForExam = M.lookup (anCode exam) (regs registrations)
+        (_, otherGroups) =
+          partition ((==regGroup) . groupDegree)
+                  $ groups exam
+        addRegToExam exam regSum = exam
+          { groups = Group regGroup Nothing Nothing (Just regSum)
+                     : otherGroups
+          }
+        regGroup = read $ regsGroup registrations
+        examNotForGroup = notElem (regsGroup registrations)
+                        $ map (show . groupDegree)
+                        $ groups exam
 
 addConstraints :: Plan -> Constraints -> Plan
 addConstraints p c = p { constraints = Just c }

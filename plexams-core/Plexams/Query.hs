@@ -5,12 +5,14 @@ module Plexams.Query
     , queryByName
     , queryByLecturer
     , queryByGroup
+    , querySlot
     , lecturerExamDays
     , examsWithSameName
     ) where
 
 import           Data.List      (isInfixOf, sortBy)
 import qualified Data.Map       as M
+import           Data.Maybe     (maybe)
 import           GHC.Exts       (groupWith)
 import           Plexams.Import
 import           Plexams.Types
@@ -49,6 +51,11 @@ queryByGroup group unscheduledOnly =
     elemOrSubGroup (Group degree semester Nothing _) groups =
         filter (\(Group d s _ _) -> degree == d && semester == s) groups
     elemOrSubGroup group groups = filter (==group) groups
+
+querySlot :: (Int, Int) -> Plan -> [Exam]
+querySlot s = maybe [] (M.elems . examsInSlot)
+            . M.lookup s
+            . slots
 
 lecturerExamDays :: Plan -> [(Person, [Int])]
 lecturerExamDays =

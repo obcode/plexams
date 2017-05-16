@@ -30,6 +30,7 @@ data Command
             , byName          :: Maybe String
             , byLecturer      :: Maybe String
             , byGroup         :: Maybe String
+            , slot            :: Maybe (Int, Int)
             , onlyUnscheduled :: Bool
             }
     | ExportZPA
@@ -138,6 +139,12 @@ queryOpts = Query
        <> metavar "GROUP"
        <> help "query by group"
         ))
+  <*> optional (option auto
+      ( long "slot"
+     <> short 's'
+     <> metavar "(DAYINDEX,SLOTINDEX)"
+     <> help "query the slot"
+      ))
     <*> switch
         ( long "unscheduled-only"
        <> short 'u'
@@ -251,11 +258,12 @@ query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config
     $ intercalate "\n" $ map show $ query' (optCommand config)
   where
-    query' (Query (Just a) _ _ _ _) = queryByAnCode a plan
-    query' (Query _ (Just n) _ _ _) = queryByName n plan
-    query' (Query _ _ (Just l) _ _) = queryByLecturer l plan
-    query' (Query _ _ _ (Just g) u) = queryByGroup g u plan
-    query' _                        = []
+    query' (Query (Just a) _ _ _ _ _) = queryByAnCode a plan
+    query' (Query _ (Just n) _ _ _ _) = queryByName n plan
+    query' (Query _ _ (Just l) _ _ _) = queryByLecturer l plan
+    query' (Query _ _ _ (Just g) _ u) = queryByGroup g u plan
+    query' (Query _ _ _ _ (Just s) _) = querySlot s plan
+    query' _                          = []
 
 exportZPA :: Config -> Plan -> IO ()
 exportZPA config = stdoutOrFile config . planToZPA
