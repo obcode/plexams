@@ -10,6 +10,7 @@ module Plexams.Types
     , SemesterConfig(..)
     , Group(..)
     , Degree(..)
+    , allDegrees
     , Subgroup(..)
     , Person(..)
     , PersonID
@@ -177,7 +178,10 @@ instance Show Group where
       ++ maybe "" (("("++) . (++")") . show) mReg
 
 data Degree = IB | IC | IF | GO | IG | IN | IS
-  deriving (Show, Eq, Ord, Read)
+  deriving (Show, Eq, Ord, Read, Enum)
+
+allDegrees :: [Degree]
+allDegrees = [IB .. IS]
 
 data Subgroup = A | B | C
   deriving (Show, Eq, Ord)

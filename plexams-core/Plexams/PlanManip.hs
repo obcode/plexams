@@ -171,5 +171,8 @@ addRegistrationsToExam registrations exam =
                         $ map (show . groupDegree)
                         $ groups exam
 
+removeGroupsWithoutRegistrations :: [Exam] -> [Exam]
+removeGroupsWithoutRegistrations = undefined
+
 addConstraints :: Plan -> Constraints -> Plan
 addConstraints p c = p { constraints = Just c }

@@ -22,7 +22,8 @@ planStatistics :: Plan -> String
 planStatistics plan =
   "\n\n# Statistiken für den aktuellen Plan\n\n"
     ++ concatMap ($ plan)
-        [ examGroupsCorrelationToString
+        [ examsWithoutRegistrations
+        , examGroupsCorrelationToString
         , lecturerExamDaysToString
         ]
 
@@ -72,6 +73,15 @@ examGroupsCorrelation plan =
                 in [(g1,g2) | g1 <- grps, g2 <- grps, g1 /= g2]
         in map (\xs@((g1,_):_) -> (g1, nub $ map snd xs))
                $ groupWith fst groupsWithSameExam
+
+examsWithoutRegistrations :: Plan -> String
+examsWithoutRegistrations = (header++)
+                          . intercalate "\n"
+                          . map (("-   "++) . show)
+                          . filter ((==0) . registrations)
+                          . allExams
+  where
+    header = "## Prüfungen ohne Anmeldungen\n\n"
 
 examsForLecturerers :: Plan -> String
 examsForLecturerers =

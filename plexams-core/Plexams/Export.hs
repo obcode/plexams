@@ -11,7 +11,8 @@ module Plexams.Export
 import           Data.Aeson
 import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
-import           Data.List                  (intercalate, partition, transpose)
+import           Data.List                  (intercalate, nub, partition,
+                                             transpose)
 import qualified Data.Map                   as M
 import           Data.Maybe                 (fromMaybe)
 import           Data.Time                  (Day)
@@ -48,6 +49,7 @@ planToHTMLTable :: Plan -> String
 planToHTMLTable plan =
         before
         ++ planToHTMLTable'
+        ++ caption
         ++ insideTag "h2" "Noch zu planen"
         ++ unscheduledExamsToList
         ++ insideTag "h2" "Nicht von mir zu planen"
@@ -55,22 +57,44 @@ planToHTMLTable plan =
         ++ after
   where
     sName = semester $ semesterConfig plan
-    before =    "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
-                 ++ sName
-                 ++ "</title><style>\ntable, th, td {\n"
-                 ++ "border: 1px solid black;\n"
-                 ++ "}\n"
-                 ++ "i { font-size: 50%; }"
-                 ++ "</style></head><body>"
-                 ++ "<h1>Prüfungsplan "
-                 ++ sName
-                 ++ "</h1>\n"
-    after = "</body></html>"
+    before =
+      "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
+     ++ sName
+     ++ "</title>"
+     ++ "<script type=\"text/javascript\" src=\"plexams.js\"></script>"
+     ++ "<link href=\"plexams.css\" rel=\"stylesheet\" type=\"text/css\" />"
+     ++ "</head><body>"
+     ++ "<h1>Prüfungsplan "
+     ++ sName
+     ++ "</h1>\n"
+    after = "<script src=\"https://code.jquery.com/jquery-latest.js\"></script>"
+         ++ "<script>"
+         ++ "$(\".tiptext\").mouseover(function() {\n"
+         ++ "  $(this).children(\".description\").show();\n"
+         ++ "}).mouseout(function() {\n"
+         ++ "    $(this).children(\".description\").hide();\n"
+         ++ "});\n"
+         ++ "</script>"
+         ++"</body></html>"
+    caption = "<span class=\"tiptext\">Basisfarbe</span>\n"
+           ++ "<span class=\"tiptext reExam\">Wiederholung</span>\n"
+           ++ concatMap ((\g -> "<span class=\"tiptext "++g++"\">"++g++"</span>\n")
+                  . show) allDegrees
+
     planToHTMLTable' =
       let header = "" : map show (examDays $ semesterConfig plan)
           columns =  slotsPerDay $ semesterConfig plan
           showExams (idx@(d,s), slot) = insideTag "i" (show idx)
-              ++ show (map anCode $ M.elems $ examsInSlot slot)
+              ++ concatMap showExam (M.elems $ examsInSlot slot)
+          showExam exam = "<div class=\"tiptext"
+                ++ (if reExam exam then " reExam " else " ")
+                ++ unwords (nub $ map (show . groupDegree) (groups exam))
+                ++ "\">"
+                ++ show (anCode exam)
+                ++ "(" ++ show (registrations exam) ++ ")"
+                ++ "<div class=\"description\">"
+                ++ show exam
+                ++ "</div></div>"
           slotsAsMatrix = zipWith (:) columns
                $ map (map showExams)
                $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
