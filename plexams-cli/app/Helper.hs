@@ -7,8 +7,9 @@ import           System.Environment
 import           System.IO
 
 data Command =
-  PrepareRegistrations -- { pRGroup :: String }
+    PrepareRegistrations -- { pRGroup :: String }
   | PrepareOverlaps --  { pOGroup :: String }
+  | PrepareStudents --
 
 data Config = Config
     { optCommand :: Command
@@ -20,10 +21,12 @@ data Config = Config
 configP :: Parser Config
 configP = Config
     <$> hsubparser
-          ( command "regs" (info (pure PrepareRegistrations)
+          ( command "registrations" (info (pure PrepareRegistrations)
                             (progDesc "prepare a registration file"))
          <> command "overlaps" (info (pure PrepareOverlaps)
                             (progDesc "prepare a overlaps file"))
+         <> command "students" (info (pure PrepareStudents)
+                            (progDesc "prepare a students file"))
           )
     <*> strOption
         ( long "group"
@@ -96,6 +99,21 @@ doCommand config@(Config PrepareOverlaps g iPath mOPath) = do
     mkOverlap (ac, noOfStuds) =
                       "        - otherExam: " ++ tail ac ++ "\n"
                    ++ "          noOfStudents: " ++ noOfStuds ++ "\n"
+
+doCommand config@(Config PrepareStudents g iPath mOPath) = do
+    contents <- getContents' iPath
+    let (header : studentLines) = map split $ lines contents
+        studentTupels =
+          filter ((>2) . length)
+          $ map (filter (not . null . snd) . zip header) studentLines
+        students = map mkStudentsYaml studentTupels
+    stdoutOrFile config $ "# group: " ++ g ++ "\n"
+                     ++ intercalate "\n" students
+                     ++ "\n"
+  where
+    mkStudentsYaml (("MTKNR", mtknr):("ANCODE", ac):_:overlaps) =
+                      "- mtknr: " ++ mtknr ++ "\n"
+                   ++ "  ancode: " ++ ac ++ "\n"
 
 getContents' :: FilePath -> IO String
 getContents' iPath = do
