@@ -8,6 +8,7 @@ module Plexams.Import
     , importOverlapsFromYAMLFile
     , parseGroup
     , importConstraintsFromYAMLFile
+    , importStudentsFromYAMLFile
     ) where
 
 import           Control.Applicative         (empty, (<$>), (<*>))
@@ -19,6 +20,7 @@ import           Data.Char                   (digitToInt)
 import           Data.List                   (elemIndex)
 import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe)
+import qualified Data.Set                    as S
 import           Data.Time                   (Day)
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
@@ -343,3 +345,29 @@ iIToSlots (ImpossibleInvigilation p ss) =
 importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
 importConstraintsFromYAMLFile =
     fmap (fmap importConstraintsToConstraints . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- Students from YAML file
+--------------------------------------------------------------------------------
+
+data ImportStudent = ImportStudent
+  { isMtkNr  :: Integer
+  , isAncode :: Integer
+  }
+
+instance Y.FromJSON ImportStudent where
+  parseJSON (Y.Object v) = ImportStudent
+                        <$> v Y..: "mtknr"
+                        <*> v Y..: "ancode"
+  parseJSON _            = empty
+
+importStudentsToStudents :: [ImportStudent] -> Students
+importStudentsToStudents = foldr insertStudent M.empty
+  where
+    insertStudent (ImportStudent mtkNr ancode) =
+      M.alter (Just . maybe (S.singleton mtkNr)
+                            (S.insert mtkNr)) ancode
+
+importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
+importStudentsFromYAMLFile =
+    fmap (fmap importStudentsToStudents . Y.decode) . BSI.readFile

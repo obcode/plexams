@@ -101,11 +101,11 @@ addRoomToExam ancode roomName plan =
 -- Make the initial plan
 --------------------------------------------------------------------------------
 
-makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Plan
+makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Maybe Students -> Plan
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 
 -- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams semesterConfig maybePers =
+makePlan exams semesterConfig maybePers maybeStudents =
   foldr addExamFromListToSlot
         Plan
           { semesterConfig = semesterConfig
@@ -113,6 +113,7 @@ makePlan exams semesterConfig maybePers =
           , unscheduledExams = unscheduledExams''
           , persons = fromMaybe M.empty maybePers
           , constraints = Nothing
+          , students = fromMaybe M.empty maybeStudents
           , initialPlan = exams
           }
         (fk10Exams semesterConfig)

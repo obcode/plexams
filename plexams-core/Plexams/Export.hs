@@ -12,7 +12,7 @@ import           Data.Aeson
 import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
 import           Data.List                  (intercalate, nub, partition,
-                                             transpose)
+                                             sortBy, transpose)
 import qualified Data.Map                   as M
 import           Data.Maybe                 (fromMaybe)
 import           Data.Time                  (Day)
@@ -32,21 +32,32 @@ planToMD plan =
           -- . allExams
     "# Prüfungsplan " ++ semester (semesterConfig plan) ++ "\n\n"
     ++ intercalate "\n\n" (map slotToMD slotList)
+    ++ "\n\n## Noch nicht geplante (sortiert nach Anmeldezahlen)\n\n"
+    ++ intercalate "\n\n"
+                  (map examToMD $ unscheduledExamsSortedByRegistrations plan)
 
   where
     slotList = M.toAscList $ slots plan
     slotToMD (ds, slot) = dayAndSlotToString ds ++ "\n\n"
-      ++ intercalate "\n\n" (map examToMD $ M.elems $ examsInSlot slot)
+      ++ intercalate "\n\n" (map (("    "++) . examToMD) $ M.elems $ examsInSlot slot)
     dayAndSlotToString (d,s) = "- " ++ dayStr ++ ": " ++ slotStr ++ " Uhr"
       where dayStr = show $ (!!d) $ examDays $ semesterConfig plan
             slotStr = (!!s) $ slotsPerDay $ semesterConfig plan
-    examToMD exam = "    - " ++ show exam
+    examToMD exam = "- " ++ show exam
+
+unscheduledExamsSortedByRegistrations :: Plan -> [Exam]
+unscheduledExamsSortedByRegistrations =
+                sortBy (\e1 e2 -> compare (registrations e2)
+                                           (registrations e1))
+                . filter plannedByMe
+                . M.elems
+                . unscheduledExams
 
 insideTag :: String -> String -> String
 insideTag tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
 
-planToHTMLTable :: Plan -> String
-planToHTMLTable plan =
+planToHTMLTable :: Maybe [Ancode] -> Plan -> String
+planToHTMLTable maybeExams plan =
         before
         ++ planToHTMLTable'
         ++ caption
@@ -78,6 +89,8 @@ planToHTMLTable plan =
          ++"</body></html>"
     caption = "<span class=\"tiptext\">Basisfarbe</span>\n"
            ++ "<span class=\"tiptext reExam\">Wiederholung</span>\n"
+           ++ "<span class=\"tiptext activeExam\">Aktive Prüfung</span>\n"
+           ++ "<span class=\"tiptext conflict\">Konflikte</span>\n"
            ++ concatMap ((\g -> "<span class=\"tiptext "++g++"\">"++g++"</span>\n")
                   . show) allDegrees
 
@@ -89,12 +102,25 @@ planToHTMLTable plan =
           showExam exam = "<div class=\"tiptext"
                 ++ (if reExam exam then " reExam " else " ")
                 ++ unwords (nub $ map (show . groupDegree) (groups exam))
+                ++ (if isActiveExam exam then " activeExam " else "")
+                ++ (if isConflict exam then " conflict " else "")
                 ++ "\">"
                 ++ show (anCode exam)
                 ++ "(" ++ show (registrations exam) ++ ")"
                 ++ "<div class=\"description\">"
                 ++ show exam
                 ++ "</div></div>"
+          isActiveExam exam = maybe False (elem $ anCode exam) maybeExams
+          isConflict exam = anCode exam `elem` conflicts
+          conflicts = maybe [] (concatMap mkConflicts) maybeExams
+          mkConflicts ancode = maybe []
+            ( concatMap ( M.keys
+                          . M.findWithDefault M.empty ancode
+                          . olOverlaps
+                        )
+              . overlaps
+            )
+            $ constraints plan
           slotsAsMatrix = zipWith (:) columns
                $ map (map showExams)
                $ groupWith (\((_,t),_) -> t) $ M.toAscList $ slots plan
@@ -102,12 +128,13 @@ planToHTMLTable plan =
           $ insideTag "tr" (concatMap (insideTag "td") header)
             ++ concatMap (insideTag "tr" . concatMap (insideTag "td"))
                          slotsAsMatrix
-    (unscheduledExams', plannedByOtherExams) =
-        partition plannedByMe $ M.elems $ unscheduledExams plan
+    plannedByOtherExams =
+        filter (not . plannedByMe) $ M.elems $ unscheduledExams plan
     unscheduledExamsToList = insideTag "ol"
-            $ concatMap (insideTag "li" . toString) unscheduledExams'
+            $ concatMap (insideTag "li" . show)
+            (unscheduledExamsSortedByRegistrations plan)
     unscheduledExamsPlannedByOthers = insideTag "ul"
-            $ concatMap (insideTag "li" . toString) plannedByOtherExams
+            $ concatMap (insideTag "li" . show) plannedByOtherExams
     toString exam = show (anCode exam) ++ " " ++ name exam
                     ++ " (" ++ personShortName (lecturer exam)  ++ ")"
 

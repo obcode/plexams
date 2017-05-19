@@ -20,7 +20,8 @@ import           System.IO                   (hPutStrLn, stderr)
 
 data Command
     = Markdown
-    | HTML
+    | HTML { showConflictsAncodes :: Maybe [Integer]
+           }
     | Statistics { initialStatistics :: Bool
                  }
     | Dot { groupDependencies :: Bool
@@ -45,6 +46,7 @@ data Config = Config
     , regsFile        :: Maybe FilePath
     , overlapsFile    :: Maybe FilePath
     , constraintsFile :: Maybe FilePath
+    , studentsFile    :: Maybe FilePath
     , outfile         :: Maybe FilePath
     , configfile      :: FilePath
     , novalidation    :: Bool
@@ -55,7 +57,7 @@ config = Config
     <$> hsubparser
           ( command "markdown"    (info (pure Markdown)
                                   (progDesc "the plan as markdown document"))
-         <> command "html"      (info (pure HTML)
+         <> command "html"      (info htmlOpts
                                  (progDesc "the plan as an HTML table"))
          <> command "stats"     (info statisticsOpts
                                   (progDesc "statistics"))
@@ -90,9 +92,15 @@ config = Config
         ))
       <*> optional (strOption
         ( long "constraints"
-       <> short 's'
+       <> short 'c'
        <> metavar "CONSTRAINTSFILE"
        <> help "import file containing constraints"
+        ))
+      <*> optional (strOption
+        ( long "students"
+       <> short 's'
+       <> metavar "STUDENTSFILE"
+       <> help "import file containing registrations for each mtknr"
         ))
       <*> optional (strOption
         ( long "output"
@@ -112,6 +120,15 @@ config = Config
         ( long "no-validation"
        <> help "turn of validation"
         )
+
+htmlOpts :: Parser Command
+htmlOpts = HTML
+    <$> optional (option auto
+        ( long "ancodes"
+       <> short 'a'
+       <> metavar "LISTOFANCODES"
+       <> help "show conflicts for given ancodes"
+        ))
 
 queryOpts :: Parser Command
 queryOpts = Query
@@ -188,10 +205,12 @@ main' config = do
       -- maybe read registrations from file
       maybeRegs <- maybe (return Nothing) importRegistrationsFromYAMLFile
                               $ regsFile config
+      maybeStuds <- maybe (return Nothing) importStudentsFromYAMLFile
+                              $ studentsFile config
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
-      unless (null examsWithRegs) $ hPutStrLn stderr ">>> Adding registrations"
+      unless (isJust maybeRegs) $ hPutStrLn stderr ">>> Adding registrations"
       maybeOverlaps <- maybe (return Nothing) importOverlapsFromYAMLFile
                               $ overlapsFile config
       when (isJust maybeOverlaps) $ hPutStrLn stderr ">>> Adding overlaps"
@@ -201,7 +220,7 @@ main' config = do
       -- generate initial plan
       let constraints' = fromMaybe noConstraints maybeConstraints
           constraints = constraints' { overlaps = fromMaybe [] maybeOverlaps }
-          plan'' = makePlan examsWithRegs semesterConfig Nothing
+          plan'' = makePlan examsWithRegs semesterConfig Nothing maybeStuds
           plan' = addConstraints plan'' constraints
       -- maybe manipulate the plan
       plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
@@ -212,14 +231,14 @@ main' config = do
       when (optCommand config /= Validate) $
         hPutStrLn stderr $ if novalidation config
           then ">>> Validation off"
-          else if fst $ P.validate plan
-               then ">>> Validation ok!"
-               else ">>> Validation NOT ok!\n"
-                 ++ "    See `plexams validate` for more information."
+          else case fst $ P.validate plan of
+            EverythingOk          -> ">>> Validation ok!"
+            SoftConstraintsBroken -> ">>> Validation: Soft Constraints broken\n"
+            HardConstraintsBroken -> ">>> Validation: Hard Constraints broken\n"
 
 commandFun :: Command -> (Config -> Plan -> IO ())
 commandFun Markdown      = markdown
-commandFun HTML          = html
+commandFun HTML {}       = html
 commandFun Statistics {} = stats
 commandFun Validate      = validate
 commandFun Query {}      = query
@@ -235,7 +254,8 @@ markdown :: Config -> Plan -> IO ()
 markdown config = stdoutOrFile config . planToMD
 
 html :: Config -> Plan -> IO ()
-html config = stdoutOrFile config . planToHTMLTable
+html config = stdoutOrFile config
+            . planToHTMLTable (showConflictsAncodes $ optCommand config)
 
 stats :: Config -> Plan -> IO ()
 stats config plan =
@@ -250,9 +270,11 @@ validate config = stdoutOrFile config . validate'
   where
     validate' plan =
       let (ok, msgs) = P.validate plan
-      in intercalate "\n\n" msgs
-        ++ if ok then "\n\n# Validation successful."
-                 else "\n\n# Validation failed."
+      in (case fst $ P.validate plan of
+          EverythingOk          -> "\n# Validation ok!\n\n"
+          SoftConstraintsBroken -> "\n# >>> Soft Constraints broken <<<\n\n"
+          HardConstraintsBroken -> "\n# >>> Hard Constraints broken <<<\n\n"
+        ) ++ intercalate "\n\n" msgs
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config

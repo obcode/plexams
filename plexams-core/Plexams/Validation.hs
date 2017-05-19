@@ -13,33 +13,32 @@ import           Plexams.Types
 import qualified Plexams.Validation.ScheduledExams
 import qualified Plexams.Validation.Sources
 
-validate :: Plan -> (Bool, [String])
+validate :: Plan -> (ValidationResult, [String])
 validate = runWriter . validate'
 
-validate' :: Plan -> Writer [String] Bool
+validate' :: Plan -> Writer [String] ValidationResult
 validate' plan = do
   tell ["# Validation"]
   sourcesOk <- Plexams.Validation.Sources.validate plan
   lecturersMax3ExamDays <- validateLecturersMax3ExamDays plan
   scheduledExams <- Plexams.Validation.ScheduledExams.validate plan
-  -- TODO: overlaps in adjacent slots
-  -- TODO: overlaps on sameday
   tell ["# no more validations implemented yet"]
-  return $ lecturersMax3ExamDays
-        && scheduledExams
-        && False
+  return $ validationResult
+            [ sourcesOk
+            , lecturersMax3ExamDays
+            , scheduledExams
+            ]
 
-
-validateLecturersMax3ExamDays :: Plan -> Writer [String] Bool
+validateLecturersMax3ExamDays :: Plan -> Writer [String] ValidationResult
 validateLecturersMax3ExamDays plan = do
   let lecturerWithMoreThan3ExamDays =
           filter ((>3) . length . snd) $ lecturerExamDays plan
       ok = null lecturerWithMoreThan3ExamDays
-  tell ["# Checking amount of exam days for each lecturer"]
+  tell ["# Checking amount of exam days for each lecturer (soft)"]
   unless ok $
     mapM_ (\(l,d) ->
               tell ["- More than 3 days of exams: "
                     ++ personShortName l
                     ++ ": " ++ show d])
           lecturerWithMoreThan3ExamDays
-  return ok
+  return $ if ok then EverythingOk else SoftConstraintsBroken

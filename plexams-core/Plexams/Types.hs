@@ -3,6 +3,8 @@ module Plexams.Types
     ( Plan(..)
     , Slots
     , Slot(..)
+    , maxDayIndex
+    , maxSlotIndex
     , setSlotsOnExams
     , Exam(..)
     , registrations
@@ -25,10 +27,15 @@ module Plexams.Types
     , setFK10Exam
     , isScheduled
     , isUnscheduled
+    , Students
+    , MtkNr
+    , ValidationResult(..)
+    , validationResult
     ) where
 
 import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
+import qualified Data.Set           as S
 import           Data.Time.Calendar
 import           GHC.Generics
 
@@ -59,6 +66,7 @@ data Plan = Plan
                                               -- Ancode -> Exam
     , persons          :: Persons
     , constraints      :: Maybe Constraints
+    , students         :: Students
     , initialPlan      :: [Exam]
     }
   deriving (Show, Eq)
@@ -83,6 +91,12 @@ isUnknownExamAncode ancode plan =
 
 type DayIndex = Int
 type SlotIndex = Int
+
+maxDayIndex :: Plan -> DayIndex
+maxDayIndex = (\x->x-1) . length . examDays . semesterConfig
+
+maxSlotIndex :: Plan -> SlotIndex
+maxSlotIndex = (\x->x-1) . length . slotsPerDay . semesterConfig
 
 type Slots = M.Map (DayIndex, SlotIndex) Slot
 
@@ -234,3 +248,14 @@ data Overlaps = Overlaps
                          )
   }
   deriving (Show, Eq)
+
+type MtkNr = Integer
+type Students = M.Map Ancode (S.Set MtkNr)
+
+data ValidationResult = EverythingOk
+                      | SoftConstraintsBroken
+                      | HardConstraintsBroken
+  deriving (Eq, Ord)
+
+validationResult :: [ValidationResult] -> ValidationResult
+validationResult = maximum
