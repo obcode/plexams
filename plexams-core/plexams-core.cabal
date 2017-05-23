@@ -15,13 +15,17 @@ cabal-version:         >=1.10
 library
   exposed-modules:     Plexams
                      , Plexams.Types
-                     , Plexams.Export
+                     , Plexams.Export.HTML
+                     , Plexams.Export.Markdown
+                     , Plexams.Export.Misc
+                     , Plexams.Export.ZPA
                      , Plexams.Import
                      , Plexams.PlanManip
                      , Plexams.Query
                      , Plexams.Statistics
                      , Plexams.Validation
-  other-modules:       Plexams.Validation.ScheduledExams
+  other-modules:       Plexams.Export.Common
+                     , Plexams.Validation.ScheduledExams
                      , Plexams.Validation.Sources
   build-depends:       base >= 4.7 && < 5
                      , aeson

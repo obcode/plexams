@@ -6,7 +6,10 @@ import           Data.Maybe                  (fromMaybe, isJust)
 import           Data.Semigroup              ((<>))
 import           Options.Applicative
 import           Plexams
-import           Plexams.Export
+import           Plexams.Export.HTML
+import           Plexams.Export.Markdown
+import           Plexams.Export.Misc
+import           Plexams.Export.ZPA
 import           Plexams.Generators.Schedule
 import           Plexams.GUI
 import           Plexams.Import
