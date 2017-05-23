@@ -32,7 +32,7 @@ validate' plan = do
 validateLecturersMax3ExamDays :: Plan -> Writer [String] ValidationResult
 validateLecturersMax3ExamDays plan = do
   let lecturerWithMoreThan3ExamDays =
-          filter ((>3) . length . snd) $ lecturerExamDays plan
+          filter ((>3) . length . nub . snd) $ lecturerExamDays plan
       ok = null lecturerWithMoreThan3ExamDays
   tell ["# Checking amount of exam days for each lecturer (soft)"]
   unless ok $

@@ -9,6 +9,7 @@ module Plexams.PlanManip
 import           Data.List     (partition)
 import qualified Data.Map      as M
 import           Data.Maybe    (fromJust, fromMaybe)
+import qualified Data.Set      as S
 import           Plexams.Query (allExams)
 import           Plexams.Types
 
@@ -114,6 +115,7 @@ makePlan exams semesterConfig maybePers maybeStudents =
           , persons = fromMaybe M.empty maybePers
           , constraints = Nothing
           , students = fromMaybe M.empty maybeStudents
+          , studentsExams = mkStudentsExams maybeStudents
           , initialPlan = exams
           }
         (fk10Exams semesterConfig)
@@ -137,6 +139,14 @@ makePlan exams semesterConfig maybePers maybeStudents =
         addExamFromListToSlot [a,d,t] plan =
                 addExamToSlot' a (fromInteger d) (fromInteger t) plan
         addExamFromListToSlot _       plan = plan
+        mkStudentsExams Nothing = M.empty
+        mkStudentsExams (Just students) =
+            foldr insertAncodes M.empty $ M.toList students
+          where insertAncodes (ancode, students) studentsExams' =
+                 foldr (insertStudent ancode) studentsExams' $ S.toList students
+                insertStudent ancode =
+                  M.alter (Just . maybe (S.singleton ancode)
+                                        (S.insert ancode))
 
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan

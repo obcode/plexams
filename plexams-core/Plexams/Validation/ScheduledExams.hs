@@ -283,7 +283,8 @@ validateLecturerMaxOneExamPerSlot plan = do
 validateStudentsMaxTwoExamsPerDay :: Plan -> Writer [String] ValidationResult
 validateStudentsMaxTwoExamsPerDay plan = do
   -- TODO: hard/soft okay?
-  tell ["### Validate numbers of exams per student per day (2 are soft, 3 are hard)"]
+  tell ["### Validate numbers of exams per student per day"
+        ++" (2 are soft, 3 are hard, but not if noOfExams > 13)"]
   let examsPerDays :: [[Ancode]]
       examsPerDays = map (\d ->
                           concatMap (M.keys . examsInSlot)
@@ -299,14 +300,24 @@ validateStudentsMaxTwoExamsPerDay plan = do
                      . mapMaybe (\a -> M.lookup a (students plan))
       mkTuples :: [[MtkNr]] -> (MtkNr, [Int])
       mkTuples mtknr = (head $ head mtknr, map length mtknr)
-      oneHasThree = any (>2) $ concatMap snd studentsWithMoreThanOneExamPerDay
-  tell [show $ students plan]
-  forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr, noOfExams) ->
-    tell ["-   Student " ++ show mtknr ++ " has more then one exam per day: "
-          ++ show noOfExams]
+      oneHasThree = filter (\(mtknr, examsPerDay) -> any (>2) examsPerDay)
+                            studentsWithMoreThanOneExamPerDay
+  forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr, noOfExams) -> do
+    let exams = maybe [] S.toList $ M.lookup mtknr $ studentsExams plan
+    let three = any (>2) noOfExams
+    tell [(if three then "-   Student has three or more exams a day:"
+                    else "-   Student has two exams per day: ")
+          ++ show noOfExams ++ " of " ++ show (length exams) ++ ", MtkNr "
+          ++ show mtknr
+          ++ "  \n" ++ show exams]
 
   return $ if null studentsWithMoreThanOneExamPerDay
            then EverythingOk
-           else if oneHasThree
-                then HardConstraintsBroken
-                else SoftConstraintsBroken
+           else if null oneHasThree
+                then SoftConstraintsBroken
+                else let nosOfExams = map length
+                           $ mapMaybe ((`M.lookup` studentsExams plan) . fst)
+                                      oneHasThree
+                     in if all (>13) nosOfExams
+                        then SoftConstraintsBroken
+                        else HardConstraintsBroken

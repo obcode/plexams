@@ -166,6 +166,7 @@ instance ToJSON ZPAExam where
            , "rooms"  .= V.fromList (map toJSON rooms)
            ]
 
+-- TODO: Zeit der FK10-Examen für den Export setzen!
 examToZPAExam :: SemesterConfig -> Maybe Integer -> Exam -> ZPAExam
 examToZPAExam semesterConfig reserveInvigilator exam = ZPAExam
     { zpaExamAnCode = anCode exam

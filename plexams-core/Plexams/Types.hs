@@ -67,6 +67,7 @@ data Plan = Plan
     , persons          :: Persons
     , constraints      :: Maybe Constraints
     , students         :: Students
+    , studentsExams    :: StudentsExams
     , initialPlan      :: [Exam]
     }
   deriving (Show, Eq)
@@ -251,6 +252,8 @@ data Overlaps = Overlaps
 
 type MtkNr = Integer
 type Students = M.Map Ancode (S.Set MtkNr)
+
+type StudentsExams = M.Map MtkNr (S.Set Ancode)
 
 data ValidationResult = EverythingOk
                       | SoftConstraintsBroken
