@@ -42,7 +42,7 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "initialPlan"
                         <*> v Y..: "planManip"
                         <*> v Y..: "rooms"
-                        <*> v Y..: "fk10Exams"
+                        <*> v Y..: "notPlannedByMe"
     parseJSON _          = empty
 
 instance Y.FromJSON AvailableRoom where
@@ -303,6 +303,7 @@ data ImportConstraints = ImportConstraints
   , iCFixedSlot                   :: [[Int]]
   , iCInvigilatesExam             :: [[Integer]]
   , iCImpossibleInvigilationSlots :: [ImpossibleInvigilation]
+  , iCRoomOnlyForSlots            :: Maybe [RoomOnlyForSlots]
   }
 
 instance Y.FromJSON ImportConstraints where
@@ -312,6 +313,7 @@ instance Y.FromJSON ImportConstraints where
                         <*> v Y..: "fixedSlot"
                         <*> v Y..: "invigilatesExam"
                         <*> v Y..: "impossibleInvigilationSlots"
+                        <*> v Y..:? "roomOnlyForSlots"
   parseJSON _            = empty
 
 data ImpossibleInvigilation = ImpossibleInvigilation
@@ -325,18 +327,39 @@ instance Y.FromJSON ImpossibleInvigilation where
                         <*> v Y..: "slots"
   parseJSON _            = empty
 
+data RoomOnlyForSlots = RoomOnlyForSlots
+  { roomNumber    :: RoomID
+  , roomOnlySlots :: [[Int]]
+  }
+
+roomOnlyForSlotsToTuple :: RoomOnlyForSlots -> (RoomID, [(DayIndex, SlotIndex)])
+roomOnlyForSlotsToTuple (RoomOnlyForSlots roomID slots) =
+  (roomID, map (\[dayIdx, slotIdx] -> (dayIdx, slotIdx)) slots)
+
+instance Y.FromJSON RoomOnlyForSlots where
+  parseJSON (Y.Object v) = RoomOnlyForSlots
+                        <$> v Y..: "roomNumber"
+                        <*> v Y..: "slots"
+  parseJSON _            = empty
+
 importConstraintsToConstraints :: ImportConstraints -> Constraints
 importConstraintsToConstraints
-  (ImportConstraints iCNotOnSameDay iCOnOneOfTheseDays iCFixedSlot
-                     iCInvigilatesExam iCImpossibleInvigilationSlots
+  (ImportConstraints iCNotOnSameDay
+                     iCOnOneOfTheseDays
+                     iCFixedSlot
+                     iCInvigilatesExam
+                     iCImpossibleInvigilationSlots
+                     iCRoomOnlyForSlots
   ) =
   Constraints
     { overlaps = []
-    , notOnSameDay =  iCNotOnSameDay
+    , notOnSameDay = iCNotOnSameDay
     , onOneOfTheseDays = map (\(x:xs) -> (toInteger x, xs)) iCOnOneOfTheseDays
     , fixedSlot =  map (\[a,d,s] -> (toInteger a, (d,s))) iCFixedSlot
     , invigilatesExam = map (\[a,p] -> (a,p)) iCInvigilatesExam
     , impossibleInvigilationSlots = map iIToSlots iCImpossibleInvigilationSlots
+    , roomSlots = maybe M.empty (M.fromList . map roomOnlyForSlotsToTuple)
+                        iCRoomOnlyForSlots
     }
 
 iIToSlots :: ImpossibleInvigilation -> (PersonID, [(Int, Int)])

@@ -3,7 +3,9 @@ module Plexams.Types
     ( Plan(..)
     , Slots
     , Slot(..)
+    , DayIndex
     , maxDayIndex
+    , SlotIndex
     , maxSlotIndex
     , examDateAsString
     , examSlotAsString
@@ -22,6 +24,7 @@ module Plexams.Types
     , Persons
     , AvailableRoom(..)
     , Room(..)
+    , RoomID
     , PlanManip(..)
     , Registrations(..)
     , Constraints(..)
@@ -184,8 +187,10 @@ instance Show Exam where
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
+type RoomID = String
+
 data Room = Room
-    { roomID               :: String        -- ^ Raum-Nr, z.B. @"R3.014"@
+    { roomID               :: RoomID        -- ^ Raum-Nr, z.B. @"R3.014"@
     , maxSeats             :: Integer       -- ^ maximale Anzahl an Prüfungsplätzen
     , deltaDuration        :: Duration      -- ^ falls der Raum für NTA genutzt wird, Anzahl der Minuten
                                             --   die die Prüfung länger
@@ -254,11 +259,12 @@ data Constraints = Constraints
   , fixedSlot                   :: [(Ancode, (Int,Int))]
   , invigilatesExam             :: [(Ancode, PersonID)]
   , impossibleInvigilationSlots :: [(PersonID, [(Int, Int)])]
+  , roomSlots                   :: M.Map RoomID [(DayIndex, SlotIndex)]
   }
   deriving (Show, Eq)
 
 noConstraints :: Constraints
-noConstraints = Constraints [] [] [] [] [] []
+noConstraints = Constraints [] [] [] [] [] [] M.empty
 
 data Overlaps = Overlaps
   { olGroup :: Group
@@ -280,7 +286,7 @@ data ValidationResult = EverythingOk
   deriving (Eq, Ord)
 
 instance Show ValidationResult where
-  show EverythingOk = "Validation ok!"
+  show EverythingOk          = "Validation ok!"
   show SoftConstraintsBroken = ">>> Soft Constraints broken <<<"
   show HardConstraintsBroken = ">>> Hard Constraints broken <<<"
 
