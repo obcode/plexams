@@ -95,6 +95,7 @@ planToZPAExams plan = map (uncurry (examToZPAExam (semesterConfig plan)))
 scheduledExamsWithReserveInvigilator :: Plan -> [(Maybe Integer, Exam)]
 scheduledExamsWithReserveInvigilator =
     sortWith (anCode . snd)
+    . filter (plannedByMe . snd)
     . concatMap (reserveAndExams . snd)
     . M.toList
     . slots

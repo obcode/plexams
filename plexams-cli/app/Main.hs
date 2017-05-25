@@ -213,7 +213,7 @@ main' config = do
       let exams = fromMaybe [] maybeExams
           examsWithRegs = maybe exams
                                 (addRegistrationsListToExams exams) maybeRegs
-      unless (isJust maybeRegs) $ hPutStrLn stderr ">>> Adding registrations"
+      when (isJust maybeRegs) $ hPutStrLn stderr ">>> Adding registrations"
       maybeOverlaps <- maybe (return Nothing) importOverlapsFromYAMLFile
                               $ overlapsFile config
       when (isJust maybeOverlaps) $ hPutStrLn stderr ">>> Adding overlaps"
