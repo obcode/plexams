@@ -17,7 +17,7 @@ import           Plexams.PlanManip
 import           Plexams.Query
 import           Plexams.Statistics
 import           Plexams.Types
-import qualified Plexams.Validation          as P (validate)
+import qualified Plexams.Validation          as P (validate, validateZPAExport)
 import           System.Directory            (doesFileExist)
 import           System.IO                   (hPutStrLn, stderr)
 
@@ -273,11 +273,7 @@ validate config = stdoutOrFile config . validate'
   where
     validate' plan =
       let (ok, msgs) = P.validate plan
-      in (case fst $ P.validate plan of
-          EverythingOk          -> "\n# Validation ok!\n\n"
-          SoftConstraintsBroken -> "\n# >>> Soft Constraints broken <<<\n\n"
-          HardConstraintsBroken -> "\n# >>> Hard Constraints broken <<<\n\n"
-        ) ++ intercalate "\n\n" msgs
+      in "\n# " ++ show ok ++ "\n\n" ++ intercalate "\n\n" msgs
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config
@@ -291,7 +287,14 @@ query config plan = stdoutOrFile config
     query' _                          = []
 
 exportZPA :: Config -> Plan -> IO ()
-exportZPA config = stdoutOrFile config . planToZPA
+exportZPA config plan = do
+  stdoutOrFile config $ planToZPA plan
+  case outfile config of
+    Nothing -> return ()
+    Just fp -> do
+      (valRes, msgs) <- P.validateZPAExport fp plan
+      putStrLn $ intercalate "\n\n" msgs
+      print valRes
 
 printConfig :: Config -> Plan -> IO ()
 printConfig config = stdoutOrFile config . semesterConfigAsString

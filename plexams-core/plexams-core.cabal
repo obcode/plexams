@@ -27,6 +27,7 @@ library
   other-modules:       Plexams.Export.Common
                      , Plexams.Validation.ScheduledExams
                      , Plexams.Validation.Sources
+                     , Plexams.Validation.Exports
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , aeson-pretty

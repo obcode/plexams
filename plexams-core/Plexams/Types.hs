@@ -5,6 +5,9 @@ module Plexams.Types
     , Slot(..)
     , maxDayIndex
     , maxSlotIndex
+    , examDateAsString
+    , examSlotAsString
+    , dateString
     , setSlotsOnExams
     , Exam(..)
     , registrations
@@ -31,6 +34,8 @@ module Plexams.Types
     , MtkNr
     , ValidationResult(..)
     , validationResult
+    , ZPAExam(..)
+    , ZPARoom(..)
     ) where
 
 import qualified Data.Map           as M
@@ -98,6 +103,20 @@ maxDayIndex = (\x->x-1) . length . examDays . semesterConfig
 
 maxSlotIndex :: Plan -> SlotIndex
 maxSlotIndex = (\x->x-1) . length . slotsPerDay . semesterConfig
+
+examDateAsString :: Exam -> Plan -> String
+examDateAsString exam plan =
+  maybe "" (dateString . (examDays (semesterConfig plan)!!) . fst) $ slot exam
+
+examSlotAsString :: Exam -> Plan -> String
+examSlotAsString exam plan =
+  maybe "" ((slotsPerDay (semesterConfig plan)!!) . snd) $ slot exam
+
+dateString :: Day -> String
+dateString day = let (y, m, d) = toGregorian day
+                     showWith0 n = let s = show n
+                                   in if n < 10 then "0"++s else s
+                 in showWith0 d ++ "." ++ showWith0 m ++ "." ++ show y
 
 type Slots = M.Map (DayIndex, SlotIndex) Slot
 
@@ -260,5 +279,30 @@ data ValidationResult = EverythingOk
                       | HardConstraintsBroken
   deriving (Eq, Ord)
 
+instance Show ValidationResult where
+  show EverythingOk = "Validation ok!"
+  show SoftConstraintsBroken = ">>> Soft Constraints broken <<<"
+  show HardConstraintsBroken = ">>> Hard Constraints broken <<<"
+
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum
+
+-- ZPAExport
+
+data ZPAExam = ZPAExam
+    { zpaExamAnCode               :: Integer
+    , zpaExamDate                 :: String
+    , zpaExamTime                 :: String
+    , zpaExamReserveInvigilatorId :: Integer
+    , zpaExamRooms                :: [ZPARoom]
+    }
+  deriving (Generic)
+
+data ZPARoom = ZPARoom
+    { zpaRoomNumber               :: String
+    , zpaRoomInvigilatorId        :: Integer
+    , zpaRoomReserveRoom          :: Bool
+    , zpaRoomHandicapCompensation :: Bool
+    , zpaRoomDuration             :: Integer
+    }
+  deriving (Generic)

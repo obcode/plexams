@@ -25,7 +25,7 @@ planToMD plan =
              $ groupWith (\((d,_),_) -> d)
              $ M.toAscList $ slots plan
     dayToMD ((d,_), slots) =
-      "## " ++ show ((!!d) $ examDays $ semesterConfig plan) ++ "\n\n"
+      "## " ++ dateString ((!!d) $ examDays $ semesterConfig plan) ++ "\n\n"
       ++ intercalate "\n\n" (map slotToMD slots)
     slotToMD (ds, slot) = "- " ++ slotToStr ds ++ "\n\n"
       ++ intercalate "\n\n" (map (("    "++) . examToMD) $ M.elems $ examsInSlot slot)

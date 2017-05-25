@@ -9,6 +9,7 @@ module Plexams.Import
     , parseGroup
     , importConstraintsFromYAMLFile
     , importStudentsFromYAMLFile
+    , importZPAExamsFromJSONFile
     ) where
 
 import           Control.Applicative         (empty, (<$>), (<*>))
@@ -371,3 +372,29 @@ importStudentsToStudents = foldr insertStudent M.empty
 importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
 importStudentsFromYAMLFile =
     fmap (fmap importStudentsToStudents . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- ZPAExams from JSON file
+--------------------------------------------------------------------------------
+
+instance FromJSON ZPAExam where
+    parseJSON (Object v ) = ZPAExam
+                         <$> v .: "anCode"
+                         <*> v .: "date"
+                         <*> v .: "time"
+                         <*> v .: "reserveInvigilator_id"
+                         <*> v .: "rooms"
+    parseJSON _          = empty
+
+instance FromJSON ZPARoom where
+    parseJSON (Object v ) = ZPARoom
+                         <$> v .: "number"
+                         <*> v .: "invigilator_id"
+                         <*> v .: "reserveRoom"
+                         <*> v .: "handicapCompensation"
+                         <*> v .: "duration"
+    parseJSON _          = empty
+
+
+importZPAExamsFromJSONFile :: FilePath -> IO (Maybe [ZPAExam])
+importZPAExamsFromJSONFile = fmap decode . BS.readFile

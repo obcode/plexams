@@ -1,5 +1,6 @@
 module Plexams.Validation
     ( validate
+    , module Plexams.Validation.Exports
     ) where
 
 import           Control.Arrow                     ((&&&))
@@ -10,8 +11,11 @@ import           Data.Maybe                        (isJust, mapMaybe)
 import           GHC.Exts                          (groupWith)
 import           Plexams.Query
 import           Plexams.Types
+import           Plexams.Validation.Exports
 import qualified Plexams.Validation.ScheduledExams
 import qualified Plexams.Validation.Sources
+
+-- validateZPAExport = Plexams.Validation.Exports.validateZPAExport
 
 validate :: Plan -> (ValidationResult, [String])
 validate = runWriter . validate'

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Export.ZPA
   ( planToZPA
@@ -16,25 +15,9 @@ import           GHC.Exts                   (sortWith)
 import           GHC.Generics
 import           Plexams.Types
 
--- TODO: Anreichern mit Infos über die FK10-Prüfungen
-
 --------------------------------------------------------------------------------
 -- Export for ZPA
 --------------------------------------------------------------------------------
-dateString :: Day -> String
-dateString day = let (y, m, d) = toGregorian day
-                     showWith0 n = let s = show n
-                                   in if n < 10 then "0"++s else s
-                 in showWith0 d ++ "." ++ showWith0 m ++ "." ++ show y
-
-data ZPAExam = ZPAExam
-    { zpaExamAnCode               :: Integer
-    , zpaExamDate                 :: String
-    , zpaExamTime                 :: String
-    , zpaExamReserveInvigilatorId :: Integer
-    , zpaExamRooms                :: [ZPARoom]
-    }
-  deriving (Generic)
 
 instance ToJSON ZPAExam where
   toJSON (ZPAExam anCode date time reserveInvigilator rooms) =
@@ -45,30 +28,20 @@ instance ToJSON ZPAExam where
            , "rooms"  .= V.fromList (map toJSON rooms)
            ]
 
--- TODO: Zeit der FK10-Examen für den Export setzen!
-examToZPAExam :: SemesterConfig -> Maybe Integer -> Exam -> ZPAExam
-examToZPAExam semesterConfig reserveInvigilator exam = ZPAExam
+examToZPAExam :: Plan -> Maybe Integer -> Exam -> ZPAExam
+examToZPAExam plan reserveInvigilator exam = ZPAExam
     { zpaExamAnCode = anCode exam
-    , zpaExamDate = date
-    , zpaExamTime = time
+    , zpaExamDate = examDateAsString exam plan
+    , zpaExamTime = examSlotAsString exam plan
     , zpaExamReserveInvigilatorId = fromMaybe 0 reserveInvigilator
     , zpaExamRooms = map (roomToZPARoom $ duration exam) $ rooms exam
     }
-  where
-    slotOfExam = slot exam
-    days = examDays semesterConfig
-    date = maybe "" (dateString . (days!!) . fst) slotOfExam
-    times = slotsPerDay semesterConfig
-    time = maybe "" ((times!!) . snd) slotOfExam
-
-data ZPARoom = ZPARoom
-    { zpaRoomNumber               :: String
-    , zpaRoomInvigilatorId        :: Integer
-    , zpaRoomReserveRoom          :: Bool
-    , zpaRoomHandicapCompensation :: Bool
-    , zpaRoomDuration             :: Integer
-    }
-  deriving (Generic)
+  -- where
+    -- slotOfExam = slot exam
+    -- days = examDays semesterConfig
+    -- date = maybe "" (dateString . (days!!) . fst) slotOfExam
+    -- times = slotsPerDay semesterConfig
+    -- time = maybe "" ((times!!) . snd) slotOfExam
 
 instance ToJSON ZPARoom where
     toJSON (ZPARoom number invigilator reserve handicap duration) =
@@ -89,7 +62,7 @@ roomToZPARoom duration room = ZPARoom
     }
 
 planToZPAExams :: Plan -> [ZPAExam]
-planToZPAExams plan = map (uncurry (examToZPAExam (semesterConfig plan)))
+planToZPAExams plan = map (uncurry (examToZPAExam plan))
                $ scheduledExamsWithReserveInvigilator plan
 
 scheduledExamsWithReserveInvigilator :: Plan -> [(Maybe Integer, Exam)]
