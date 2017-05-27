@@ -199,6 +199,7 @@ data Room = Room
     , reserveRoom          :: Bool          -- ^ @True@, Raum ist eingeplant, wird aber nicht im ZPA
                                             --   veröffentlicht
     , handicapCompensation :: Bool          -- ^ @True@ Raum für NTA
+    , seatsPlanned         :: Integer       -- ^ Anzahl der geplanten Studierenden
     }
   deriving (Show, Eq)
 
@@ -310,5 +311,6 @@ data ZPARoom = ZPARoom
     , zpaRoomReserveRoom          :: Bool
     , zpaRoomHandicapCompensation :: Bool
     , zpaRoomDuration             :: Integer
+    , zpaRoomNumberStudents       :: Integer
     }
   deriving (Generic)

@@ -36,21 +36,16 @@ examToZPAExam plan reserveInvigilator exam = ZPAExam
     , zpaExamReserveInvigilatorId = fromMaybe 0 reserveInvigilator
     , zpaExamRooms = map (roomToZPARoom $ duration exam) $ rooms exam
     }
-  -- where
-    -- slotOfExam = slot exam
-    -- days = examDays semesterConfig
-    -- date = maybe "" (dateString . (days!!) . fst) slotOfExam
-    -- times = slotsPerDay semesterConfig
-    -- time = maybe "" ((times!!) . snd) slotOfExam
 
 instance ToJSON ZPARoom where
-    toJSON (ZPARoom number invigilator reserve handicap duration) =
-      object [ "number"               .= number
-             , "invigilator_id"       .= invigilator
-             , "reserveRoom"          .= reserve
-             , "handicapCompensation" .= handicap
-             , "duration"             .= duration
-             ]
+  toJSON (ZPARoom number invigilator reserve handicap duration numberStudents) =
+    object [ "number"               .= number
+           , "invigilator_id"       .= invigilator
+           , "reserveRoom"          .= reserve
+           , "handicapCompensation" .= handicap
+           , "duration"             .= duration
+           , "numberStudents"       .= numberStudents
+           ]
 
 roomToZPARoom :: Integer -> Room -> ZPARoom
 roomToZPARoom duration room = ZPARoom
@@ -59,6 +54,7 @@ roomToZPARoom duration room = ZPARoom
     , zpaRoomReserveRoom = reserveRoom room
     , zpaRoomHandicapCompensation = handicapCompensation room
     , zpaRoomDuration = duration + deltaDuration room
+    , zpaRoomNumberStudents = seatsPlanned room
     }
 
 planToZPAExams :: Plan -> [ZPAExam]

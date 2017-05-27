@@ -416,8 +416,8 @@ instance FromJSON ZPARoom where
                          <*> v .: "reserveRoom"
                          <*> v .: "handicapCompensation"
                          <*> v .: "duration"
+                         <*> v .: "numberStudents"
     parseJSON _          = empty
-
 
 importZPAExamsFromJSONFile :: FilePath -> IO (Maybe [ZPAExam])
 importZPAExamsFromJSONFile = fmap decode . BS.readFile
