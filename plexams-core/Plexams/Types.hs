@@ -23,6 +23,8 @@ module Plexams.Types
     , PersonID
     , Persons
     , AvailableRoom(..)
+    , AvailableRooms
+    , mkAvailableRooms
     , Room(..)
     , RoomID
     , PlanManip(..)
@@ -41,8 +43,10 @@ module Plexams.Types
     , ZPARoom(..)
     ) where
 
+import           Data.List          (partition, sortBy, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
+import           Data.Ord           (Down (Down), comparing)
 import qualified Data.Set           as S
 import           Data.Time.Calendar
 import           GHC.Generics
@@ -67,6 +71,42 @@ data AvailableRoom = AvailableRoom
     , availableRoomHandicap :: Bool
     }
   deriving (Eq, Show, Generic)
+
+type AvailableRooms = M.Map (DayIndex, SlotIndex)
+                            -- ( Normale Räume (absteigend sortiert nach Größe)
+                            -- , Handicap Räume)
+                            ([AvailableRoom], [AvailableRoom])
+
+mkAvailableRooms :: Plan -> [AvailableRoom] -> AvailableRooms
+mkAvailableRooms _ [] = M.empty
+mkAvailableRooms plan rooms =
+  let slots' = M.keys $ slots plan
+      (handicapCompensationRooms, normalRooms') =
+                                          partition availableRoomHandicap rooms
+      normalRooms =
+        sortBy (comparing (Down . availableRoomMaxSeats)) normalRooms'
+      (handicapCompensationRoomOdd, handicapCompensationRoomEven) =
+                              splitAt (length handicapCompensationRooms `div` 2)
+                                      handicapCompensationRooms
+      roomSlots' = maybe M.empty roomSlots $ constraints plan
+      -- normalRoomsAlways =
+      --  filter (not . (`elem` M.keys roomSlots') . availableRoomName) normalRooms
+      allAvailableRooms = M.fromList $ zip slots' $ concat
+                        $ repeat [ (normalRooms, handicapCompensationRoomOdd)
+                                 , (normalRooms, handicapCompensationRoomEven)]
+      removeRoomFromAllOtherSlots :: RoomID -> [(DayIndex, SlotIndex)] -> AvailableRooms
+                      -> AvailableRooms
+      removeRoomFromAllOtherSlots roomID slots'' allRooms =
+        foldr ( -- \s ->
+                M.alter (maybe Nothing (\(nr, hr) -> Just
+                          ( filter ((/=roomID) . availableRoomName) nr
+                          , filter ((/=roomID) . availableRoomName) hr
+                          )
+                        ))
+              ) allRooms
+              $ slots' \\ slots''
+   in foldr (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
+            allAvailableRooms $ M.toList roomSlots'
 
 data Plan = Plan
     { semesterConfig   :: SemesterConfig
