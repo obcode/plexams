@@ -64,6 +64,7 @@ data SemesterConfig = SemesterConfig
 data AvailableRoom = AvailableRoom
     { availableRoomName     :: String
     , availableRoomMaxSeats :: Integer
+    , availableRoomHandicap :: Bool
     }
   deriving (Eq, Show, Generic)
 

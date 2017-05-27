@@ -49,6 +49,7 @@ instance Y.FromJSON AvailableRoom where
     parseJSON (Y.Object v) = AvailableRoom
                        <$> v Y..: "name"
                        <*> v Y..: "seats"
+                       <*> v Y..:? "handicap" Y..!= False
     parseJSON _            = empty
 
 makeSemesterConfig :: String -> String -> String -> String -> [String]
