@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Export.Misc
   ( semesterConfigAsString
-  , exportPlanManips
+  , exportAddExamToSlots
   ) where
 
 import           Data.Aeson
@@ -24,12 +24,12 @@ semesterConfigAsString :: Plan -> String
 semesterConfigAsString = unpack . encodePretty . semesterConfig
 
 --------------------------------------------------------------------------------
--- Export PlanManips to Yaml
+-- Export AddExamToSlot to Yaml
 --------------------------------------------------------------------------------
 
-exportPlanManips :: [PlanManip] -> String
-exportPlanManips = intercalate "\n" . map exportPlanManip
+exportAddExamToSlots :: [AddExamToSlot] -> String
+exportAddExamToSlots = intercalate "\n" . map exportAddExamToSlot
 
-exportPlanManip :: PlanManip -> String
-exportPlanManip (AddExamToSlot a d s) =
+exportAddExamToSlot :: AddExamToSlot -> String
+exportAddExamToSlot (AddExamToSlot a d s) =
   "- [" ++ show a ++ ", " ++ show d ++ ", " ++ show s ++ "]"

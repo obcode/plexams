@@ -13,8 +13,7 @@ build-type:            Simple
 cabal-version:         >=1.10
 
 library
-  exposed-modules:     Plexams
-                     , Plexams.Types
+  exposed-modules:     Plexams.Types
                      , Plexams.Export.HTML
                      , Plexams.Export.Markdown
                      , Plexams.Export.Misc

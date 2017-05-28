@@ -2,8 +2,7 @@
 module Plexams.Import
     ( importSemesterConfigFromYAMLFile
     , importExamsFromJSONFile
-    , importPlanManipFromJSONFile
-    , importPlanManipFromYAMLFile
+    , importExamSlotsFromYAMLFile
     , importRegistrationsFromYAMLFile
     , importOverlapsFromYAMLFile
     , parseGroup
@@ -175,32 +174,18 @@ parseGroup str = Group
                           _   -> error $ "unknown group: " ++ str
 
 --------------------------------------------------------------------------------
--- PlanManip from JSON File
+-- AddExamToSlot from YAML file
 --------------------------------------------------------------------------------
 
-instance FromJSON PlanManip where
-    parseJSON (Object v) = AddExamToSlot
-                        <$> v .: "anCode"
-                        <*> v .: "day"
-                        <*> v .: "slot"
-    parseJSON _          = empty
+listsToExamSlots :: Maybe [[Integer]] -> Maybe [AddExamToSlot]
+listsToExamSlots = fmap $ map listToExamSlots
 
-importPlanManipFromJSONFile :: FilePath -> IO (Maybe [PlanManip])
-importPlanManipFromJSONFile = fmap decode . BS.readFile
+listToExamSlots :: [Integer] -> AddExamToSlot
+listToExamSlots [a,d,s] = AddExamToSlot a (fromInteger d) (fromInteger s)
+listToExamSlots xs      = error $ "cannot decode " ++ show xs
 
---------------------------------------------------------------------------------
--- PlanManip from YAML file
---------------------------------------------------------------------------------
-
-listsToPlanManips :: Maybe [[Integer]] -> Maybe [PlanManip]
-listsToPlanManips = fmap $ map listToPlanManip
-
-listToPlanManip :: [Integer] -> PlanManip
-listToPlanManip [a,d,s] = AddExamToSlot a (fromInteger d) (fromInteger s)
-listToPlanManip xs      = error $ "cannot decode " ++ show xs
-
-importPlanManipFromYAMLFile :: FilePath -> IO (Maybe [PlanManip])
-importPlanManipFromYAMLFile = fmap (listsToPlanManips . Y.decode) . BSI.readFile
+importExamSlotsFromYAMLFile :: FilePath -> IO (Maybe [AddExamToSlot])
+importExamSlotsFromYAMLFile = fmap (listsToExamSlots . Y.decode) . BSI.readFile
 
 --------------------------------------------------------------------------------
 -- Registrations from YAML file

@@ -1,6 +1,6 @@
 module Plexams.PlanManip
     ( addExamToSlot
-    , applyPlanManipListToPlan
+    , applyAddExamToSlotListToPlan
     , makePlan
     , addRegistrationsListToExams
     , addConstraints
@@ -75,10 +75,8 @@ addExamToSlot' ancode dayIdx slotIdx plan =
                        then plan { slots = changedSlots }
                        else plan
 
-
--- TODO: works only for AddExamToSlot now
-applyPlanManipListToPlan :: Plan -> [PlanManip] -> Plan
-applyPlanManipListToPlan plan planManips =
+applyAddExamToSlotListToPlan :: Plan -> [AddExamToSlot] -> Plan
+applyAddExamToSlotListToPlan plan planManips =
        foldr applyPlanManipToPlan plan $ reverse planManips
     where
         applyPlanManipToPlan (AddExamToSlot a d s) = addExamToSlot a d s

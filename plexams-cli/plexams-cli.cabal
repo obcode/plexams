@@ -23,6 +23,7 @@ executable plexams
                      , plexams-generators
                      , plexams-gui
                      , time
+                     , containers
   default-language:    Haskell2010
 
 executable plexams-helper

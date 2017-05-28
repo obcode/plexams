@@ -27,7 +27,8 @@ module Plexams.Types
     , mkAvailableRooms
     , Room(..)
     , RoomID
-    , PlanManip(..)
+    , AddExamToSlot(..)
+    , AddRoomToExam(..)
     , Registrations(..)
     , Constraints(..)
     , noConstraints
@@ -277,13 +278,15 @@ data Person = Person
     }
   deriving (Eq, Show, Ord)
 
-data PlanManip =
+data AddExamToSlot =
     AddExamToSlot
       { planManipAnCode :: Integer
       , planManipDay    :: Int
       , planManipSlot   :: Int
       }
-  | AddRoomToExam
+
+data AddRoomToExam =
+    AddRoomToExam
       { addRoomAnCode   :: Integer
       , addRoomRoomName :: String
       }

@@ -9,17 +9,17 @@ import           Plexams.PlanManip
 import           Plexams.Query
 import           Plexams.Types
 
-generateSchedule :: Plan -> (Plan, [PlanManip])
+generateSchedule :: Plan -> (Plan, [AddExamToSlot])
 generateSchedule plan = undefined
 
-findSlotForUnscheduledExam :: Integer -> Plan -> PlanManip
+findSlotForUnscheduledExam :: Integer -> Plan -> AddExamToSlot
 findSlotForUnscheduledExam ancode plan = undefined
 
 -- | Schedule exams with same name in the same slot.
 --
 -- This only works if one of them is already planned.
 -- Ignores exams with same name that are planned in different slots.
-scheduleExamsWithSameName :: Plan -> (Plan, [PlanManip])
+scheduleExamsWithSameName :: Plan -> (Plan, [AddExamToSlot])
 scheduleExamsWithSameName plan =
   let exams = filter (\(s,u) -> length s == 1)
             . map (filter isScheduled &&& filter isUnscheduled)
@@ -32,4 +32,4 @@ scheduleExamsWithSameName plan =
                                                   (slotScheduled scheduled))
             unscheduled
       planManips = concatMap makePlanManips exams
-  in (applyPlanManipListToPlan plan planManips, planManips)
+  in (applyAddExamToSlotListToPlan plan planManips, planManips)

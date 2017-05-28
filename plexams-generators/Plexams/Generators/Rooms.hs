@@ -4,5 +4,5 @@ module Plexams.Generators.Rooms
 
 import           Plexams.Types
 
-generateRooms :: Plan -> (Plan, [PlanManip])
+generateRooms :: Plan -> (Plan, [AddRoomToExam])
 generateRooms plan = undefined

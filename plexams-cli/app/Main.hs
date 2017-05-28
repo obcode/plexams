@@ -2,10 +2,10 @@ module Main where
 
 import           Control.Monad               (unless, when)
 import           Data.List                   (intercalate)
+import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe, isJust)
 import           Data.Semigroup              ((<>))
 import           Options.Applicative
-import           Plexams
 import           Plexams.Export.HTML
 import           Plexams.Export.Markdown
 import           Plexams.Export.Misc
@@ -41,6 +41,7 @@ data Command
     | PrintConfig
     | Generate { scheduleSameNames :: Bool
                }
+    | GenerateRooms
   deriving (Eq)
 
 data Config = Config
@@ -74,6 +75,8 @@ config = Config
                                   (progDesc "print the current config"))
          <> command "generate"  (info generateOpts
                                   (progDesc "generate part of the plan"))
+         <> command "generate-rooms"  (info (pure GenerateRooms)
+                                  (progDesc "generate rooms for the schedule"))
           )
       <*> optional (strOption
         ( long "planManip"
@@ -199,7 +202,7 @@ main = main' =<< execParser opts
 
 main' :: Config -> IO ()
 main' config = do
-  maybeSemesterConfig <- initSemesterConfigFromFile $ configfile config
+  maybeSemesterConfig <- importSemesterConfigFromYAMLFile $ configfile config
   case maybeSemesterConfig of
     Nothing -> putStrLn "no semester config"
     Just semesterConfig -> do
@@ -227,7 +230,7 @@ main' config = do
           plan' = addConstraints plan'' constraints
       -- maybe manipulate the plan
       plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
-                    (applyPlanManipToPlanWithFile plan')
+                    (applyAddExamToPlanWithFile plan')
                      $ planManipFile' config
       -- call the command function
       commandFun (optCommand config) config  plan
@@ -248,6 +251,7 @@ commandFun Query {}      = query
 commandFun ExportZPA {}  = exportZPA
 commandFun PrintConfig   = printConfig
 commandFun Generate {}   = generate
+commandFun GenerateRooms = generateRooms
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
@@ -303,7 +307,7 @@ applyFileFromConfig :: Plan -> FilePath -> IO Plan
 applyFileFromConfig plan file = do
     fileExist <- doesFileExist file
     if fileExist
-      then applyPlanManipToPlanWithFile plan file
+      then applyAddExamToPlanWithFile plan file
       else return plan
 
 generate :: Config -> Plan -> IO ()
@@ -312,6 +316,26 @@ generate config plan =
     where
       generate' (Generate True) =
         ("# Slots for exams with same name --- generated\n"++)
-        $ exportPlanManips
+        $ exportAddExamToSlots
         $ snd
         $ scheduleExamsWithSameName plan
+
+generateRooms :: Config -> Plan -> IO ()
+generateRooms config plan =
+  stdoutOrFile config generateRooms'
+    where
+      generateRooms'  =
+        ("# Rooms for exams --- generated\n"++)
+        $ intercalate "\n"
+        $ map (\(s,(nrs,hrs)) -> show (s, ( map availableRoomName nrs
+                                          , map availableRoomName hrs)))
+        $ M.toList
+        $ mkAvailableRooms plan
+        $ availableRooms
+        $ semesterConfig plan
+        -- $ maybe M.empty roomSlots $ constraints plan
+
+applyAddExamToPlanWithFile :: Plan -> FilePath -> IO Plan
+applyAddExamToPlanWithFile plan filePath =
+  fmap (maybe plan (applyAddExamToSlotListToPlan plan))
+       (importExamSlotsFromYAMLFile filePath)
