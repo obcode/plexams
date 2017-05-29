@@ -16,6 +16,7 @@ module Plexams.Types
     , Ancode
     , SemesterConfig(..)
     , Group(..)
+    , parseGroup
     , Degree(..)
     , allDegrees
     , Subgroup(..)
@@ -26,6 +27,7 @@ module Plexams.Types
     , AvailableRooms
     , mkAvailableRooms
     , Room(..)
+    , seatsMissing
     , RoomID
     , AddExamToSlot(..)
     , AddRoomToExam(..)
@@ -44,6 +46,7 @@ module Plexams.Types
     , ZPARoom(..)
     ) where
 
+import           Data.Char          (digitToInt)
 import           Data.List          (partition, sortBy, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
@@ -245,6 +248,10 @@ data Room = Room
     }
   deriving (Show, Eq)
 
+seatsMissing :: Exam -> Integer
+seatsMissing exam = registrations exam
+                  - sum (map seatsPlanned $ rooms exam)
+
 data Group = Group
     { groupDegree        :: Degree
     , groupSemester      :: Maybe Int
@@ -268,6 +275,36 @@ allDegrees = [IB .. IS]
 data Subgroup = A | B | C
   deriving (Show, Eq, Ord)
 
+instance Read Group where
+    readsPrec _ str = [(parseGroup str, "")]
+
+parseGroup :: String -> Group
+parseGroup str = Group
+    { groupDegree = str2Degree $ take 2 str
+    , groupSemester = if length str > 2
+                          then Just (digitToInt $ str !! 2)
+                          else Nothing
+    , groupSubgroup = if length str > 3
+                          then Just (char2Subgroup $ str !! 3)
+                          else Nothing
+    , groupRegistrations = Nothing
+    }
+  where
+    str2Degree str = case str of
+                         "IB" -> IB
+                         "IC" -> IC
+                         "IF" -> IF
+                         "GO" -> GO
+                         "IG" -> IG
+                         "IN" -> IN
+                         "IS" -> IS
+                         _    -> error $ "unknown group: " ++ str
+    char2Subgroup c = case c of
+                          'A' -> A
+                          'B' -> B
+                          'C' -> C
+                          _   -> error $ "unknown group: " ++ str
+
 type Persons = M.Map Integer Person
 type PersonID = Integer
 
@@ -287,9 +324,13 @@ data AddExamToSlot =
 
 data AddRoomToExam =
     AddRoomToExam
-      { addRoomAnCode   :: Integer
-      , addRoomRoomName :: String
+      { addRoomAnCode        :: Integer
+      , addRoomRoomName      :: String
+      , addRoomSeatsPlanned  :: Integer
+      , addRoomDeltaDuration :: Maybe Integer
+--      , addRoomReserveRoom :: Bool -- TODO: calculate?
       }
+  deriving Show
 
 data Registrations = Registrations
     { regsGroup :: String

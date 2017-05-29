@@ -1,14 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Plexams.Import
+module Plexams.Import.MasterData
     ( importSemesterConfigFromYAMLFile
     , importExamsFromJSONFile
-    , importExamSlotsFromYAMLFile
-    , importRegistrationsFromYAMLFile
-    , importOverlapsFromYAMLFile
-    , parseGroup
     , importConstraintsFromYAMLFile
-    , importStudentsFromYAMLFile
-    , importZPAExamsFromJSONFile
     ) where
 
 import           Control.Applicative         (empty, (<$>), (<*>))
@@ -16,11 +10,9 @@ import           Data.Aeson                  (FromJSON, Value (Object), decode,
                                               parseJSON, (.:))
 import qualified Data.ByteString             as BSI
 import qualified Data.ByteString.Lazy        as BS
-import           Data.Char                   (digitToInt)
 import           Data.List                   (elemIndex)
 import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe)
-import qualified Data.Set                    as S
 import           Data.Time                   (Day)
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
@@ -143,142 +135,6 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
           , slot = Nothing
           }
 
-instance Read Group where
-    readsPrec _ str = [(parseGroup str, "")]
-
-parseGroup :: String -> Group
-parseGroup str = Group
-    { groupDegree = str2Degree $ take 2 str
-    , groupSemester = if length str > 2
-                          then Just (digitToInt $ str !! 2)
-                          else Nothing
-    , groupSubgroup = if length str > 3
-                          then Just (char2Subgroup $ str !! 3)
-                          else Nothing
-    , groupRegistrations = Nothing
-    }
-  where
-    str2Degree str = case str of
-                         "IB" -> IB
-                         "IC" -> IC
-                         "IF" -> IF
-                         "GO" -> GO
-                         "IG" -> IG
-                         "IN" -> IN
-                         "IS" -> IS
-                         _    -> error $ "unknown group: " ++ str
-    char2Subgroup c = case c of
-                          'A' -> A
-                          'B' -> B
-                          'C' -> C
-                          _   -> error $ "unknown group: " ++ str
-
---------------------------------------------------------------------------------
--- AddExamToSlot from YAML file
---------------------------------------------------------------------------------
-
-listsToExamSlots :: Maybe [[Integer]] -> Maybe [AddExamToSlot]
-listsToExamSlots = fmap $ map listToExamSlots
-
-listToExamSlots :: [Integer] -> AddExamToSlot
-listToExamSlots [a,d,s] = AddExamToSlot a (fromInteger d) (fromInteger s)
-listToExamSlots xs      = error $ "cannot decode " ++ show xs
-
-importExamSlotsFromYAMLFile :: FilePath -> IO (Maybe [AddExamToSlot])
-importExamSlotsFromYAMLFile = fmap (listsToExamSlots . Y.decode) . BSI.readFile
-
---------------------------------------------------------------------------------
--- Registrations from YAML file
---------------------------------------------------------------------------------
-
-data ImportRegistrations = ImportRegistrations
-  { iRegGroups :: String
-  , iRegs      :: [ImportRegistration]
-  }
-
-instance Y.FromJSON ImportRegistrations where
-  parseJSON (Y.Object v) = ImportRegistrations
-                        <$> v Y..: "group"
-                        <*> v Y..: "registrations"
-  parseJSON _            = empty
-
-data ImportRegistration = ImportRegistration
-  { iRegAncode :: Integer
-  , iRegSum    :: Integer
-  }
-
-instance Y.FromJSON ImportRegistration where
-    parseJSON (Y.Object v) = ImportRegistration
-                          <$> v Y..: "ancode"
-                          <*> v Y..: "sum"
-    parseJSON _            = empty
-
-listToRegistrations :: (String, [(Integer, Integer)]) -> Registrations
-listToRegistrations (g, regs) = Registrations g (M.fromList regs)
-
-iRegsToRegs :: ImportRegistrations -> Registrations
-iRegsToRegs (ImportRegistrations g rs) = Registrations
-  { regsGroup = g
-  , regs = M.fromList $ map (\(ImportRegistration a s) -> (a, s)) rs
-  }
-
-iRegsLToRegsL = map iRegsToRegs
-
-importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe [Registrations])
-importRegistrationsFromYAMLFile =
-    fmap (fmap iRegsLToRegsL . Y.decode) . BSI.readFile
-
---------------------------------------------------------------------------------
--- Overlaps from YAML file
---------------------------------------------------------------------------------
-
-data ImportOverlaps = ImportOverlaps
-  { iOLGroup :: String
-  , iOLList  :: [ImportOverlapsList]
-  }
-
-instance Y.FromJSON ImportOverlaps where
-  parseJSON (Y.Object v) = ImportOverlaps
-                        <$> v Y..: "group"
-                        <*> v Y..: "overlapsList"
-  parseJSON _            = empty
-
-data ImportOverlapsList = ImportOverlapsList
-  { iOLAncode :: Integer
-  , iOL       :: [ImportOverlap]
-  }
-
-instance Y.FromJSON ImportOverlapsList where
-  parseJSON (Y.Object v) = ImportOverlapsList
-                        <$> v Y..: "ancode"
-                        <*> v Y..: "overlaps"
-  parseJSON _            = empty
-
-data ImportOverlap = ImportOverlap
-  { iOLOtherAncode :: Integer
-  , iOLSum         :: Integer
-  }
-
-instance Y.FromJSON ImportOverlap where
-    parseJSON (Y.Object v) = ImportOverlap
-                          <$> v Y..: "otherExam"
-                          <*> v Y..: "noOfStudents"
-    parseJSON _            = empty
-
-iOLToOL :: ImportOverlaps -> Overlaps
-iOLToOL (ImportOverlaps g rs) = Overlaps
-  { olGroup = read g
-  , olOverlaps = M.fromList
-        $ map (\(ImportOverlapsList a s) -> (a, M.fromList $ map toTupel s)) rs
-  }
-  where toTupel (ImportOverlap a s) = (a,s)
-
-iOLToOLList = map iOLToOL
-
-importOverlapsFromYAMLFile :: FilePath -> IO (Maybe [Overlaps])
-importOverlapsFromYAMLFile =
-    fmap (fmap iOLToOLList . Y.decode) . BSI.readFile
-
 --------------------------------------------------------------------------------
 -- Constraints from YAML file
 --------------------------------------------------------------------------------
@@ -355,55 +211,3 @@ iIToSlots (ImpossibleInvigilation p ss) =
 importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
 importConstraintsFromYAMLFile =
     fmap (fmap importConstraintsToConstraints . Y.decode) . BSI.readFile
-
---------------------------------------------------------------------------------
--- Students from YAML file
---------------------------------------------------------------------------------
-
-data ImportStudent = ImportStudent
-  { isMtkNr  :: Integer
-  , isAncode :: Integer
-  }
-
-instance Y.FromJSON ImportStudent where
-  parseJSON (Y.Object v) = ImportStudent
-                        <$> v Y..: "mtknr"
-                        <*> v Y..: "ancode"
-  parseJSON _            = empty
-
-importStudentsToStudents :: [ImportStudent] -> Students
-importStudentsToStudents = foldr insertStudent M.empty
-  where
-    insertStudent (ImportStudent mtkNr ancode) =
-      M.alter (Just . maybe (S.singleton mtkNr)
-                            (S.insert mtkNr)) ancode
-
-importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
-importStudentsFromYAMLFile =
-    fmap (fmap importStudentsToStudents . Y.decode) . BSI.readFile
-
---------------------------------------------------------------------------------
--- ZPAExams from JSON file
---------------------------------------------------------------------------------
-
-instance FromJSON ZPAExam where
-    parseJSON (Object v ) = ZPAExam
-                         <$> v .: "anCode"
-                         <*> v .: "date"
-                         <*> v .: "time"
-                         <*> v .: "reserveInvigilator_id"
-                         <*> v .: "rooms"
-    parseJSON _          = empty
-
-instance FromJSON ZPARoom where
-    parseJSON (Object v ) = ZPARoom
-                         <$> v .: "number"
-                         <*> v .: "invigilator_id"
-                         <*> v .: "reserveRoom"
-                         <*> v .: "handicapCompensation"
-                         <*> v .: "duration"
-                         <*> v .: "numberStudents"
-    parseJSON _          = empty
-
-importZPAExamsFromJSONFile :: FilePath -> IO (Maybe [ZPAExam])
-importZPAExamsFromJSONFile = fmap decode . BS.readFile

@@ -10,11 +10,11 @@ module Plexams.Query
     , examsWithSameName
     ) where
 
-import           Data.List      (isInfixOf, sortBy)
-import qualified Data.Map       as M
-import           Data.Maybe     (maybe)
-import           GHC.Exts       (groupWith)
-import           Plexams.Import
+import           Data.List                 (isInfixOf, sortBy)
+import qualified Data.Map                  as M
+import           Data.Maybe                (maybe)
+import           GHC.Exts                  (groupWith)
+import           Plexams.Import.MasterData
 import           Plexams.Types
 
 allExams :: Plan -> [Exam]

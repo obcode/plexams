@@ -18,7 +18,10 @@ library
                      , Plexams.Export.Markdown
                      , Plexams.Export.Misc
                      , Plexams.Export.ZPA
-                     , Plexams.Import
+                     , Plexams.Import.MasterData
+                     , Plexams.Import.Misc
+                     , Plexams.Import.PlanManip
+                     , Plexams.Import.Registrations
                      , Plexams.PlanManip
                      , Plexams.Query
                      , Plexams.Statistics

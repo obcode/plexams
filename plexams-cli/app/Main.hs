@@ -1,25 +1,28 @@
 module Main where
 
-import           Control.Monad               (unless, when)
-import           Data.List                   (intercalate)
-import qualified Data.Map                    as M
-import           Data.Maybe                  (fromMaybe, isJust)
-import           Data.Semigroup              ((<>))
+import           Control.Monad                (unless, when)
+import           Data.List                    (intercalate)
+import qualified Data.Map                     as M
+import           Data.Maybe                   (fromMaybe, isJust)
+import           Data.Semigroup               ((<>))
 import           Options.Applicative
 import           Plexams.Export.HTML
 import           Plexams.Export.Markdown
 import           Plexams.Export.Misc
 import           Plexams.Export.ZPA
+import qualified Plexams.Generators.Rooms
 import           Plexams.Generators.Schedule
 import           Plexams.GUI
-import           Plexams.Import
+import           Plexams.Import.MasterData
+import           Plexams.Import.PlanManip
+import           Plexams.Import.Registrations
 import           Plexams.PlanManip
 import           Plexams.Query
 import           Plexams.Statistics
 import           Plexams.Types
-import qualified Plexams.Validation          as P (validate, validateZPAExport)
-import           System.Directory            (doesFileExist)
-import           System.IO                   (hPutStrLn, stderr)
+import qualified Plexams.Validation           as P (validate, validateZPAExport)
+import           System.Directory             (doesFileExist)
+import           System.IO                    (hPutStrLn, stderr)
 
 data Command
     = Markdown
@@ -326,13 +329,17 @@ generateRooms config plan =
     where
       generateRooms'  =
         ("# Rooms for exams --- generated\n"++)
-        $ intercalate "\n"
-        $ map (\(s,(nrs,hrs)) -> show (s, ( map availableRoomName nrs
-                                          , map availableRoomName hrs)))
-        $ M.toList
-        $ mkAvailableRooms plan
-        $ availableRooms
-        $ semesterConfig plan
+        $ exportAddRoomToExams
+        -- $ intercalate "\n"
+        -- $ map show
+        $ snd
+        $ Plexams.Generators.Rooms.generateRooms plan
+        -- $ map (\(s,(nrs,hrs)) -> show (s, ( map availableRoomName nrs
+        --                                   , map availableRoomName hrs)))
+        -- $ M.toList
+        -- $ mkAvailableRooms plan
+        -- $ availableRooms
+        -- $ semesterConfig plan
         -- $ maybe M.empty roomSlots $ constraints plan
 
 applyAddExamToPlanWithFile :: Plan -> FilePath -> IO Plan

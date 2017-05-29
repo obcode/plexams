@@ -2,6 +2,7 @@
 module Plexams.Export.Misc
   ( semesterConfigAsString
   , exportAddExamToSlots
+  , exportAddRoomToExams
   ) where
 
 import           Data.Aeson
@@ -33,3 +34,17 @@ exportAddExamToSlots = intercalate "\n" . map exportAddExamToSlot
 exportAddExamToSlot :: AddExamToSlot -> String
 exportAddExamToSlot (AddExamToSlot a d s) =
   "- [" ++ show a ++ ", " ++ show d ++ ", " ++ show s ++ "]"
+
+--------------------------------------------------------------------------------
+-- Export AddRoomToExam to Yaml
+--------------------------------------------------------------------------------
+
+exportAddRoomToExams :: [AddRoomToExam] -> String
+exportAddRoomToExams = intercalate "\n" . map exportAddRoomToExam
+
+exportAddRoomToExam :: AddRoomToExam -> String
+exportAddRoomToExam (AddRoomToExam a r s d) =
+  "- [" ++ show a ++ ", " ++ r ++ ", " ++ show s ++
+  (case d of Nothing -> ""
+             Just dd -> show dd)
+  ++ "]"
