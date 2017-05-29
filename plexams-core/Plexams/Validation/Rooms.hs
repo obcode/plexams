@@ -27,14 +27,15 @@ validate plan = do
 validateEnoughRoomsForExams :: Plan -> Writer [String] ValidationResult
 validateEnoughRoomsForExams plan = do
   tell ["### Validating enough rooms for exam (hard)"]
-  validationResult <$> mapM validateEnoughRoomsForExam (scheduledExams plan)
+  validationResult <$> mapM validateEnoughRoomsForExam
+                            (filter plannedByMe $ scheduledExams plan)
 
 validateEnoughRoomsForExam :: Exam -> Writer [String] ValidationResult
 validateEnoughRoomsForExam exam = do
   let regs = registrations exam
       seats = sum $ map maxSeats $ rooms exam
   when (regs>seats) $
-    tell ["- exam " ++ show (anCode exam) ++ "not enough rooms planned"]
+    tell ["- exam " ++ show exam ++ " not enough rooms planned"]
   return $ if regs<=seats
            then EverythingOk
            else HardConstraintsBroken
@@ -42,14 +43,17 @@ validateEnoughRoomsForExam exam = do
 validationStillReserveForExams :: Plan -> Writer [String] ValidationResult
 validationStillReserveForExams plan = do
   tell ["### Validating if there are at least 2 empty seats left for exam (soft)"]
-  validationResult <$> mapM validationStillReserveForExam (scheduledExams plan)
+  validationResult <$> mapM validationStillReserveForExam
+                            (filter plannedByMe $ scheduledExams plan)
 
 validationStillReserveForExam :: Exam -> Writer [String] ValidationResult
 validationStillReserveForExam exam = do
   let regs = registrations exam
       seats = sum $ map maxSeats $ rooms exam
   when (regs+2>=seats) $
-    tell ["- exam " ++ show (anCode exam) ++ "not enough reserve seats left"]
+    tell ["- exam " ++ show exam
+          ++ " not enough reserve seats left: "
+          ++ show regs ++"/" ++ show seats]
   return $ if regs+2<=seats
            then EverythingOk
            else SoftConstraintsBroken

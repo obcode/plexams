@@ -15,7 +15,7 @@ generateRooms plan =
                       $ M.toList $ mkAvailableRooms plan
                                     (availableRooms $ semesterConfig plan)
       slots' = M.toList $ M.map (M.elems . examsInSlot) $ slots plan
-      roomsAndSlots = [ (s, (rooms, exams))
+      roomsAndSlots = [ (s, (rooms, filter plannedByMe exams))
                       | (s,  rooms) <- availableRooms'
                       , (s', exams) <- slots'
                       , s == s'
