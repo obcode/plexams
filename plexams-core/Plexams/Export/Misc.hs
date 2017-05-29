@@ -44,7 +44,8 @@ exportAddRoomToExams = intercalate "\n" . map exportAddRoomToExam
 
 exportAddRoomToExam :: AddRoomToExam -> String
 exportAddRoomToExam (AddRoomToExam a r s d) =
-  "- [" ++ show a ++ ", " ++ r ++ ", " ++ show s ++
+       "- ancode: " ++ show a
+  ++ "\n  room: " ++ r
+  ++ "\n  seatsPlanned: " ++ show s ++
   (case d of Nothing -> ""
-             Just dd -> show dd)
-  ++ "]"
+             Just dd -> "\n  deltaDuration: " ++ show dd)

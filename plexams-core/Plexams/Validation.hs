@@ -12,6 +12,7 @@ import           GHC.Exts                          (groupWith)
 import           Plexams.Query
 import           Plexams.Types
 import           Plexams.Validation.Exports
+import qualified Plexams.Validation.Rooms
 import qualified Plexams.Validation.ScheduledExams
 import qualified Plexams.Validation.Sources
 
@@ -26,6 +27,7 @@ validate' plan = do
   sourcesOk <- Plexams.Validation.Sources.validate plan
   lecturersMax3ExamDays <- validateLecturersMax3ExamDays plan
   scheduledExams <- Plexams.Validation.ScheduledExams.validate plan
+  roomsOk <- Plexams.Validation.Rooms.validate plan
   tell ["# no more validations implemented yet"]
   return $ validationResult
             [ sourcesOk

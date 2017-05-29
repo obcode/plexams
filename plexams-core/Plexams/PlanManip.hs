@@ -3,12 +3,13 @@ module Plexams.PlanManip
     , applyAddExamToSlotListToPlan
     , makePlan
     , addRegistrationsListToExams
+    , applyAddRoomToExamListToPlan
     , addConstraints
     ) where
 
 import           Data.List     (partition)
 import qualified Data.Map      as M
-import           Data.Maybe    (fromJust, fromMaybe)
+import           Data.Maybe    (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set      as S
 import           Plexams.Query (allExams)
 import           Plexams.Types
@@ -86,15 +87,54 @@ applyAddExamToSlotListToPlan plan planManips =
 --------------------------------------------------------------------------------
 -- Add room NOT before the exam schedule is frozen
 
-addRoomToExam :: Integer -> String -> Plan -> Plan
-addRoomToExam ancode roomName plan =
+applyAddRoomToExamListToPlan :: Plan -> [AddRoomToExam] -> Plan
+applyAddRoomToExamListToPlan = foldr applyPlanManipToPlan
+    where
+        applyPlanManipToPlan (AddRoomToExam a n s dd) = addRoomToExam a n s dd
+
+
+addRoomToExam :: Integer -> String -> Integer -> Maybe Integer -> Plan -> Plan
+addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
   if ancode `M.member` unscheduledExams plan
   then plan -- a room cannot be added to an unscheduled exam
   else -- exam is scheduled (or unknown)
-    -- step 1: find exam by ancode
-    -- step 2: find room by name
+    let exam = head -- should never fail
+             $ mapMaybe (M.lookup ancode . examsInSlot)
+             $ M.elems
+             $ slots
+             $ setSlotsOnExams plan
+        availableRoom = head -- should never fail
+                      $ filter ((==roomName) . availableRoomName)
+                      $ availableRooms $ semesterConfig plan
+        room = Room
+                { roomID = roomName
+                , maxSeats = availableRoomMaxSeats availableRoom
+                , deltaDuration = fromMaybe 0 maybeDeltaDuration
+                , invigilator = Nothing
+                , reserveRoom = seatsPlanned' < 3
+                             && seatsPlanned' /= registrations exam
+                , handicapCompensation = availableRoomHandicap availableRoom
+                , seatsPlanned = seatsPlanned'
+                }
     -- step 3: add room to exam and put new exam into correct slot
-    undefined
+    in plan
+        { slots = M.alter
+                  (\(Just slot) -> Just
+                    slot
+                      { examsInSlot = M.alter (\(Just exam) -> Just
+                                                exam
+                                                  { rooms = room
+                                                          : rooms exam
+                                                  }
+                                              )
+                                              ancode
+                                              $ examsInSlot slot
+
+                      }
+                  )
+                  (fromMaybe (0,0) $ slot exam)
+                  $ slots plan
+        }
 
 --------------------------------------------------------------------------------
 -- Make the initial plan

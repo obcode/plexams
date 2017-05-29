@@ -47,7 +47,7 @@ module Plexams.Types
     ) where
 
 import           Data.Char          (digitToInt)
-import           Data.List          (partition, sortBy, (\\))
+import           Data.List          (intercalate, partition, sortBy, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
 import           Data.Ord           (Down (Down), comparing)
@@ -229,6 +229,9 @@ instance Show Exam where
                     then "=" ++ show (registrations exam)
                     else "")
                 ++ maybe "" ((", "++) . show) (slot exam)
+                ++ if null $ rooms exam then ""
+                   else "  \n"
+                        ++ intercalate "  \n" (map show (rooms exam))
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
@@ -246,7 +249,15 @@ data Room = Room
     , handicapCompensation :: Bool          -- ^ @True@ Raum für NTA
     , seatsPlanned         :: Integer       -- ^ Anzahl der geplanten Studierenden
     }
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show Room where
+  show room = roomID room ++ ", "
+           ++ show (seatsPlanned room) ++ "/" ++ show (maxSeats room)
+           ++ (if reserveRoom room then ", R" else "")
+           ++ (if handicapCompensation room
+               then ", H (+"++ show (deltaDuration room) ++ "Min)"
+               else "")
 
 seatsMissing :: Exam -> Integer
 seatsMissing exam = registrations exam

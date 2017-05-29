@@ -50,6 +50,7 @@ data Command
 data Config = Config
     { optCommand      :: Command
     , planManipFile'  :: Maybe FilePath
+    , roomsFile       :: Maybe FilePath
     , regsFile        :: Maybe FilePath
     , overlapsFile    :: Maybe FilePath
     , constraintsFile :: Maybe FilePath
@@ -85,7 +86,13 @@ config = Config
         ( long "planManip"
        <> short 'p'
        <> metavar "PLANMANIPFILE"
-       <> help "import file containing plan manipulations"
+       <> help "import file containing exam2slot manipulations"
+        ))
+      <*> optional (strOption
+        ( long "rooms"
+       -- <> short 'p'
+       <> metavar "ROOMSFILE"
+       <> help "import file containing room2slot manipulations"
         ))
       <*> optional (strOption
         ( long "registrations"
@@ -232,9 +239,14 @@ main' config = do
           plan'' = makePlan examsWithRegs semesterConfig Nothing maybeStuds
           plan' = addConstraints plan'' constraints
       -- maybe manipulate the plan
-      plan <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
-                    (applyAddExamToPlanWithFile plan')
-                     $ planManipFile' config
+      plan''' <- maybe (applyFileFromConfig plan' (planManipFile semesterConfig))
+                       (applyAddExamToPlanWithFile plan')
+                       $ planManipFile' config
+      when (isJust $ roomsFile config) $
+        hPutStrLn stderr ">>> Adding rooms"
+      plan <- maybe (return plan''')
+                    (applyAddRoomToExamWithFile plan''')
+                    $ roomsFile config
       -- call the command function
       commandFun (optCommand config) config  plan
       when (optCommand config /= Validate) $
@@ -346,3 +358,8 @@ applyAddExamToPlanWithFile :: Plan -> FilePath -> IO Plan
 applyAddExamToPlanWithFile plan filePath =
   fmap (maybe plan (applyAddExamToSlotListToPlan plan))
        (importExamSlotsFromYAMLFile filePath)
+
+applyAddRoomToExamWithFile :: Plan -> FilePath -> IO Plan
+applyAddRoomToExamWithFile plan filePath =
+  fmap (maybe plan (applyAddRoomToExamListToPlan plan))
+       (importAddRoomToExamFromYAMLFile filePath)

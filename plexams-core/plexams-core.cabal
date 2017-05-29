@@ -27,6 +27,7 @@ library
                      , Plexams.Statistics
                      , Plexams.Validation
   other-modules:       Plexams.Export.Common
+                     , Plexams.Validation.Rooms
                      , Plexams.Validation.ScheduledExams
                      , Plexams.Validation.Sources
                      , Plexams.Validation.Exports
@@ -36,6 +37,7 @@ library
                      , bytestring
                      , containers
                      , mtl
+                     , text
                      , time
                      , vector
                      , yaml
