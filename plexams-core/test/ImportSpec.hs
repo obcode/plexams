@@ -5,7 +5,7 @@ import           Data.Aeson           (decode)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.Map             as M
 import           Data.Time.Calendar
-import           Plexams.Import
+import           Plexams.Import.MasterData
 import           Plexams.Types
 import           Test.Hspec
 

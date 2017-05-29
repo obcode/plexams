@@ -3,8 +3,8 @@ module Plexams.Validation.Exports
   ) where
 
 import           Control.Monad.Writer
-import           Plexams.Import.Misc (importZPAExamsFromJSONFile)
-import           Plexams.Query             (allExams)
+import           Plexams.Import.Misc  (importZPAExamsFromJSONFile)
+import           Plexams.Query        (allExams)
 import           Plexams.Types
 
 validateZPAExport :: FilePath -> Plan -> IO (ValidationResult, [String])
