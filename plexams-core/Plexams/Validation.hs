@@ -16,8 +16,6 @@ import qualified Plexams.Validation.Rooms
 import qualified Plexams.Validation.ScheduledExams
 import qualified Plexams.Validation.Sources
 
--- validateZPAExport = Plexams.Validation.Exports.validateZPAExport
-
 validate :: Plan -> (ValidationResult, [String])
 validate = runWriter . validate'
 
@@ -33,6 +31,7 @@ validate' plan = do
             [ sourcesOk
             , lecturersMax3ExamDays
             , scheduledExams
+            , roomsOk
             ]
 
 validateLecturersMax3ExamDays :: Plan -> Writer [String] ValidationResult
