@@ -5,8 +5,6 @@ module Plexams.Types
     , Constraints(..)
     , noConstraints
     , setFK10Exam
-    , isScheduled
-    , isUnscheduled
 
       -- * Plan
     , Plan(..)
@@ -19,6 +17,10 @@ module Plexams.Types
     , maxSlotIndex
       -- * Exams
     , Exam(..)
+    , allExams
+    , scheduledExams
+    , isScheduled
+    , isUnscheduled
     , Ancode
     , examDateAsString
     , examSlotAsString
@@ -50,6 +52,7 @@ module Plexams.Types
       -- * Registrations and overlaps
     , Overlaps(..)
     , Registrations(..)
+    , Handicap(..)
       -- * Validation
     , ValidationResult(..)
     , validationResult
@@ -64,11 +67,12 @@ import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
 import           Data.Ord           (Down (Down), comparing)
 import qualified Data.Set           as S
+import           Data.Text          (Text)
 import           Data.Time.Calendar
 import           GHC.Generics
 
 data SemesterConfig = SemesterConfig
-    { semester        :: String   -- ^ Semester
+    { semester        :: Text     -- ^ Semester
     , firstDay        :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
     , lastDay         :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
     , examDays        :: [Day]    -- ^ vom ersten bis letzten Tag OHNE Wochenende
@@ -133,9 +137,18 @@ data Plan = Plan
     , constraints      :: Maybe Constraints
     , students         :: Students
     , studentsExams    :: StudentsExams
+    , handicaps        :: Handicaps
     , initialPlan      :: [Exam]
     }
   deriving (Show, Eq)
+
+scheduledExams :: Plan -> [Exam]
+scheduledExams plan =
+    concatMap (M.elems . examsInSlot . snd) $ M.toList $ slots plan
+
+allExams :: Plan -> [Exam]
+allExams plan = let plan' = setSlotsOnExams plan
+                in M.elems (unscheduledExams plan') ++ scheduledExams plan'
 
 isScheduledAncode :: Ancode -> Plan -> Bool
 isScheduledAncode ancode =
@@ -388,6 +401,26 @@ type MtkNr = Integer
 type Students = M.Map Ancode (S.Set MtkNr)
 
 type StudentsExams = M.Map MtkNr (S.Set Ancode)
+
+data Handicap = Handicap
+  { studentname          :: Text
+  , mtknr                :: Integer
+  , compensation         :: Text
+  , deltaDurationPercent :: Integer
+  , exams                :: [Ancode]
+  , needsRoomAlone       :: Bool
+  }
+  deriving (Eq, Show)
+
+type Handicaps = M.Map MtkNr Handicap
+
+mkHandicaps :: Plan -> [Handicap] -> Handicaps
+mkHandicaps plan =
+  M.fromList
+  -- remove all unknown exams
+  . map (\h -> ( mtknr h
+               , h {exams = filter (`elem` (map anCode $ allExams plan))
+                                   $ exams h}))
 
 data ValidationResult = EverythingOk
                       | SoftConstraintsBroken

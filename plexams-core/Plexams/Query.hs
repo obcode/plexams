@@ -1,7 +1,5 @@
 module Plexams.Query
-    ( allExams
-    , scheduledExams
-    , queryByAnCode
+    ( queryByAnCode
     , queryByName
     , queryByLecturer
     , queryByGroup
@@ -17,13 +15,6 @@ import           GHC.Exts                  (groupWith)
 import           Plexams.Import.MasterData
 import           Plexams.Types
 
-allExams :: Plan -> [Exam]
-allExams plan = let plan' = setSlotsOnExams plan
-                in M.elems (unscheduledExams plan') ++ scheduledExams plan'
-
-scheduledExams :: Plan -> [Exam]
-scheduledExams plan =
-    concatMap (M.elems . examsInSlot . snd) $ M.toList $ slots plan
 
 queryByAnCode :: Integer -> Plan -> [Exam]
 queryByAnCode ac = filter ((==ac) . anCode) . allExams

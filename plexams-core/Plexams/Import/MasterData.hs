@@ -13,6 +13,7 @@ import qualified Data.ByteString.Lazy        as BS
 import           Data.List                   (elemIndex)
 import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe)
+import           Data.Text                   (Text)
 import           Data.Time                   (Day)
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
@@ -43,7 +44,7 @@ instance Y.FromJSON AvailableRoom where
                        <*> v Y..:? "handicap" Y..!= False
     parseJSON _            = empty
 
-makeSemesterConfig :: String -> String -> String -> String -> [String]
+makeSemesterConfig :: Text -> String -> String -> String -> [String]
                    -> FilePath -> FilePath -> [AvailableRoom] -> [[Integer]]
                    -> SemesterConfig
 makeSemesterConfig s f l goDay0 =

@@ -11,7 +11,6 @@ import           Data.List     (partition)
 import qualified Data.Map      as M
 import           Data.Maybe    (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set      as S
-import           Plexams.Query (allExams)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -154,6 +153,7 @@ makePlan exams semesterConfig maybePers maybeStudents =
           , constraints = Nothing
           , students = fromMaybe M.empty maybeStudents
           , studentsExams = mkStudentsExams maybeStudents
+          , handicaps = M.empty
           , initialPlan = exams
           }
         (fk10Exams semesterConfig)

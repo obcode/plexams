@@ -9,6 +9,7 @@ import           Control.Applicative (empty, (<$>), (<*>))
 import qualified Data.ByteString     as BSI
 import qualified Data.Map            as M
 import qualified Data.Set            as S
+import           Data.Text           (Text)
 import qualified Data.Yaml           as Y
 import           Plexams.Types
 
@@ -129,3 +130,21 @@ importStudentsToStudents = foldr insertStudent M.empty
 importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
 importStudentsFromYAMLFile =
     fmap (fmap importStudentsToStudents . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- Handicaps from YAML file
+--------------------------------------------------------------------------------
+
+instance Y.FromJSON Handicap where
+  parseJSON (Y.Object v) = Handicap
+                        <$> v Y..: "studentname"
+                        <*> v Y..: "mtknr"
+                        <*> v Y..: "compensation"
+                        <*> v Y..: "deltaDurationPercent"
+                        <*> v Y..: "exams"
+                        <*> v Y..:? "needsRoomAlone" Y..!= False
+  parseJSON _            = empty
+
+importHandicapsFromYAMLFile :: FilePath -> IO (Maybe [Handicap])
+importHandicapsFromYAMLFile =
+    fmap Y.decode . BSI.readFile

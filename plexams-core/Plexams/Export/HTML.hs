@@ -5,6 +5,7 @@ module Plexams.Export.HTML
 
 import           Data.List             (nub)
 import qualified Data.Map              as M
+import           Data.Text             (unpack)
 import           Data.Time             (Day)
 import           Data.Time.Calendar
 import           GHC.Exts              (groupWith)
@@ -28,13 +29,13 @@ planToHTMLTable maybeExams plan =
     sName = semester $ semesterConfig plan
     before =
       "<html><head><meta charset=\"utf-8\"/><title>Prüfungsplan "
-     ++ sName
+     ++ unpack sName
      ++ "</title>"
      ++ "<script type=\"text/javascript\" src=\"plexams.js\"></script>"
      ++ "<link href=\"plexams.css\" rel=\"stylesheet\" type=\"text/css\" />"
      ++ "</head><body>"
      ++ "<h1>Prüfungsplan "
-     ++ sName
+     ++ unpack sName
      ++ "</h1>\n"
     after = "<script src=\"https://code.jquery.com/jquery-latest.js\"></script>"
          ++ "<script>"
