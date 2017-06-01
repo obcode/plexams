@@ -1,48 +1,59 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Plexams.Types
-    ( Plan(..)
+    ( -- * Config
+      SemesterConfig(..)
+    , Constraints(..)
+    , noConstraints
+    , setFK10Exam
+    , isScheduled
+    , isUnscheduled
+
+      -- * Plan
+    , Plan(..)
+      -- * Slots
     , Slots
     , Slot(..)
     , DayIndex
     , maxDayIndex
     , SlotIndex
     , maxSlotIndex
+      -- * Exams
+    , Exam(..)
+    , Ancode
     , examDateAsString
     , examSlotAsString
     , dateString
     , setSlotsOnExams
-    , Exam(..)
     , registrations
-    , isUnknownExamAncode
-    , Ancode
-    , SemesterConfig(..)
+      -- * Groups
     , Group(..)
     , parseGroup
     , Degree(..)
     , allDegrees
     , Subgroup(..)
+      -- * Persons (lecturer, invigilators) and students
     , Person(..)
     , PersonID
     , Persons
+    , Students
+    , MtkNr
+      -- * Rooms
     , AvailableRoom(..)
     , AvailableRooms
     , mkAvailableRooms
     , Room(..)
     , seatsMissing
     , RoomID
+      -- * Plan manipulation
     , AddExamToSlot(..)
     , AddRoomToExam(..)
-    , Registrations(..)
-    , Constraints(..)
-    , noConstraints
+      -- * Registrations and overlaps
     , Overlaps(..)
-    , setFK10Exam
-    , isScheduled
-    , isUnscheduled
-    , Students
-    , MtkNr
+    , Registrations(..)
+      -- * Validation
     , ValidationResult(..)
     , validationResult
+      -- * ZPA
     , ZPAExam(..)
     , ZPARoom(..)
     ) where
