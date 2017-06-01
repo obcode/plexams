@@ -13,6 +13,7 @@ module Plexams.Types
     , setSlotsOnExams
     , Exam(..)
     , registrations
+    , isUnknownExamAncode
     , Ancode
     , SemesterConfig(..)
     , Group(..)

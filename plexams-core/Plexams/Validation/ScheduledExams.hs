@@ -279,7 +279,8 @@ validateLecturerMaxOneExamPerSlot plan = do
 -- each student should have two exams max per day
 -------------------------------------------------
 
--- TODO: Welche Prüfungen betrifft das berechnen
+-- TODO: Unterscheidung ob zwei Erstprüfungen an einem Tag oder Wiederholungs-
+-- prüfungen
 validateStudentsMaxTwoExamsPerDay :: Plan -> Writer [String] ValidationResult
 validateStudentsMaxTwoExamsPerDay plan = do
   -- TODO: hard/soft okay?
@@ -302,8 +303,10 @@ validateStudentsMaxTwoExamsPerDay plan = do
       mkTuples mtknr = (head $ head mtknr, map length mtknr)
       oneHasThree = filter (\(mtknr, examsPerDay) -> any (>2) examsPerDay)
                             studentsWithMoreThanOneExamPerDay
+      allAncodes = map anCode $ allExams plan
   forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr, noOfExams) -> do
-    let exams = maybe [] S.toList $ M.lookup mtknr $ studentsExams plan
+    let exams = maybe [] (filter (`elem` allAncodes) . S.toList)
+                         $ M.lookup mtknr $ studentsExams plan
     let three = any (>2) noOfExams
     tell [(if three then "-   Student has three or more exams a day:"
                     else "-   Student has two exams per day: ")
