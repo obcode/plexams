@@ -9,11 +9,7 @@ data Command
     | Dot { groupDependencies :: Bool
           }
     | Validate
-    | Query { byAncode        :: Maybe Integer
-            , byName          :: Maybe String
-            , byLecturer      :: Maybe String
-            , byGroup         :: Maybe String
-            , slot            :: Maybe (Int, Int)
+    | Query { bywhat          :: QueryWhat
             , onlyUnscheduled :: Bool
             }
     | Export { what :: ExportWhat }
@@ -31,10 +27,20 @@ data Config = Config
     , overlapsFile    :: Maybe FilePath
     , constraintsFile :: Maybe FilePath
     , studentsFile    :: Maybe FilePath
+    , handicapFile    :: Maybe FilePath
     , outfile         :: Maybe FilePath
     , configfile      :: FilePath
     , novalidation    :: Bool
     }
+
+data QueryWhat =
+    ByAncode Integer
+  | ByName String
+  | ByLecturer String
+  | ByGroup String
+  | BySlot (Int, Int)
+  | StudentByName String
+  deriving (Eq)
 
 data ExportWhat = ZPA
                 | Handicaps

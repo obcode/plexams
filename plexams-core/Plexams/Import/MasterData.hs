@@ -133,6 +133,7 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
           , reExam = ieIsRepeaterExam ie
           , groups = map read $ ieGroups ie
           , examType = ieExamType ie
+          , studentsWithHandicaps = []
           , slot = Nothing
           }
 

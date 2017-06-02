@@ -7,6 +7,7 @@ module Plexams.PlanManip
     , addConstraints
     ) where
 
+import           Control.Arrow (second)
 import           Data.List     (partition)
 import qualified Data.Map      as M
 import           Data.Maybe    (fromJust, fromMaybe, mapMaybe)
@@ -139,11 +140,12 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
 -- Make the initial plan
 --------------------------------------------------------------------------------
 
-makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Maybe Students -> Plan
+makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Maybe Students
+         -> [Handicap] -> Plan
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 
 -- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams semesterConfig maybePers maybeStudents =
+makePlan exams semesterConfig maybePers maybeStudents handicaps' =
   foldr addExamFromListToSlot
         Plan
           { semesterConfig = semesterConfig
@@ -153,7 +155,7 @@ makePlan exams semesterConfig maybePers maybeStudents =
           , constraints = Nothing
           , students = fromMaybe M.empty maybeStudents
           , studentsExams = mkStudentsExams maybeStudents
-          , handicaps = M.empty
+          , handicaps = handicaps'
           , initialPlan = exams
           }
         (fk10Exams semesterConfig)
@@ -182,9 +184,9 @@ makePlan exams semesterConfig maybePers maybeStudents =
             foldr insertAncodes M.empty $ M.toList students
           where insertAncodes (ancode, students) studentsExams' =
                  foldr (insertStudent ancode) studentsExams' $ S.toList students
-                insertStudent ancode =
-                  M.alter (Just . maybe (S.singleton ancode)
-                                        (S.insert ancode))
+                insertStudent ancode (m, n)=
+                  M.alter (Just . maybe (n, S.singleton ancode)
+                                        (second (S.insert ancode))) m
 
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan

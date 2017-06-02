@@ -6,11 +6,15 @@ module Plexams.Query
     , querySlot
     , lecturerExamDays
     , examsWithSameName
+    , queryStudentByName
+    , queryStudentByMtkNr
     ) where
 
 import           Data.List                 (isInfixOf, sortBy)
 import qualified Data.Map                  as M
 import           Data.Maybe                (maybe)
+import           Data.Set                  (Set)
+import           Data.Text                 (unpack)
 import           GHC.Exts                  (groupWith)
 import           Plexams.Import.MasterData
 import           Plexams.Types
@@ -61,3 +65,11 @@ examsWithSameName :: Plan -> [[Exam]]
 examsWithSameName =  filter ((>1) . length)
                   . groupWith name
                   . allExams
+
+queryStudentByName :: String -> Plan -> [(MtkNr, (StudentName, Set Ancode))]
+queryStudentByName str =
+  filter (isInfixOf str . unpack .  fst . snd)
+  . M.toList
+  . studentsExams
+
+queryStudentByMtkNr = undefined

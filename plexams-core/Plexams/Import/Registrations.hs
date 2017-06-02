@@ -3,6 +3,7 @@ module Plexams.Import.Registrations
     ( importRegistrationsFromYAMLFile
     , importOverlapsFromYAMLFile
     , importStudentsFromYAMLFile
+    , importHandicapsFromYAMLFile
     ) where
 
 import           Control.Applicative (empty, (<$>), (<*>))
@@ -111,21 +112,23 @@ importOverlapsFromYAMLFile =
 
 data ImportStudent = ImportStudent
   { isMtkNr  :: Integer
+  , isName   :: Text
   , isAncode :: Integer
   }
 
 instance Y.FromJSON ImportStudent where
   parseJSON (Y.Object v) = ImportStudent
                         <$> v Y..: "mtknr"
+                        <*> v Y..: "name"
                         <*> v Y..: "ancode"
   parseJSON _            = empty
 
 importStudentsToStudents :: [ImportStudent] -> Students
 importStudentsToStudents = foldr insertStudent M.empty
   where
-    insertStudent (ImportStudent mtkNr ancode) =
-      M.alter (Just . maybe (S.singleton mtkNr)
-                            (S.insert mtkNr)) ancode
+    insertStudent (ImportStudent mtkNr name ancode) =
+      M.alter (Just . maybe (S.singleton (mtkNr,name))
+                            (S.insert (mtkNr,name))) ancode
 
 importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
 importStudentsFromYAMLFile =

@@ -21,7 +21,7 @@ runCommand HTML {}       = html
 runCommand Statistics {} = stats
 runCommand Validate      = validate
 runCommand Query {}      = query
-runCommand Export {}     = exportZPA
+runCommand Export {}     = export
 runCommand PrintConfig   = printConfig
 runCommand Generate {}   = generate
 runCommand GenerateRooms = generateRooms
@@ -54,24 +54,29 @@ validate config = stdoutOrFile config . validate'
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config
-    $ intercalate "\n" $ map show $ query' (optCommand config)
+    $ intercalate "\n" $ query' (optCommand config)
   where
-    query' (Query (Just a) _ _ _ _ _) = queryByAnCode a plan
-    query' (Query _ (Just n) _ _ _ _) = queryByName n plan
-    query' (Query _ _ (Just l) _ _ _) = queryByLecturer l plan
-    query' (Query _ _ _ (Just g) _ u) = queryByGroup g u plan
-    query' (Query _ _ _ _ (Just s) _) = querySlot s plan
-    query' _                          = []
+    query' (Query (ByAncode a) _)      = map show $ queryByAnCode a plan
+    query' (Query (ByName n) _)        = map show $ queryByName n plan
+    query' (Query (ByLecturer l) _)    = map show $ queryByLecturer l plan
+    query' (Query (ByGroup g) u)       = map show $ queryByGroup g u plan
+    query' (Query (BySlot s) _)        = map show $ querySlot s plan
+    query' (Query (StudentByName s) _) = map show $ queryStudentByName s plan
+    query' _                           = []
 
-exportZPA :: Config -> Plan -> IO ()
-exportZPA config plan = do
-  stdoutOrFile config $ planToZPA plan
-  case outfile config of
-    Nothing -> return ()
-    Just fp -> do
-      (valRes, msgs) <- P.validateZPAExport fp plan
-      putStrLn $ intercalate "\n\n" msgs
-      print valRes
+export :: Config -> Plan -> IO ()
+export config plan =
+  case optCommand config of
+    Export ZPA ->  do
+      stdoutOrFile config $ planToZPA plan
+      case outfile config of
+        Nothing -> return ()
+        Just fp -> do
+          (valRes, msgs) <- P.validateZPAExport fp plan
+          putStrLn $ intercalate "\n\n" msgs
+          print valRes
+    Export Handicaps ->
+      stdoutOrFile config $ exportHandicaps plan
 
 printConfig :: Config -> Plan -> IO ()
 printConfig config = stdoutOrFile config . semesterConfigAsString

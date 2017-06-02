@@ -4,6 +4,7 @@ module Plexams.CLI.Import
   , importAndAddRegs
   , importStudents
   , importConstraints
+  , importHandicaps
   ) where
 
 import           Plexams.CLI.Types
@@ -112,4 +113,22 @@ importOverlaps config =
           exitWith $ ExitFailure 5
     Nothing -> do
       hPutStrLn stderr "no overlaps file specified"
+      return []
+
+importHandicaps :: Config -> IO [Handicap]
+importHandicaps config =
+  case handicapFile config of
+    Just file -> do
+      maybeHandicaps <- importHandicapsFromYAMLFile file
+      case maybeHandicaps of
+        Just handicaps -> do
+          hPutStrLn stderr ">>> importing handicaps"
+          return handicaps
+        Nothing -> do
+          hPutStrLn stderr $ "no handicaps found: "
+                            ++ file
+                            ++ " does not exist or is not parsable."
+          exitWith $ ExitFailure 8
+    Nothing -> do
+      hPutStrLn stderr "no handicaps file specified"
       return []

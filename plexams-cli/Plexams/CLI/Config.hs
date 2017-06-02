@@ -65,6 +65,11 @@ config = Config
        <> help "import file containing registrations for each mtknr"
         ))
       <*> optional (strOption
+        ( long "handicaps"
+       <> metavar "HANDICAPSFILE"
+       <> help "import file containing handicap information"
+        ))
+      <*> optional (strOption
         ( long "output"
        <> short 'o'
        <> metavar "OUTFILE"
@@ -94,41 +99,71 @@ htmlOpts = HTML
 
 queryOpts :: Parser Command
 queryOpts = Query
-    <$> optional (option auto
-        ( long "ancode"
-       <> short 'a'
-       <> metavar "EXAMID"
-       <> help "query by exam id"
-        ))
-    <*> optional (strOption
-        ( long "name"
-       <> short 'n'
-       <> metavar "NAME"
-       <> help "query by name (substring of name)"
-        ))
-    <*> optional (strOption
-        ( long "lecturer"
-       <> short 'l'
-       <> metavar "LECTURERID"
-       <> help "query by lecturer name (substring of name)"
-        ))
-    <*> optional (strOption
-        ( long "group"
-       <> short 'g'
-       <> metavar "GROUP"
-       <> help "query by group"
-        ))
-  <*> optional (option auto
-      ( long "slot"
-     <> short 's'
-     <> metavar "(DAYINDEX,SLOTINDEX)"
-     <> help "query the slot"
-      ))
+    <$> (   queryByAncode
+        <|> queryByName
+        <|> queryByLecturer
+        <|> queryByGroup
+        <|> queryBySlot
+        <|> queryStudentByName
+        )
     <*> switch
         ( long "unscheduled-only"
        <> short 'u'
        <> help "show only unscheduled"
         )
+
+queryByAncode :: Parser QueryWhat
+queryByAncode = ByAncode
+      <$> option auto
+        ( long "ancode"
+       <> short 'a'
+       <> metavar "EXAMID"
+       <> help "query by exam id"
+        )
+
+queryByName :: Parser QueryWhat
+queryByName = ByName
+      <$> strOption
+        ( long "name"
+       <> short 'n'
+       <> metavar "NAME"
+       <> help "query by name (substring of name)"
+        )
+
+queryByLecturer :: Parser QueryWhat
+queryByLecturer = ByLecturer
+    <$> strOption
+        ( long "lecturer"
+       <> short 'l'
+       <> metavar "LECTURERNAME"
+       <> help "query by lecturer name (substring of name)"
+        )
+
+queryByGroup :: Parser QueryWhat
+queryByGroup = ByGroup
+    <$> strOption
+        ( long "group"
+       <> short 'g'
+       <> metavar "GROUP"
+       <> help "query by group"
+        )
+
+queryBySlot :: Parser QueryWhat
+queryBySlot = ByGroup
+  <$> option auto
+      ( long "slot"
+     <> short 's'
+     <> metavar "(DAYINDEX,SLOTINDEX)"
+     <> help "query the slot"
+      )
+
+queryStudentByName :: Parser QueryWhat
+queryStudentByName = StudentByName
+  <$> strOption
+      ( long "studentname"
+     <> metavar "STUDENTNAME"
+     <> help "query by student name (substring of name)"
+      )
 
 statisticsOpts :: Parser Command
 statisticsOpts = Statistics

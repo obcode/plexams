@@ -297,7 +297,7 @@ validateStudentsMaxTwoExamsPerDay plan = do
       checkStudents :: [Ancode] -> [[MtkNr]]
       checkStudents  = filter ((>1) . length)
                      . groupWith id
-                     . concatMap S.toList
+                     . concatMap (map fst . S.toList)
                      . mapMaybe (\a -> M.lookup a (students plan))
       mkTuples :: [[MtkNr]] -> (MtkNr, [Int])
       mkTuples mtknr = (head $ head mtknr, map length mtknr)
@@ -305,8 +305,8 @@ validateStudentsMaxTwoExamsPerDay plan = do
                             studentsWithMoreThanOneExamPerDay
       allAncodes = map anCode $ allExams plan
   forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr, noOfExams) -> do
-    let exams = maybe [] (filter (`elem` allAncodes) . S.toList)
-                         $ M.lookup mtknr $ studentsExams plan
+    let exams = maybe [] (filter (`elem` allAncodes) . S.toList . snd)
+                          $ M.lookup mtknr $ studentsExams plan
     let three = any (>2) noOfExams
     tell [(if three then "-   Student has three or more exams a day:"
                     else "-   Student has two exams per day: ")

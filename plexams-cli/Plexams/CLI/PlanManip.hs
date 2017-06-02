@@ -21,10 +21,14 @@ makePlan config = do
     examsWithRegs  <- importAndAddRegs config semesterConfig exams
     maybeStudents  <- importStudents config
     constraints    <- importConstraints config
+    handicaps      <- importHandicaps config
 
     return $ addConstraints constraints
            $ Plexams.PlanManip.makePlan examsWithRegs
-                                        semesterConfig Nothing maybeStudents
+                                        semesterConfig
+                                        Nothing
+                                        maybeStudents
+                                        handicaps
 
 applyPlanManips :: Config -> Plan -> IO Plan
 applyPlanManips config plan =

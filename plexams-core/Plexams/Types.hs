@@ -39,6 +39,7 @@ module Plexams.Types
     , Persons
     , Students
     , MtkNr
+    , StudentName
       -- * Rooms
     , AvailableRoom(..)
     , AvailableRooms
@@ -53,6 +54,7 @@ module Plexams.Types
     , Overlaps(..)
     , Registrations(..)
     , Handicap(..)
+    , setHandicapsOnScheduledExams
       -- * Validation
     , ValidationResult(..)
     , validationResult
@@ -61,15 +63,18 @@ module Plexams.Types
     , ZPARoom(..)
     ) where
 
+import           Control.Arrow      (second)
 import           Data.Char          (digitToInt)
 import           Data.List          (intercalate, partition, sortBy, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
 import           Data.Ord           (Down (Down), comparing)
 import qualified Data.Set           as S
-import           Data.Text          (Text)
+import           Data.Text          (Text, unpack)
 import           Data.Time.Calendar
+import           GHC.Exts           (groupWith)
 import           GHC.Generics
+
 
 data SemesterConfig = SemesterConfig
     { semester        :: Text     -- ^ Semester
@@ -137,7 +142,7 @@ data Plan = Plan
     , constraints      :: Maybe Constraints
     , students         :: Students
     , studentsExams    :: StudentsExams
-    , handicaps        :: Handicaps
+    , handicaps        :: [Handicap]
     , initialPlan      :: [Exam]
     }
   deriving (Show, Eq)
@@ -217,17 +222,18 @@ type Duration = Integer
 type ExamType = String
 
 data Exam = Exam
-    { anCode      :: Ancode -- ^ Anmeldecode Prüfungsamt
-    , name        :: String  -- ^ Name der Prüfung
-    , lecturer    :: Person  -- ^ Prüfer
-    , duration    :: Duration -- ^ Dauer der Prüfung in Minuten
-    , rooms       :: [Room]  -- ^ Liste der Räume in denen die Prüfung statt findet
-    , plannedByMe :: Bool    -- ^ @False@ bei Prüfungen, die zwar mit erfasst werden, aber nicht geplant werden
+    { anCode                :: Ancode -- ^ Anmeldecode Prüfungsamt
+    , name                  :: String  -- ^ Name der Prüfung
+    , lecturer              :: Person  -- ^ Prüfer
+    , duration              :: Duration -- ^ Dauer der Prüfung in Minuten
+    , rooms                 :: [Room]  -- ^ Liste der Räume in denen die Prüfung statt findet
+    , plannedByMe           :: Bool    -- ^ @False@ bei Prüfungen, die zwar mit erfasst werden, aber nicht geplant werden
                              --   können
-    , reExam      :: Bool    -- ^ @True@ bei einer Wiederholungsklausur
-    , groups      :: [Group]  -- ^ Studierendengruppen die an der Prüfung teilnehmen
-    , examType    :: ExamType  -- ^ Typ der Prüfung aus ZPA
-    , slot        :: Maybe (Int, Int) -- ^ (Tag, Slot)
+    , reExam                :: Bool    -- ^ @True@ bei einer Wiederholungsklausur
+    , groups                :: [Group]  -- ^ Studierendengruppen die an der Prüfung teilnehmen
+    , examType              :: ExamType  -- ^ Typ der Prüfung aus ZPA
+    , studentsWithHandicaps :: [Handicap]
+    , slot                  :: Maybe (Int, Int) -- ^ (Tag, Slot)
     }
   deriving (Eq)
 
@@ -236,6 +242,9 @@ isScheduled = isJust . slot
 
 isUnscheduled :: Exam -> Bool
 isUnscheduled = not . isScheduled
+
+withHandicaps :: Exam -> Bool
+withHandicaps = not . null . studentsWithHandicaps
 
 registrations :: Exam -> Integer
 registrations = sum . mapMaybe groupRegistrations . groups
@@ -254,9 +263,15 @@ instance Show Exam where
                     then "=" ++ show (registrations exam)
                     else "")
                 ++ maybe "" ((", "++) . show) (slot exam)
-                ++ if null $ rooms exam then ""
+                ++ (if null $ studentsWithHandicaps exam then ""
+                    else "  \n    - "
+                        ++ intercalate "  \n    - "
+                            (map show (studentsWithHandicaps exam))
+                   )
+                ++ (if null $ rooms exam then ""
                    else "  \n"
                         ++ intercalate "  \n" (map show (rooms exam))
+                   )
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
@@ -398,9 +413,10 @@ data Overlaps = Overlaps
   deriving (Show, Eq)
 
 type MtkNr = Integer
-type Students = M.Map Ancode (S.Set MtkNr)
+type StudentName = Text
+type Students = M.Map Ancode (S.Set (MtkNr, StudentName))
 
-type StudentsExams = M.Map MtkNr (S.Set Ancode)
+type StudentsExams = M.Map MtkNr (StudentName, S.Set Ancode)
 
 data Handicap = Handicap
   { studentname          :: Text
@@ -410,10 +426,15 @@ data Handicap = Handicap
   , exams                :: [Ancode]
   , needsRoomAlone       :: Bool
   }
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Handicap where
+  show handicap = unpack (studentname handicap)
+                  ++ " (" ++ unpack (compensation handicap) ++ ")"
 
 type Handicaps = M.Map MtkNr Handicap
 
+-- TODO: Brauche ich die Funktion wirklich?
 mkHandicaps :: Plan -> [Handicap] -> Handicaps
 mkHandicaps plan =
   M.fromList
@@ -421,6 +442,46 @@ mkHandicaps plan =
   . map (\h -> ( mtknr h
                , h {exams = filter (`elem` (map anCode $ allExams plan))
                                    $ exams h}))
+
+updateExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
+updateExamByAncodeWith plan ancode f
+  | isScheduledAncode ancode plan =
+                                updateScheduledExamByAncodeWith plan ancode f
+  | isUnscheduledAncode ancode plan =
+                                updateUnscheduledExamByAncodeWith plan ancode f
+  | otherwise = plan
+
+updateScheduledExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
+updateScheduledExamByAncodeWith plan ancode f =
+  let updatedExamsInSlot = M.alter (fmap f) ancode
+                                   $ examsInSlot oldSlotContents
+          -- map (second (filter ((==ancode) . anCode) . M.elems . examsInSlot))
+      (oldSlot, oldSlotContents) =
+        head -- should not fail
+        $ filter (elem ancode . map anCode . M.elems . examsInSlot . snd)
+        $ M.toList
+        $ slots plan
+  in plan { slots = M.alter (fmap $ \s -> s {examsInSlot = updatedExamsInSlot})
+                            oldSlot $ slots plan}
+
+updateUnscheduledExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
+updateUnscheduledExamByAncodeWith plan ancode f =
+  plan { unscheduledExams = M.alter (fmap f) ancode $ unscheduledExams plan}
+
+setHandicapsOnScheduledExams :: Plan -> Plan
+setHandicapsOnScheduledExams plan =
+  let handicapsPerAncode =
+        map (\aH -> (fst $ head aH, map snd aH))
+        $ groupWith fst
+        $ concatMap (\h -> map (\a -> (a,h)) $ exams h)
+        $ handicaps plan
+  in foldr (\(a,hs) p ->
+            updateExamByAncodeWith p a (\e -> e {
+              studentsWithHandicaps = hs
+            })
+           )
+           plan
+           handicapsPerAncode
 
 data ValidationResult = EverythingOk
                       | SoftConstraintsBroken

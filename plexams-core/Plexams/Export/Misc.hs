@@ -3,12 +3,14 @@ module Plexams.Export.Misc
   ( semesterConfigAsString
   , exportAddExamToSlots
   , exportAddRoomToExams
+  , exportHandicaps
   ) where
 
 import           Data.Aeson
 import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
 import           Data.List                  (intercalate)
+import           GHC.Exts                   (sortWith)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -49,3 +51,16 @@ exportAddRoomToExam (AddRoomToExam a r s d) =
   ++ "\n  seatsPlanned: " ++ show s ++
   (case d of Nothing -> ""
              Just dd -> "\n  deltaDuration: " ++ show dd)
+
+--------------------------------------------------------------------------------
+-- Export Handicaps for Lecturers
+--------------------------------------------------------------------------------
+
+exportHandicaps :: Plan -> String
+exportHandicaps plan =
+  intercalate "\n"
+  $ map show
+  $ sortWith lecturer
+  $ filter (not . null . studentsWithHandicaps)
+  $ scheduledExams
+  $ setHandicapsOnScheduledExams plan
