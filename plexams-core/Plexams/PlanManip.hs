@@ -223,5 +223,5 @@ addRegistrationsToExam registrations exam =
 removeGroupsWithoutRegistrations :: [Exam] -> [Exam]
 removeGroupsWithoutRegistrations = undefined
 
-addConstraints :: Plan -> Constraints -> Plan
-addConstraints p c = p { constraints = Just c }
+addConstraints :: Constraints -> Plan -> Plan
+addConstraints c p = p { constraints = Just c }
