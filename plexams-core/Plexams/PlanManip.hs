@@ -92,7 +92,7 @@ applyAddRoomToExamListToPlan = foldr applyPlanManipToPlan
     where
         applyPlanManipToPlan (AddRoomToExam a n s dd) = addRoomToExam a n s dd
 
-
+-- TODO: Reserve nach oben eingeplant?
 addRoomToExam :: Integer -> String -> Integer -> Maybe Integer -> Plan -> Plan
 addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
   if ancode `M.member` unscheduledExams plan
@@ -111,8 +111,8 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
                 , maxSeats = availableRoomMaxSeats availableRoom
                 , deltaDuration = fromMaybe 0 maybeDeltaDuration
                 , invigilator = Nothing
-                , reserveRoom = seatsPlanned' < 3
-                             && seatsPlanned' /= registrations exam
+                , reserveRoom = not (availableRoomHandicap availableRoom) &&
+                    (seatsPlanned' < 3 && seatsPlanned' /= registrations exam)
                 , handicapCompensation = availableRoomHandicap availableRoom
                 , seatsPlanned = seatsPlanned'
                 }

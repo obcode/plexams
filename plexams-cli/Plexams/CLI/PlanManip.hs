@@ -23,7 +23,8 @@ makePlan config = do
     constraints    <- importConstraints config
     handicaps      <- importHandicaps config
 
-    return $ addConstraints constraints
+    return $ setHandicapsOnScheduledExams
+           $ addConstraints constraints
            $ Plexams.PlanManip.makePlan examsWithRegs
                                         semesterConfig
                                         Nothing

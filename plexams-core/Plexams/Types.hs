@@ -21,6 +21,7 @@ module Plexams.Types
     , scheduledExams
     , isScheduled
     , isUnscheduled
+    , withHandicaps
     , Ancode
     , examDateAsString
     , examSlotAsString
@@ -63,7 +64,7 @@ module Plexams.Types
     , ZPARoom(..)
     ) where
 
-import           Control.Arrow      (second)
+import           Control.Arrow      (second, (***))
 import           Data.Char          (digitToInt)
 import           Data.List          (intercalate, partition, sortBy, (\\))
 import qualified Data.Map           as M
@@ -106,13 +107,17 @@ mkAvailableRooms :: Plan -> [AvailableRoom] -> AvailableRooms
 mkAvailableRooms _ [] = M.empty
 mkAvailableRooms plan rooms =
   let slots' = M.keys $ slots plan
-      (handicapCompensationRooms, normalRooms') =
+      (handicapCompensationRooms', normalRooms') =
                                           partition availableRoomHandicap rooms
       normalRooms =
         sortBy (comparing (Down . availableRoomMaxSeats)) normalRooms'
+      handicapCompensationRooms =
+        sortBy (comparing (Down . availableRoomMaxSeats))
+                handicapCompensationRooms'
       (handicapCompensationRoomOdd, handicapCompensationRoomEven) =
-                              splitAt (length handicapCompensationRooms `div` 2)
-                                      handicapCompensationRooms
+          (map snd *** map snd)
+          $  partition fst
+          $ zip (concat $ repeat [True,False]) handicapCompensationRooms
       roomSlots' = maybe M.empty roomSlots $ constraints plan
       -- normalRoomsAlways =
       --  filter (not . (`elem` M.keys roomSlots') . availableRoomName) normalRooms
@@ -264,13 +269,13 @@ instance Show Exam where
                     else "")
                 ++ maybe "" ((", "++) . show) (slot exam)
                 ++ (if null $ studentsWithHandicaps exam then ""
-                    else "  \n    - "
-                        ++ intercalate "  \n    - "
+                    else "\n        - "
+                        ++ intercalate "\n        - "
                             (map show (studentsWithHandicaps exam))
                    )
                 ++ (if null $ rooms exam then ""
-                   else "  \n"
-                        ++ intercalate "  \n" (map show (rooms exam))
+                   else "\n        - "
+                        ++ intercalate "\n        - " (map show (rooms exam))
                    )
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
