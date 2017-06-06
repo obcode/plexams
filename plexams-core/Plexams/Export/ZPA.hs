@@ -109,6 +109,12 @@ planToZPA = unpack . encodePretty' config . planToZPAExams
                                                 , "date"
                                                 , "time"
                                                 , "reserveInvigilator_id"
-                                                -- , "rooms"
+                                                , "rooms"
+                                                , "number"
+                                                , "invigilator_id"
+                                                , "numberStudents"
+                                                , "reserveRoom"
+                                                , "handicapCompensation"
+                                                , "duration"
                                                 ]
                        }
