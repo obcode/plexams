@@ -38,6 +38,7 @@ library
                      , containers
                      , mtl
                      , text
+                     , text-show
                      , time
                      , vector
                      , yaml

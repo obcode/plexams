@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Plexams.Types
     ( -- * Config
       SemesterConfig(..)
@@ -69,12 +70,14 @@ import           Data.Char          (digitToInt)
 import           Data.List          (intercalate, partition, sortBy, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (isJust, mapMaybe)
+import           Data.Monoid        ((<>))
 import           Data.Ord           (Down (Down), comparing)
 import qualified Data.Set           as S
 import           Data.Text          (Text, unpack)
 import           Data.Time.Calendar
 import           GHC.Exts           (groupWith)
 import           GHC.Generics
+import           TextShow           (TextShow, showb)
 
 
 data SemesterConfig = SemesterConfig
@@ -322,14 +325,34 @@ instance Show Group where
       ++ maybe "" show mS
       ++ maybe "" (("("++) . (++")") . show) mReg
 
+instance TextShow Group where
+  showb (Group d mI mS mReg) = showb d
+    <> maybe "" showb mI
+    <> maybe "" showb mS
+    <> maybe "" (("("<>) . (<>")") . showb) mReg
+
 data Degree = IB | IC | IF | GO | IG | IN | IS
   deriving (Show, Eq, Ord, Read, Enum)
+
+instance TextShow Degree where
+  showb IB = "IB"
+  showb IC = "IC"
+  showb IF = "IF"
+  showb GO = "GO"
+  showb IG = "IG"
+  showb IN = "IN"
+  showb IS = "IS"
 
 allDegrees :: [Degree]
 allDegrees = [IB .. IS]
 
 data Subgroup = A | B | C
   deriving (Show, Eq, Ord)
+
+instance TextShow Subgroup where
+  showb A = "A"
+  showb B = "B"
+  showb C = "C"
 
 instance Read Group where
     readsPrec _ str = [(parseGroup str, "")]
@@ -370,6 +393,10 @@ data Person = Person
     , personFullName  :: String
     }
   deriving (Eq, Show, Ord)
+
+instance TextShow Person where
+  showb (Person id shortName _) =
+    showb id <> ". " <> showb shortName
 
 data AddExamToSlot =
     AddExamToSlot

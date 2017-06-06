@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Plexams.Validation
     ( validate
     , module Plexams.Validation.Exports
@@ -8,6 +9,7 @@ import           Control.Monad.Writer
 import           Data.List                         (nub)
 import qualified Data.Map                          as M
 import           Data.Maybe                        (isJust, mapMaybe)
+import           Data.Text                         (Text, append)
 import           GHC.Exts                          (groupWith)
 import           Plexams.Query
 import           Plexams.Types
@@ -15,11 +17,12 @@ import           Plexams.Validation.Exports
 import qualified Plexams.Validation.Rooms
 import qualified Plexams.Validation.ScheduledExams
 import qualified Plexams.Validation.Sources
+import           TextShow                          (showt)
 
-validate :: Plan -> (ValidationResult, [String])
+validate :: Plan -> (ValidationResult, [Text])
 validate = runWriter . validate'
 
-validate' :: Plan -> Writer [String] ValidationResult
+validate' :: Plan -> Writer [Text] ValidationResult
 validate' plan = do
   tell ["# Validation"]
   sourcesOk <- Plexams.Validation.Sources.validate plan
@@ -34,7 +37,7 @@ validate' plan = do
             , roomsOk
             ]
 
-validateLecturersMax3ExamDays :: Plan -> Writer [String] ValidationResult
+validateLecturersMax3ExamDays :: Plan -> Writer [Text] ValidationResult
 validateLecturersMax3ExamDays plan = do
   let lecturerWithMoreThan3ExamDays =
           filter ((>3) . length . nub . snd) $ lecturerExamDays plan
@@ -43,7 +46,8 @@ validateLecturersMax3ExamDays plan = do
   unless ok $
     mapM_ (\(l,d) ->
               tell ["- More than 3 days of exams: "
-                    ++ personShortName l
-                    ++ ": " ++ show d])
+                    `append` showt (personShortName l)
+                    `append` ": "
+                    `append` showt d])
           lecturerWithMoreThan3ExamDays
   return $ if ok then EverythingOk else SoftConstraintsBroken

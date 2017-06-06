@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Plexams.CLI.Commands
   ( runCommand
   ) where
 
 import           Data.List                   (intercalate)
+import qualified Data.Text                   as Text
+import qualified Data.Text.IO                as Text
 import           Plexams.CLI.Types
 import           Plexams.Export.HTML
 import           Plexams.Export.Markdown
@@ -50,7 +53,8 @@ validate config = stdoutOrFile config . validate'
   where
     validate' plan =
       let (ok, msgs) = P.validate plan
-      in "\n# " ++ show ok ++ "\n\n" ++ intercalate "\n\n" msgs
+      in "\n# " ++ show ok ++ "\n\n" ++ intercalate "\n\n"
+                                                    (map Text.unpack msgs)
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config
@@ -73,7 +77,7 @@ export config plan =
         Nothing -> return ()
         Just fp -> do
           (valRes, msgs) <- P.validateZPAExport fp plan
-          putStrLn $ intercalate "\n\n" msgs
+          Text.putStrLn $ Text.intercalate "\n\n" msgs
           print valRes
     Export Handicaps ->
       stdoutOrFile config $ exportHandicaps plan
