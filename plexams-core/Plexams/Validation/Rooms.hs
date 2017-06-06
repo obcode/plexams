@@ -65,9 +65,32 @@ validationStillReserveForExam exam = do
 validateDifferentRoomsInSlots :: Plan -> Writer [Text] ValidationResult
 validateDifferentRoomsInSlots plan = do
   tell ["### Validating different rooms in slot (hard)"]
-  validationResult <$> mapM validateDifferentRoomsInSlot (M.elems (slots plan))
+  validationResult <$> mapM validateDifferentRoomsInSlot (M.toList (slots plan))
 
-validateDifferentRoomsInSlot :: Slot -> Writer [Text] ValidationResult
-validateDifferentRoomsInSlot slot = do
-  tell ["TODO: fixme"]
-  return HardConstraintsBroken
+validateDifferentRoomsInSlot :: ((DayIndex, SlotIndex), Slot)
+                             -> Writer [Text] ValidationResult
+validateDifferentRoomsInSlot (index, slot) = do
+  let exams = examsInSlot slot
+      roomsDifferent rs =  length rs
+                        == length (nub (map (roomID . fst) rs))
+      plannedRooms = concatMap (\e -> map (\r -> (r, e)) $ rooms e) exams
+      allRoomsDifferent = roomsDifferent plannedRooms
+      plannedRoomsWithoutReserveRooms =
+                    filter (not . reserveRoom . fst) plannedRooms
+      plannedRoomsWithoutReserveRoomsDifferent =
+                    roomsDifferent plannedRoomsWithoutReserveRooms
+      plannedRoomsWithoutHandicapCompensation =
+                    filter (not . handicapCompensation . fst) plannedRooms
+      plannedRoomsWithoutHandicapCompensationDifferent =
+                    roomsDifferent plannedRoomsWithoutHandicapCompensation
+  unless allRoomsDifferent $
+    tell [ "- slot "
+           `append` showt index
+           `append` ": same rooms used more than once"
+         ]
+  return $ if allRoomsDifferent
+    then EverythingOk
+    else if plannedRoomsWithoutReserveRoomsDifferent
+            && plannedRoomsWithoutHandicapCompensationDifferent
+         then SoftConstraintsBroken
+         else HardConstraintsBroken

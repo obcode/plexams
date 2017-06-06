@@ -79,7 +79,7 @@ import           GHC.Exts           (groupWith)
 import           GHC.Generics
 import           TextShow           (TextShow, showb)
 
-
+-- fold SemesterConfig
 data SemesterConfig = SemesterConfig
     { semester        :: Text     -- ^ Semester
     , firstDay        :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
@@ -140,7 +140,9 @@ mkAvailableRooms plan rooms =
               $ slots' \\ slots''
    in foldr (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
             allAvailableRooms $ M.toList roomSlots'
+-- endfold
 
+-- fold Plan
 data Plan = Plan
     { semesterConfig   :: SemesterConfig
     , slots            :: Slots
@@ -180,7 +182,9 @@ isUnknownExamAncode :: Ancode -> Plan -> Bool
 isUnknownExamAncode ancode plan =
      not (isScheduledAncode ancode plan)
   && not (isUnscheduledAncode ancode plan)
+-- endfold
 
+-- fold Slots
 type DayIndex = Int
 type SlotIndex = Int
 
@@ -224,7 +228,9 @@ data Slot = Slot
     , reserveInvigilator :: Maybe Integer  -- ^ Reserveaufsicht für die Prüfung
     }
   deriving (Show, Eq)
+-- endfold
 
+-- fold Exam
 type Ancode = Integer
 type Duration = Integer
 type ExamType = String
@@ -280,6 +286,7 @@ instance Show Exam where
                    else "\n        - "
                         ++ intercalate "\n        - " (map show (rooms exam))
                    )
+-- endfold
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 

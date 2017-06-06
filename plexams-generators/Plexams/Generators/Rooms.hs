@@ -11,8 +11,7 @@ import           Plexams.Types
 
 generateRooms :: Plan -> (Plan, [AddRoomToExam])
 generateRooms plan =
-  let availableRooms' = {- map (second fst)
-                      $ -} M.toList $ mkAvailableRooms plan
+  let availableRooms' =  M.toList $ mkAvailableRooms plan
                                     (availableRooms $ semesterConfig plan)
       slots' = M.toList $ M.map (M.elems . examsInSlot) $ slots plan
       roomsAndSlots = [ (s, (rooms, filter plannedByMe exams))
