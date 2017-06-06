@@ -156,6 +156,7 @@ makePlan exams semesterConfig maybePers maybeStudents handicaps' =
           , students = fromMaybe M.empty maybeStudents
           , studentsExams = mkStudentsExams maybeStudents
           , handicaps = handicaps'
+          , invigilators = M.empty
           , initialPlan = exams
           }
         (fk10Exams semesterConfig)

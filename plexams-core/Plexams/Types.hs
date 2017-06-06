@@ -39,6 +39,9 @@ module Plexams.Types
     , Person(..)
     , PersonID
     , Persons
+    , Invigilator(..)
+    , Invigilators
+    , addInvigilators
     , Students
     , MtkNr
     , StudentName
@@ -65,16 +68,18 @@ module Plexams.Types
     , ZPARoom(..)
     ) where
 
-import           Control.Arrow      (second, (***))
+import           Control.Arrow      (second, (&&&), (***))
 import           Data.Char          (digitToInt)
-import           Data.List          (intercalate, partition, sortBy, (\\))
+import           Data.List          (elemIndex, intercalate, partition, sortBy,
+                                     (\\))
 import qualified Data.Map           as M
-import           Data.Maybe         (isJust, mapMaybe)
+import           Data.Maybe         (fromMaybe, isJust, mapMaybe)
 import           Data.Monoid        ((<>))
 import           Data.Ord           (Down (Down), comparing)
 import qualified Data.Set           as S
-import           Data.Text          (Text, unpack)
+import           Data.Text          (Text, append, unpack)
 import           Data.Time.Calendar
+import           Data.Time.Format   (defaultTimeLocale, parseTimeM)
 import           GHC.Exts           (groupWith)
 import           GHC.Generics
 import           TextShow           (TextShow, showb)
@@ -153,6 +158,7 @@ data Plan = Plan
     , students         :: Students
     , studentsExams    :: StudentsExams
     , handicaps        :: [Handicap]
+    , invigilators     :: Invigilators
     , initialPlan      :: [Exam]
     }
   deriving (Show, Eq)
@@ -522,6 +528,55 @@ setHandicapsOnScheduledExams plan =
            plan
            handicapsPerAncode
 
+-- fold Invigilator
+
+data Invigilator = Invigilator
+  { invigilatorExcludedDays         :: [Int]
+  , invigilatorExamDays             :: [Int]
+  , invigilatorName                 :: Text
+  , invigilatorID                   :: Integer
+  , invigilatorExcludedDates        :: [Text]
+  , invigilatorPartTime             :: Float
+  , invigilatorFreeSemester         :: Float
+  , invigilatorOvertimeThisSemester :: Float
+  , invigilatorOvertimeLastSemester :: Float
+  , invigilatorOralExams            :: Integer
+  , invigilatorMaster               :: Integer
+  } deriving (Show, Eq)
+
+type InvigilatorID = Integer
+type Invigilators = M.Map InvigilatorID Invigilator
+
+addInvigilators :: [Invigilator] -> Plan -> Plan
+addInvigilators invigilatorList plan =
+  let examDaysPerLecturer = M.fromList
+        $ map (\g -> (fst $ head g, map snd g))
+        $ groupWith fst
+        $ concatMap (\((d,_), s) -> map (\e -> (personID $ lecturer e, d))
+                                        $ M.elems
+                                        $ examsInSlot s)
+        $ M.toList
+        $ slots plan
+      makeDay :: Text -> Day
+      makeDay str =
+        fromMaybe (error $ unpack $ "cannot parse date: " `append` str)
+                  (parseTimeM True defaultTimeLocale "%d.%m.%y" (unpack str))
+      addDays invigilator = invigilator
+        { invigilatorExamDays = M.findWithDefault []
+                                                  (invigilatorID invigilator)
+                                                  examDaysPerLecturer
+        , invigilatorExcludedDays =
+            mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
+            $ invigilatorExcludedDates invigilator
+        }
+  in plan
+      { invigilators =
+          M.fromList $ map (invigilatorID &&& addDays) invigilatorList
+      }
+
+-- endfold
+
+-- fold Validation
 data ValidationResult = EverythingOk
                       | SoftConstraintsBroken
                       | HardConstraintsBroken
@@ -534,8 +589,9 @@ instance Show ValidationResult where
 
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum
+-- endfold
 
--- ZPAExport
+-- fold ZPAExport
 
 data ZPAExam = ZPAExam
     { zpaExamAnCode               :: Integer
@@ -555,3 +611,4 @@ data ZPARoom = ZPARoom
     , zpaRoomNumberStudents       :: Integer
     }
   deriving (Generic)
+-- endfold

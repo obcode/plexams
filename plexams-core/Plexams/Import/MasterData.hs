@@ -3,6 +3,7 @@ module Plexams.Import.MasterData
     ( importSemesterConfigFromYAMLFile
     , importExamsFromJSONFile
     , importConstraintsFromYAMLFile
+    , importInvigilatorsFromJSONFile
     ) where
 
 import           Control.Applicative         (empty, (<$>), (<*>))
@@ -213,3 +214,40 @@ iIToSlots (ImpossibleInvigilation p ss) =
 importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
 importConstraintsFromYAMLFile =
     fmap (fmap importConstraintsToConstraints . Y.decode) . BSI.readFile
+
+--------------------------------------------------------------------------------
+-- Exams from JSON File
+--------------------------------------------------------------------------------
+
+-- {
+--     "invigilator": "Braun, O.",
+--     "overtime_this_semester": 0.0,
+--     "free_semester": 0.0,
+--     "oral_exams_contribution": 0,
+--     "inviligator_id": 180,
+--     "part_time": 1.0,
+--     "excluded_dates": [
+--         "12.07.17",
+--         "14.07.17",
+--         "19.07.17",
+--         "21.07.17"
+--     ],
+--     "master_contribution": 0,
+--     "overtime_last_semester": 0.0
+-- }
+
+instance FromJSON Invigilator where
+    parseJSON (Object v ) = Invigilator [] []
+                         <$> v .: "invigilator"
+                         <*> v .: "inviligator_id"
+                         <*> v .: "excluded_dates"
+                         <*> v .: "part_time"
+                         <*> v .: "free_semester"
+                         <*> v .: "overtime_this_semester"
+                         <*> v .: "overtime_last_semester"
+                         <*> v .: "oral_exams_contribution"
+                         <*> v .: "master_contribution"
+    parseJSON _          = empty
+
+importInvigilatorsFromJSONFile :: FilePath -> IO (Maybe [Invigilator])
+importInvigilatorsFromJSONFile = fmap decode . BS.readFile
