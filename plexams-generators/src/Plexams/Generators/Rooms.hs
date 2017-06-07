@@ -14,18 +14,18 @@ generateRooms plan =
   let availableRooms' =  M.toList $ mkAvailableRooms plan
                                     (availableRooms $ semesterConfig plan)
       slots' = M.toList $ M.map (M.elems . examsInSlot) $ slots plan
-      roomsAndSlots = [ (s, (rooms, filter plannedByMe exams))
-                      | (s,  rooms) <- availableRooms'
-                      , (s', exams) <- slots'
+      roomsAndSlots = [ (s, (rooms', filter plannedByMe exams'))
+                      | (s,  rooms') <- availableRooms'
+                      , (s', exams') <- slots'
                       , s == s'
                       ]
       slotsWithRooms = map (second (uncurry setRoomsOnSlot)) roomsAndSlots
-  in ( plan { slots = foldr (\(s,(exams, _)) slots'' ->
-                              M.alter (\(Just slot)
-                                        -> Just $ slot {
+  in ( plan { slots = foldr (\(s,(exams', _)) slots'' ->
+                              M.alter (\(Just slot')
+                                        -> Just $ slot' {
                                             examsInSlot = M.fromList
                                               $ map (\e -> (anCode e, e))
-                                                    exams
+                                                    exams'
                                           }
                                       ) s slots''
                             )
@@ -39,7 +39,7 @@ setRoomsOnSlot :: ([AvailableRoom], [AvailableRoom]) -> [Exam]
                -> ([Exam], [AddRoomToExam])
 setRoomsOnSlot (n,h) e =
   let (e', planManipsNormal) = setNormalRoomsOnSlot n e []
-      (e'', planManipsHandicap) = setHandicapRoomsOnSlot h e
+      (e'', planManipsHandicap) = setHandicapRoomsOnSlot h e'
   in (e'', planManipsNormal ++ planManipsHandicap)
 
 seatsMissing' :: Exam -> Integer
@@ -50,15 +50,15 @@ seatsMissing' exam = seatsMissing exam -
 setNormalRoomsOnSlot :: [AvailableRoom] -> [Exam] -> [AddRoomToExam]
                -> ([Exam], [AddRoomToExam])
 setNormalRoomsOnSlot [] _ _ = error "no normal rooms left for slot"
-setNormalRoomsOnSlot (room:rooms) exams planManips =
-  let exams' = sortBy (comparing (Down . seatsMissing')) exams
-  in case exams' of
-    [] -> (exams, planManips)
+setNormalRoomsOnSlot (room:rooms') exams' planManips =
+  let exams'' = sortBy (comparing (Down . seatsMissing')) exams'
+  in case exams'' of
+    [] -> (exams', planManips)
     (nextExam:sortedExams) ->
      if seatsMissing' nextExam <= 0
      then (sortedExams, planManips)
      else let (exam', planManip) = setRoomOnExam nextExam room
-       in setNormalRoomsOnSlot rooms (exam' : sortedExams)
+       in setNormalRoomsOnSlot rooms' (exam' : sortedExams)
                                           (planManip : planManips)
 
 setRoomOnExam :: Exam -> AvailableRoom -> (Exam, AddRoomToExam)
@@ -85,27 +85,27 @@ setRoomOnExam exam availableRoom  =
 setHandicapRoomsOnSlot :: [AvailableRoom] -> [Exam]
                -> ([Exam], [AddRoomToExam])
 setHandicapRoomsOnSlot [] _ = error "no handicap rooms left for slot"
-setHandicapRoomsOnSlot (room:rooms) exams
-  | not (any withHandicaps exams) = (exams, [])
+setHandicapRoomsOnSlot (room:rooms') exams'
+  | not (any withHandicaps exams') = (exams', [])
   | otherwise =
-  let (examsWithHandicaps, otherExams) = partition withHandicaps exams
+  let examsWithHandicaps = filter withHandicaps exams'
       (studentsOwnRoom, otherStudents) =
           partition needsRoomAlone
           $ concatMap studentsWithHandicaps examsWithHandicaps
-      (exams', planManips) =
+      (exams'', planManips) =
         if length otherStudents <= fromInteger (availableRoomMaxSeats room)
-        then setHandicapRoomOnAllExams room exams
+        then setHandicapRoomOnAllExams room exams'
         else error "too much handicap students, room to small"
-      (exams'', planManips')
-        | null studentsOwnRoom = (exams', [])
-        | length studentsOwnRoom <= 1 = setHandicapsRoomAlone (head rooms) exams'
+      (exams''', planManips')
+        | null studentsOwnRoom = (exams'', [])
+        | length studentsOwnRoom <= 1 = setHandicapsRoomAlone (head rooms') exams''
         | otherwise =  error "more than one students needs room for its own"
-  in (exams'', planManips ++ planManips')
+  in (exams''', planManips ++ planManips')
 
 setHandicapRoomOnAllExams :: AvailableRoom -> [Exam] -> ([Exam],[AddRoomToExam])
-setHandicapRoomOnAllExams room exams =  second concat
-                                      $ unzip
-                                      $ map (setHandicapRoomOnExam room) exams
+setHandicapRoomOnAllExams room  = second concat
+                                . unzip
+                                . map (setHandicapRoomOnExam room)
   where
     setHandicapRoomOnExam availableRoom exam =
       let studentsWithHandicaps' = filter (not . needsRoomAlone)
@@ -135,9 +135,9 @@ setHandicapRoomOnAllExams room exams =  second concat
         else (exam,[])
 
 setHandicapsRoomAlone :: AvailableRoom -> [Exam] -> ([Exam],[AddRoomToExam])
-setHandicapsRoomAlone availableRoom exams =
+setHandicapsRoomAlone availableRoom exams' =
   let ([exam], others) = partition (any needsRoomAlone . studentsWithHandicaps)
-                                   exams
+                                   exams'
       roomName = availableRoomName availableRoom
       deltaDuration'  = (duration exam  *
         deltaDurationPercent

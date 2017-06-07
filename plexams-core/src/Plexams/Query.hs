@@ -7,18 +7,15 @@ module Plexams.Query
     , lecturerExamDays
     , examsWithSameName
     , queryStudentByName
-    , queryStudentByMtkNr
     ) where
 
-import           Data.List                 (isInfixOf, sortBy)
-import qualified Data.Map                  as M
-import           Data.Maybe                (maybe)
-import           Data.Set                  (Set)
-import           Data.Text                 (unpack)
-import           GHC.Exts                  (groupWith)
-import           Plexams.Import.MasterData
+import           Data.List     (isInfixOf, sortBy)
+import qualified Data.Map      as M
+import           Data.Maybe    (maybe)
+import           Data.Set      (Set)
+import           Data.Text     (unpack)
+import           GHC.Exts      (groupWith)
 import           Plexams.Types
-
 
 queryByAnCode :: Integer -> Plan -> [Exam]
 queryByAnCode ac = filter ((==ac) . anCode) . allExams
@@ -41,11 +38,11 @@ queryByGroup group unscheduledOnly =
                   else allExams)
   where
     elemOrSubGroup :: Group -> [Group] -> [Group]
-    elemOrSubGroup (Group degree Nothing Nothing _) groups =
-        filter (\(Group d _ _ _) -> degree == d) groups
-    elemOrSubGroup (Group degree semester Nothing _) groups =
-        filter (\(Group d s _ _) -> degree == d && semester == s) groups
-    elemOrSubGroup group groups = filter (==group) groups
+    elemOrSubGroup (Group degree Nothing Nothing _) groups' =
+        filter (\(Group d _ _ _) -> degree == d) groups'
+    elemOrSubGroup (Group degree semester' Nothing _) groups' =
+        filter (\(Group d s _ _) -> degree == d && semester' == s) groups'
+    elemOrSubGroup group' groups' = filter (==group') groups'
 
 querySlot :: (Int, Int) -> Plan -> [Exam]
 querySlot s = maybe [] (M.elems . examsInSlot)
@@ -71,5 +68,3 @@ queryStudentByName str =
   filter (isInfixOf str . unpack .  fst . snd)
   . M.toList
   . studentsExams
-
-queryStudentByMtkNr = undefined

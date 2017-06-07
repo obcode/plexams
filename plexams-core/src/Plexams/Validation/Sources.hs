@@ -24,17 +24,17 @@ validateRegsAndOverlaps plan = do
     Nothing -> do
       tell ["### no constraints for plan defined"]
       return HardConstraintsBroken
-    Just overlaps ->
-      validationResult <$> mapM validateOverlapsForGroups overlaps
+    Just overlaps' ->
+      validationResult <$> mapM validateOverlapsForGroups overlaps'
 
 -- Überprüft die Symmetrie der Overlaps
 validateOverlapsForGroups :: Overlaps -> Writer [Text] ValidationResult
-validateOverlapsForGroups overlaps = do
-  let group = showt $ olGroup overlaps
+validateOverlapsForGroups overlaps' = do
+  let group = showt $ olGroup overlaps'
       flatOverlaps = concatMap (\(a,m) ->
                             map (\(b,c) -> (a,b,c))
                          $ M.toList m)
-                   $ M.toList $ olOverlaps overlaps
+                   $ M.toList $ olOverlaps overlaps'
   tell ["### Checking integrity of overlaps file for "
         `append` group `append` " (hard)"]
   validationResult <$> mapM (findSymm group flatOverlaps) flatOverlaps

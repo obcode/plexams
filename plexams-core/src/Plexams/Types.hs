@@ -22,6 +22,7 @@ module Plexams.Types
     , scheduledExams
     , isScheduled
     , isUnscheduled
+    , isUnknownExamAncode
     , withHandicaps
     , Ancode
     , examDateAsString
@@ -68,21 +69,27 @@ module Plexams.Types
     , ZPARoom(..)
     ) where
 
-import           Control.Arrow      (second, (&&&), (***))
-import           Data.Char          (digitToInt)
-import           Data.List          (elemIndex, intercalate, partition, sortBy,
-                                     (\\))
-import qualified Data.Map           as M
-import           Data.Maybe         (fromMaybe, isJust, mapMaybe)
-import           Data.Monoid        ((<>))
-import           Data.Ord           (Down (Down), comparing)
-import qualified Data.Set           as S
-import           Data.Text          (Text, append, unpack)
+import           Control.Applicative         (empty, (<$>), (<*>))
+import           Control.Arrow               ((&&&), (***))
+import           Data.Aeson                  (FromJSON, Value (Object),
+                                              parseJSON, (.:))
+import           Data.Char                   (digitToInt)
+import           Data.List                   (elemIndex, intercalate, partition,
+                                              sortBy, (\\))
+import qualified Data.Map                    as M
+import           Data.Maybe                  (fromMaybe, isJust, mapMaybe)
+import           Data.Monoid                 ((<>))
+import           Data.Ord                    (Down (Down), comparing)
+import qualified Data.Set                    as S
+import           Data.Text                   (Text, append, unpack)
 import           Data.Time.Calendar
-import           Data.Time.Format   (defaultTimeLocale, parseTimeM)
-import           GHC.Exts           (groupWith)
+import           Data.Time.Calendar.WeekDate (toWeekDate)
+import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
+import qualified Data.Yaml                   as Y
+import           GHC.Exts                    (groupWith)
 import           GHC.Generics
-import           TextShow           (TextShow, showb)
+import           TextShow                    (TextShow, showb)
+
 
 -- {{{ SemesterConfig
 data SemesterConfig = SemesterConfig
@@ -100,12 +107,58 @@ data SemesterConfig = SemesterConfig
     }
   deriving (Eq, Show, Generic)
 
+instance Y.FromJSON SemesterConfig where
+    parseJSON (Y.Object v) = makeSemesterConfig
+                        <$> v Y..: "semester"
+                        <*> v Y..: "firstDay"
+                        <*> v Y..: "lastDay"
+                        <*> v Y..: "goDay0"
+                        <*> v Y..: "slotsPerDay"
+                        <*> v Y..: "initialPlan"
+                        <*> v Y..: "persons"
+                        <*> v Y..: "planManip"
+                        <*> v Y..: "rooms"
+                        <*> v Y..: "notPlannedByMe"
+    parseJSON _          = empty
+
+makeSemesterConfig :: Text -> String -> String -> String -> [String]
+                   -> FilePath -> FilePath -> FilePath
+                   -> [AvailableRoom] -> [[Integer]]
+                   -> SemesterConfig
+makeSemesterConfig s f l goDay0 =
+        SemesterConfig s firstDay' lastDay' realExamDays goSlots'
+    where makeDay :: String -> Day
+          makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
+             (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
+          firstDay' = makeDay f
+          lastDay' = makeDay l
+          realExamDays = filter (notWeekend . toWeekDate) [firstDay'..lastDay']
+          notWeekend (_,_,weekday) = weekday <= 5
+          goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays
+          goSlots' = map (\(d,t) -> (d+goDay0Index, t)) rawGOSlots
+          rawGOSlots =  [ (0,0), (0,1) -- Tag 0
+                        , (1,3), (1,4), (1,5)
+                        , (2,0), (2,1)
+                        , (3,3), (3,4), (3,5)
+                        , (4,0), (4,1)
+                        , (5,3), (5,4), (5,5)
+                        , (6,0), (6,1)
+                        , (9,3), (9,4), (9,5)
+                        ]
+
 data AvailableRoom = AvailableRoom
     { availableRoomName     :: String
     , availableRoomMaxSeats :: Integer
     , availableRoomHandicap :: Bool
     }
   deriving (Eq, Show, Generic)
+
+instance Y.FromJSON AvailableRoom where
+    parseJSON (Y.Object v) = AvailableRoom
+                       <$> v Y..: "name"
+                       <*> v Y..: "seats"
+                       <*> v Y..:? "handicap" Y..!= False
+    parseJSON _            = empty
 
 type AvailableRooms = M.Map (DayIndex, SlotIndex)
                             -- ( Normale Räume (absteigend sortiert nach Größe)
@@ -114,10 +167,10 @@ type AvailableRooms = M.Map (DayIndex, SlotIndex)
 
 mkAvailableRooms :: Plan -> [AvailableRoom] -> AvailableRooms
 mkAvailableRooms _ [] = M.empty
-mkAvailableRooms plan rooms =
+mkAvailableRooms plan rooms' =
   let slots' = M.keys $ slots plan
       (handicapCompensationRooms', normalRooms') =
-                                          partition availableRoomHandicap rooms
+                                          partition availableRoomHandicap rooms'
       normalRooms =
         sortBy (comparing (Down . availableRoomMaxSeats)) normalRooms'
       handicapCompensationRooms =
@@ -133,13 +186,14 @@ mkAvailableRooms plan rooms =
       allAvailableRooms = M.fromList $ zip slots' $ concat
                         $ repeat [ (normalRooms, handicapCompensationRoomOdd)
                                  , (normalRooms, handicapCompensationRoomEven)]
+      filterNotRoomID roomID' = filter ((/=roomID') . availableRoomName)
       removeRoomFromAllOtherSlots :: RoomID -> [(DayIndex, SlotIndex)] -> AvailableRooms
                       -> AvailableRooms
-      removeRoomFromAllOtherSlots roomID slots'' allRooms =
+      removeRoomFromAllOtherSlots roomID' slots'' allRooms =
         foldr ( -- \s ->
                 M.alter (maybe Nothing (\(nr, hr) -> Just
-                          ( filter ((/=roomID) . availableRoomName) nr
-                          , filter ((/=roomID) . availableRoomName) hr
+                          ( filterNotRoomID roomID' nr
+                          , filterNotRoomID roomID' hr
                           )
                         ))
               ) allRooms
@@ -225,10 +279,10 @@ setSlotsOnExams plan = plan
     }
 
 addSlotKeyToExam :: (DayIndex, SlotIndex) -> Slot -> Slot
-addSlotKeyToExam k slot =
-    slot { examsInSlot = M.map (addSlotKey k) $ examsInSlot slot }
+addSlotKeyToExam k slot' =
+    slot' { examsInSlot = M.map (addSlotKey k) $ examsInSlot slot' }
   where
-    addSlotKey k exam = exam { slot = Just k }
+    addSlotKey k' exam = exam { slot = Just k' }
 
 data Slot = Slot
     { examsInSlot        :: M.Map Ancode Exam -- Ancode -> Exam
@@ -383,7 +437,7 @@ parseGroup str = Group
     , groupRegistrations = Nothing
     }
   where
-    str2Degree str = case str of
+    str2Degree str' = case str' of
                          "IB" -> IB
                          "IC" -> IC
                          "IF" -> IF
@@ -412,9 +466,19 @@ data Person = Person
   deriving (Eq, Show, Ord)
 
 instance TextShow Person where
-  showb (Person id shortName _ email _ _) =
-    showb id <> ". " <> showb shortName
+  showb (Person iD shortName _ email _ _) =
+    showb iD <> ". " <> showb shortName
     <> " <" <> showb email <> "> "
+
+instance FromJSON Person where
+    parseJSON (Object v) = Person
+                        <$> v .: "person_id"
+                        <*> v .: "person_shortname"
+                        <*> v .: "person_fullname"
+                        <*> v .: "email"
+                        <*> v .: "fk"
+                        <*> v .: "is_lba"
+    parseJSON _          = empty
 
 data AddExamToSlot =
     AddExamToSlot
@@ -432,6 +496,14 @@ data AddRoomToExam =
 --      , addRoomReserveRoom :: Bool -- TODO: calculate?
       }
   deriving Show
+
+instance Y.FromJSON AddRoomToExam where
+    parseJSON (Y.Object v) = AddRoomToExam
+                       <$> v Y..: "ancode"
+                       <*> v Y..: "room"
+                       <*> v Y..: "seatsPlanned"
+                       <*> v Y..:? "deltaDuration" Y..!= Nothing
+    parseJSON _            = empty
 
 data Registrations = Registrations
     { regsGroup :: String
@@ -478,20 +550,19 @@ data Handicap = Handicap
   }
   deriving (Eq)
 
+instance Y.FromJSON Handicap where
+  parseJSON (Y.Object v) = Handicap
+                        <$> v Y..: "studentname"
+                        <*> v Y..: "mtknr"
+                        <*> v Y..: "compensation"
+                        <*> v Y..: "deltaDurationPercent"
+                        <*> v Y..: "exams"
+                        <*> v Y..:? "needsRoomAlone" Y..!= False
+  parseJSON _            = empty
+
 instance Show Handicap where
   show handicap = unpack (studentname handicap)
                   ++ " (" ++ unpack (compensation handicap) ++ ")"
-
-type Handicaps = M.Map MtkNr Handicap
-
--- TODO: Brauche ich die Funktion wirklich?
-mkHandicaps :: Plan -> [Handicap] -> Handicaps
-mkHandicaps plan =
-  M.fromList
-  -- remove all unknown exams
-  . map (\h -> ( mtknr h
-               , h {exams = filter (`elem` (map anCode $ allExams plan))
-                                   $ exams h}))
 
 updateExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
 updateExamByAncodeWith plan ancode f
@@ -549,6 +620,19 @@ data Invigilator = Invigilator
   , invigilatorMaster               :: Integer
   } deriving (Show, Eq)
 
+instance FromJSON Invigilator where
+    parseJSON (Object v ) = Invigilator [] []
+                         <$> v .: "invigilator"
+                         <*> v .: "inviligator_id"
+                         <*> v .: "excluded_dates"
+                         <*> v .: "part_time"
+                         <*> v .: "free_semester"
+                         <*> v .: "overtime_this_semester"
+                         <*> v .: "overtime_last_semester"
+                         <*> v .: "oral_exams_contribution"
+                         <*> v .: "master_contribution"
+    parseJSON _          = empty
+
 type InvigilatorID = Integer
 type Invigilators = M.Map InvigilatorID Invigilator
 
@@ -566,17 +650,17 @@ addInvigilators invigilatorList plan =
       makeDay str =
         fromMaybe (error $ unpack $ "cannot parse date: " `append` str)
                   (parseTimeM True defaultTimeLocale "%d.%m.%y" (unpack str))
-      addDays invigilator = invigilator
+      addDays' invigilator' = invigilator'
         { invigilatorExamDays = M.findWithDefault []
-                                                  (invigilatorID invigilator)
+                                                  (invigilatorID invigilator')
                                                   examDaysPerLecturer
         , invigilatorExcludedDays =
             mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
-            $ invigilatorExcludedDates invigilator
+            $ invigilatorExcludedDates invigilator'
         }
   in plan
       { invigilators =
-          M.fromList $ map (invigilatorID &&& addDays) invigilatorList
+          M.fromList $ map (invigilatorID &&& addDays') invigilatorList
       }
 
 -- }}}
@@ -608,6 +692,16 @@ data ZPAExam = ZPAExam
     }
   deriving (Generic)
 
+instance FromJSON ZPAExam where
+    parseJSON (Object v ) = ZPAExam
+                         <$> v .: "anCode"
+                         <*> v .: "date"
+                         <*> v .: "time"
+                         <*> v .: "total_number"
+                         <*> v .: "reserveInvigilator_id"
+                         <*> v .: "rooms"
+    parseJSON _          = empty
+
 data ZPARoom = ZPARoom
     { zpaRoomNumber               :: String
     , zpaRoomInvigilatorId        :: Integer
@@ -617,4 +711,15 @@ data ZPARoom = ZPARoom
     , zpaRoomNumberStudents       :: Integer
     }
   deriving (Generic)
+
+instance FromJSON ZPARoom where
+    parseJSON (Object v ) = ZPARoom
+                         <$> v .: "number"
+                         <*> v .: "invigilator_id"
+                         <*> v .: "reserveRoom"
+                         <*> v .: "handicapCompensation"
+                         <*> v .: "duration"
+                         <*> v .: "numberStudents"
+    parseJSON _          = empty
+
 -- }}}

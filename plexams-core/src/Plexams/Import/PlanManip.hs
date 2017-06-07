@@ -4,9 +4,8 @@ module Plexams.Import.PlanManip
     , importAddRoomToExamFromYAMLFile
     ) where
 
-import           Control.Applicative (empty, (<$>), (<*>))
-import qualified Data.ByteString     as BSI
-import qualified Data.Yaml           as Y
+import qualified Data.ByteString as BSI
+import qualified Data.Yaml       as Y
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -27,23 +26,5 @@ importExamSlotsFromYAMLFile = fmap (listsToExamSlots . Y.decode) . BSI.readFile
 -- AddRoomToExam from YAML file
 --------------------------------------------------------------------------------
 
-instance Y.FromJSON AddRoomToExam where
-    parseJSON (Y.Object v) = AddRoomToExam
-                       <$> v Y..: "ancode"
-                       <*> v Y..: "room"
-                       <*> v Y..: "seatsPlanned"
-                       <*> v Y..:? "deltaDuration" Y..!= Nothing
-    parseJSON _            = empty
-
-listsToAddRoomToExam :: Maybe [[String]] -> Maybe [AddRoomToExam]
-listsToAddRoomToExam = fmap $ map listToAddRoomToExam
-
-listToAddRoomToExam :: [String] -> AddRoomToExam
-listToAddRoomToExam [a,r,s,dd] = AddRoomToExam (read a) r (read s)
-                                                                (Just $ read dd)
-listToAddRoomToExam [a,r,s]    = AddRoomToExam (read a) r (read s) Nothing
-listToAddRoomToExam xs         = error $ "cannot decode " ++ show xs
-
 importAddRoomToExamFromYAMLFile :: FilePath -> IO (Maybe [AddRoomToExam])
-importAddRoomToExamFromYAMLFile =
-  fmap Y.decode . BSI.readFile
+importAddRoomToExamFromYAMLFile = fmap Y.decode . BSI.readFile

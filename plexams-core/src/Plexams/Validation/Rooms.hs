@@ -3,15 +3,10 @@ module Plexams.Validation.Rooms
   ( validate
   ) where
 
-import           Control.Arrow        ((&&&))
 import           Control.Monad.Writer
 import           Data.List            (nub)
 import qualified Data.Map             as M
-import           Data.Maybe           (isJust, mapMaybe)
-import qualified Data.Set             as S
 import           Data.Text            (Text, append)
-import           GHC.Exts             (groupWith)
-import           Plexams.Query
 import           Plexams.Types
 import           TextShow             (showt)
 
@@ -35,12 +30,12 @@ validateEnoughRoomsForExams plan = do
 
 validateEnoughRoomsForExam :: Exam -> Writer [Text] ValidationResult
 validateEnoughRoomsForExam exam = do
-  let regs = registrations exam
+  let regs' = registrations exam
       seats = sum $ map maxSeats $ rooms exam
-  when (regs>seats) $
+  when (regs'>seats) $
     tell ["- exam " `append` showt (anCode exam)
                     `append` " not enough rooms planned"]
-  return $ if regs<=seats
+  return $ if regs'<=seats
            then EverythingOk
            else HardConstraintsBroken
 
@@ -52,13 +47,13 @@ validationStillReserveForExams plan = do
 
 validationStillReserveForExam :: Exam -> Writer [Text] ValidationResult
 validationStillReserveForExam exam = do
-  let regs = registrations exam
+  let regs' = registrations exam
       seats = sum $ map maxSeats $ rooms exam
-  when (regs+2>=seats) $
+  when (regs'+2>=seats) $
     tell ["- exam " `append` showt (anCode exam)
           `append` " not enough reserve seats left: "
-          `append` showt regs `append`"/" `append` showt seats]
-  return $ if regs+2<=seats
+          `append` showt regs' `append`"/" `append` showt seats]
+  return $ if regs'+2<=seats
            then EverythingOk
            else SoftConstraintsBroken
 
@@ -69,11 +64,11 @@ validateDifferentRoomsInSlots plan = do
 
 validateDifferentRoomsInSlot :: ((DayIndex, SlotIndex), Slot)
                              -> Writer [Text] ValidationResult
-validateDifferentRoomsInSlot (index, slot) = do
-  let exams = examsInSlot slot
+validateDifferentRoomsInSlot (index, slot') = do
+  let exams' = examsInSlot slot'
       roomsDifferent rs =  length rs
                         == length (nub (map (roomID . fst) rs))
-      plannedRooms = concatMap (\e -> map (\r -> (r, e)) $ rooms e) exams
+      plannedRooms = concatMap (\e -> map (\r -> (r, e)) $ rooms e) exams'
       allRoomsDifferent = roomsDifferent plannedRooms
       plannedRoomsWithoutReserveRooms =
                     filter (not . reserveRoom . fst) plannedRooms

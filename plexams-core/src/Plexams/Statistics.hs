@@ -4,7 +4,6 @@ module Plexams.Statistics
     ) where
 
 import           Data.List     (intercalate, nub)
-import qualified Data.Map      as M
 import           Data.Text     (unpack)
 import           GHC.Exts      (groupWith, sortWith)
 import           Plexams.Query
@@ -115,6 +114,6 @@ examsWithSameNameString :: Plan -> String
 examsWithSameNameString =
   ("\n\n## Prüfungen mit gleichem Namen\n\n"++)
   . intercalate "\n"
-  . map (\exams -> "-   " ++ name (head exams)
-                ++ ": " ++ show (map anCode exams))
+  . map (\exams' -> "-   " ++ name (head exams')
+                ++ ": " ++ show (map anCode exams'))
   . examsWithSameName

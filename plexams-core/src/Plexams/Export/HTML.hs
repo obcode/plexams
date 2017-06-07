@@ -6,8 +6,6 @@ module Plexams.Export.HTML
 import           Data.List             (nub)
 import qualified Data.Map              as M
 import           Data.Text             (unpack)
-import           Data.Time             (Day)
-import           Data.Time.Calendar
 import           GHC.Exts              (groupWith)
 import           Plexams.Export.Common
 import           Plexams.Types
@@ -56,8 +54,8 @@ planToHTMLTable maybeExams plan =
     planToHTMLTable' =
       let header = "" : map show (examDays $ semesterConfig plan)
           columns =  slotsPerDay $ semesterConfig plan
-          showExams (idx@(d,s), slot) = insideTag "i" (show idx)
-              ++ concatMap showExam (M.elems $ examsInSlot slot)
+          showExams (idx, slot') = insideTag "i" (show idx)
+              ++ concatMap showExam (M.elems $ examsInSlot slot')
           showExam exam = "<div class=\"tiptext"
                 ++ (if reExam exam then " reExam " else " ")
                 ++ unwords (nub $ map (show . groupDegree) (groups exam))
@@ -94,5 +92,3 @@ planToHTMLTable maybeExams plan =
             (unscheduledExamsSortedByRegistrations plan)
     unscheduledExamsPlannedByOthers = insideTag "ul"
             $ concatMap (insideTag "li" . show) plannedByOtherExams
-    toString exam = show (anCode exam) ++ " " ++ name exam
-                    ++ " (" ++ unpack (personShortName (lecturer exam))  ++ ")"

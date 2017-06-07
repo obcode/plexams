@@ -27,9 +27,11 @@ validate plan = do
   lecturerMaxOneExamPerSlot <- validateLecturerMaxOneExamPerSlot plan
   studentsMaxTwoExamsPerDay <- validateStudentsMaxTwoExamsPerDay plan
   return $ validationResult
-            [ goSlotsOk
+            [ constraintsOk
+            , goSlotsOk
             , sameNameSameSlot
             , sameSlotOverlaps
+            , sameDayOverlaps
             , adjacentSlotOverlaps
             , lecturerMaxOneExamPerSlot
             , studentsMaxTwoExamsPerDay
@@ -85,20 +87,20 @@ validateOverlaps :: Maybe [Overlaps] -> [[Exam]]
 validateOverlaps Nothing _ = do
   tell ["#### no overlaps found"]
   return EverythingOk
-validateOverlaps (Just overlaps) exams =
-  validationResult <$> mapM (validateOverlapsForExams overlaps) exams
+validateOverlaps (Just overlaps') exams' =
+  validationResult <$> mapM (validateOverlapsForExams overlaps') exams'
 
 validateOverlapsForExams :: [Overlaps] -> [Exam]
                          -> Writer [Text] ValidationResult
-validateOverlapsForExams overlaps exams =
-  validationResult <$> mapM (`validateOverlapsForExams'` exams) overlaps
+validateOverlapsForExams overlaps' exams' =
+  validationResult <$> mapM (`validateOverlapsForExams'` exams') overlaps'
 
 validateOverlapsForExams' :: Overlaps -> [Exam]
                           -> Writer [Text] ValidationResult
-validateOverlapsForExams' overlaps [] = return EverythingOk
-validateOverlapsForExams' overlaps (exam:exams) = do
-  examOk <- validateOverlapsForExam overlaps exam exams
-  tailOk <- validateOverlapsForExams' overlaps exams
+validateOverlapsForExams' _ [] = return EverythingOk
+validateOverlapsForExams' overlaps' (exam:exams') = do
+  examOk <- validateOverlapsForExam overlaps' exam exams'
+  tailOk <- validateOverlapsForExams' overlaps' exams'
   return $ validationResult [examOk, tailOk]
 
 validateOverlapsInAdjacentSlots :: Plan -> Writer [Text] ValidationResult
@@ -110,9 +112,9 @@ validateOverlapsInAdjacentSlots plan = do
                                  , (i,j) <- zip [0..] [1..maxSlots] ]
       examsList (d,i) =
         M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
-      exams = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
+      exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
                   daySlotPairs
-  validateOverlapsTwoLists (overlaps <$> constraints plan) exams
+  validateOverlapsTwoLists (overlaps <$> constraints plan) exams'
 
 validateOverlapsSameDay :: Plan -> Writer [Text] ValidationResult
 validateOverlapsSameDay plan = do
@@ -125,9 +127,9 @@ validateOverlapsSameDay plan = do
                      ]
       examsList (d,i) =
         M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
-      exams = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
+      exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
                   daySlotPairs
-  valRes <- validateOverlapsTwoLists (overlaps <$> constraints plan) exams
+  valRes <- validateOverlapsTwoLists (overlaps <$> constraints plan) exams'
   return $ case valRes of
     HardConstraintsBroken -> SoftConstraintsBroken
     _                     -> valRes
@@ -137,35 +139,36 @@ validateOverlapsTwoLists :: Maybe [Overlaps] -> [([Exam],[Exam])]
 validateOverlapsTwoLists Nothing _ = do
   tell ["#### no overlaps found"]
   return EverythingOk
-validateOverlapsTwoLists (Just overlaps) exams =
-  validationResult <$> mapM (validateOverlapsTwoListsForExams overlaps) exams
+validateOverlapsTwoLists (Just overlaps') exams' =
+  validationResult <$> mapM (validateOverlapsTwoListsForExams overlaps') exams'
 
 validateOverlapsTwoListsForExams :: [Overlaps] -> ([Exam],[Exam])
                                  -> Writer [Text] ValidationResult
-validateOverlapsTwoListsForExams overlaps (ex1, ex2) =
-  validationResult <$> mapM (validateOverlapsTwoListsForExams' ex1 ex2) overlaps
+validateOverlapsTwoListsForExams overlaps' (ex1, ex2) =
+  validationResult
+    <$> mapM (validateOverlapsTwoListsForExams' ex1 ex2) overlaps'
 
 validateOverlapsTwoListsForExams' :: [Exam] -> [Exam] -> Overlaps
                                   -> Writer [Text] ValidationResult
 validateOverlapsTwoListsForExams' [] _ _ = return EverythingOk
-validateOverlapsTwoListsForExams' (exam:exams) otherExams overlaps = do
-  examOk <- validateOverlapsForExam overlaps exam otherExams
-  tailOk <- validateOverlapsTwoListsForExams' exams otherExams overlaps
+validateOverlapsTwoListsForExams' (exam:exams') otherExams overlaps' = do
+  examOk <- validateOverlapsForExam overlaps' exam otherExams
+  tailOk <- validateOverlapsTwoListsForExams' exams' otherExams overlaps'
   return $ validationResult [ examOk, tailOk ]
 
 validateOverlapsForExam :: Overlaps -> Exam -> [Exam]
                         -> Writer [Text] ValidationResult
 validateOverlapsForExam _        _    []    = return EverythingOk
-validateOverlapsForExam overlaps exam exams = do
+validateOverlapsForExam overlaps' exam exams' = do
   let overlapsForExam =
-        M.findWithDefault M.empty (anCode exam) $ olOverlaps overlaps
+        M.findWithDefault M.empty (anCode exam) $ olOverlaps overlaps'
       overlappingExams =
         filter (isJust . snd)
         $ map ((\ancode -> (ancode , M.lookup ancode overlapsForExam)) . anCode)
-              exams
+              exams'
       ok = null overlappingExams
   forM_ overlappingExams $ \(other, Just studs) ->
-    tell ["-   " `append` showt (olGroup overlaps)
+    tell ["-   " `append` showt (olGroup overlaps')
           `append` ": Exam " `append` showt (anCode exam)
           `append` " overlaps with exam " `append` showt other
           `append` " for " `append` showt studs `append` " Students"]
@@ -174,38 +177,37 @@ validateOverlapsForExam overlaps exam exams = do
 --------------------------------------------------------------------------------
 -- validate constraints from constraints file
 --------------------------------------------------------------------------------
-validateScheduleConstraints :: Plan -> Writer [Text] Bool
+validateScheduleConstraints :: Plan -> Writer [Text] ValidationResult
 validateScheduleConstraints plan = do
   tell ["## Validate schedule constraints from file"]
   let maybeConstraints = constraints plan
   case maybeConstraints of
-    Nothing -> tell ["- no constraints found"] >> return True
-    Just constraints -> do
-      notOnSameDayOk <- validateNotOnSameDay plan (notOnSameDay constraints)
+    Nothing -> tell ["- no constraints found"] >> return EverythingOk
+    Just constraints' -> do
+      notOnSameDayOk <- validateNotOnSameDay plan (notOnSameDay constraints')
       onOneOfTheseDaysOk <- validateOneOfTheseDays plan
-                                                  (onOneOfTheseDays constraints)
-      fixedSlotOk <- validateFixSlot plan (fixedSlot constraints)
+                                                (onOneOfTheseDays constraints')
+      _ <- validateFixSlot plan (fixedSlot constraints')
       tell ["TODO: invigilatesExam"]
       tell ["TODO: impossibleInvigilationSlots"]
-      return $ notOnSameDayOk
-            && onOneOfTheseDaysOk
+      return $ validationResult [notOnSameDayOk, onOneOfTheseDaysOk]
 
 ------------------
 -- not on same day
 ------------------
-validateNotOnSameDay :: Plan -> [[Ancode]] -> Writer [Text] Bool
+validateNotOnSameDay :: Plan -> [[Ancode]] -> Writer [Text] ValidationResult
 validateNotOnSameDay plan listOfAncodes = do
   tell ["### Validate exams not on same day"]
-  and <$> mapM (validateNotOnSameDay' plan) listOfAncodes
+  validationResult <$> mapM (validateNotOnSameDay' plan) listOfAncodes
 
-validateNotOnSameDay' :: Plan -> [Ancode] -> Writer [Text] Bool
+validateNotOnSameDay' :: Plan -> [Ancode] -> Writer [Text] ValidationResult
 validateNotOnSameDay' plan ancodes = do
   let ancodesAndDays =
          filter (isJust . snd)
          $ map (\ancode -> ( ancode
-                           , let exams = queryByAnCode ancode plan
-                                 maybeDay = fst <$> slot (head exams)
-                             in if null exams
+                           , let exams' = queryByAnCode ancode plan
+                                 maybeDay = fst <$> slot (head exams')
+                             in if null exams'
                                 then Nothing
                                 else maybeDay
                            )
@@ -214,61 +216,66 @@ validateNotOnSameDay' plan ancodes = do
                          $ length $ nub $ map snd ancodesAndDays
   unless ancodesAndDaysOk $
     tell ["- not okay for " `append` showt ancodesAndDays]
-  return ancodesAndDaysOk
+  return $ if ancodesAndDaysOk then EverythingOk else SoftConstraintsBroken
 
 --------------------
 -- one of these days
 --------------------
-validateOneOfTheseDays :: Plan -> [(Ancode, [Int])] -> Writer [Text] Bool
+validateOneOfTheseDays :: Plan -> [(Ancode, [Int])]
+                       -> Writer [Text] ValidationResult
 validateOneOfTheseDays plan ancodesAndDays = do
   tell ["### Validate exams on one of these days"]
-  and <$> mapM (validateOneOfTheseDays' plan) ancodesAndDays
+  validationResult <$> mapM (validateOneOfTheseDays' plan) ancodesAndDays
 
-validateOneOfTheseDays' :: Plan -> (Ancode, [Int]) -> Writer [Text] Bool
+validateOneOfTheseDays' :: Plan -> (Ancode, [Int])
+                        -> Writer [Text] ValidationResult
 validateOneOfTheseDays' plan (ancode, days) = do
-  let exams = queryByAnCode ancode plan
-      oneOfTheseDaysOk = case slot $ head exams of
+  let exams' = queryByAnCode ancode plan
+      oneOfTheseDaysOk = case slot $ head exams' of
         Nothing    -> True
         Just (d,_) -> d `elem` days
-  if null exams
+  if null exams'
     then tell ["- exam " `append` showt ancode
-                         `append` " not found"] >> return True
+                         `append` " not found"] >> return EverythingOk
     else do
       unless oneOfTheseDaysOk $
         tell ["- exam " `append` showt ancode
                         `append` " not on one of "
                         `append` showt days]
-      return oneOfTheseDaysOk
+      return $ if oneOfTheseDaysOk then EverythingOk else HardConstraintsBroken
 
 -------------
 -- fixed slot
 -------------
-validateFixSlot :: Plan -> [(Ancode, (Int,Int))] -> Writer [Text] Bool
+validateFixSlot :: Plan -> [(Ancode, (Int,Int))]
+                -> Writer [Text] ValidationResult
 validateFixSlot plan ancodesAndSlots = do
   tell ["### Validate exams in fixed slot"]
-  and <$> mapM (validateFixSlot' plan) ancodesAndSlots
+  validationResult <$> mapM (validateFixSlot' plan) ancodesAndSlots
 
-validateFixSlot' :: Plan -> (Ancode, (Int,Int)) -> Writer [Text] Bool
+validateFixSlot' :: Plan -> (Ancode, (Int,Int))
+                 -> Writer [Text] ValidationResult
 validateFixSlot' plan (ancode, (d,s)) = do
-  let exams = queryByAnCode ancode plan
-      fixedSlotOk = case slot $ head exams of
+  let exams' = queryByAnCode ancode plan
+      fixedSlotOk = case slot $ head exams' of
         Nothing      -> True
         Just (d',s') -> d' == d && s' == s
-  if null exams
+  if null exams'
     then tell ["- exam " `append` showt ancode
-                         `append` " not found"] >> return True
+                         `append` " not found"] >> return EverythingOk
     else do
       unless fixedSlotOk $
         tell ["- exam " `append` showt ancode
                         `append` " not in slot "
                         `append` showt (d,s)]
-      return fixedSlotOk
+      return $ if fixedSlotOk then EverythingOk else HardConstraintsBroken
 
 -------------------------------------------------------
 -- each lecturer should have zero or one exams per slot
 -------------------------------------------------------
 
-validateLecturerMaxOneExamPerSlot :: Plan -> Writer [Text] ValidationResult
+validateLecturerMaxOneExamPerSlot :: Plan
+                                  -> Writer [Text] ValidationResult
 validateLecturerMaxOneExamPerSlot plan = do
   tell ["### Validate numbers of exams per lecturer per slot (soft)"]
   let listsOfLecturers = map (\(s,es) -> ( s
@@ -278,8 +285,8 @@ validateLecturerMaxOneExamPerSlot plan = do
                                          ))
                            $ M.toList $ slots plan
       slotsWithDuplicates = filter (((/=) <$> nub <*> id) . snd) listsOfLecturers
-  forM_ slotsWithDuplicates $ \(slot, lecturers) ->
-    tell ["-   ecturer has more then one exam in slot: "
+  forM_ slotsWithDuplicates $ \(_, lecturers) ->
+    tell ["-   lecturer has more then one exam in slot: "
           `append` showt lecturers]
   return $ if null slotsWithDuplicates
            then EverythingOk
@@ -310,22 +317,22 @@ validateStudentsMaxTwoExamsPerDay plan = do
                      . concatMap (map fst . S.toList)
                      . mapMaybe (\a -> M.lookup a (students plan))
       mkTuples :: [[MtkNr]] -> (MtkNr, [Int])
-      mkTuples mtknr = (head $ head mtknr, map length mtknr)
-      oneHasThree = filter (\(mtknr, examsPerDay) -> any (>2) examsPerDay)
+      mkTuples mtknr' = (head $ head mtknr', map length mtknr')
+      oneHasThree = filter (\(_, examsPerDay) -> any (>2) examsPerDay)
                             studentsWithMoreThanOneExamPerDay
       allAncodes = map anCode $ allExams plan
-  forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr, noOfExams) -> do
-    let exams = maybe [] (filter (`elem` allAncodes) . S.toList . snd)
-                          $ M.lookup mtknr $ studentsExams plan
+  forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr', noOfExams) -> do
+    let exams' = maybe [] (filter (`elem` allAncodes) . S.toList . snd)
+                          $ M.lookup mtknr' $ studentsExams plan
     let three = any (>2) noOfExams
     tell [(if three then "-   Student has three or more exams a day:"
                     else "-   Student has two exams per day: ")
           `append` showt noOfExams
           `append` " of "
-          `append` showt (length exams)
+          `append` showt (length exams')
           `append` ", MtkNr "
-          `append` showt mtknr
-          `append` "  \n" `append` showt exams]
+          `append` showt mtknr'
+          `append` "  \n" `append` showt exams']
 
   return $ if null studentsWithMoreThanOneExamPerDay
            then EverythingOk

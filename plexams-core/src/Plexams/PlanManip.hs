@@ -24,8 +24,8 @@ addExamToSlot :: Integer -- ^ Anmeldecode
               -> Plan
               -> Plan
 addExamToSlot ancode dayIdx slotIdx plan =
-  let exams = filter ((==ancode) . anCode) $ allExams plan
-  in if not (null exams) && all plannedByMe exams
+  let exams' = filter ((==ancode) . anCode) $ allExams plan
+  in if not (null exams') && all plannedByMe exams'
      then addExamToSlot' ancode dayIdx slotIdx plan
      else plan
 
@@ -43,14 +43,14 @@ addExamToSlot' ancode dayIdx slotIdx plan =
                             || slotIdx >= length (slotsPerDay config)
         -- noch unscheduled?
         newSlots ex =
-          M.update (\slot -> Just $
-                              slot { examsInSlot =
+          M.update (\slot' -> Just $
+                              slot' { examsInSlot =
                                         M.insert (anCode ex) ex
-                                        $ examsInSlot slot })
+                                        $ examsInSlot slot' })
                             (dayIdx, slotIdx) $ slots plan
         -- bereits verplant
-        slotsWithExam = filter (\((_,_),slot)
-                                  -> ancode `elem` M.keys (examsInSlot slot))
+        slotsWithExam = filter (\((_,_),slot')
+                                  -> ancode `elem` M.keys (examsInSlot slot'))
                                             $ M.toList $ slots plan
         slotWithExam = head slotsWithExam
         examInOtherSlot = not $ null slotsWithExam
@@ -59,19 +59,19 @@ addExamToSlot' ancode dayIdx slotIdx plan =
                                                             $ examsInSlot s}))
                              slotWithExam
         exam = fromJust $ M.lookup ancode $ examsInSlot $ snd slotWithExam
-        changedSlots = M.update (\slot -> Just $
-                                            slot { examsInSlot =
+        changedSlots = M.update (\slot' -> Just $
+                                            slot' { examsInSlot =
                                               M.insert (anCode exam) exam
-                                              $ examsInSlot slot })
+                                              $ examsInSlot slot' })
                                 (dayIdx, slotIdx)
                      $ uncurry M.insert oldSlotWithoutExam $ slots plan
     in if dayIdxOutOfBounds || slotIndexOutOfBounds
        then plan
        else case M.lookup ancode $ unscheduledExams plan of
-            Just exam -> plan { unscheduledExams = M.delete ancode
+            Just exam' -> plan { unscheduledExams = M.delete ancode
                                                     $ unscheduledExams plan
-                              , slots = newSlots exam
-                              }
+                               , slots = newSlots exam'
+                               }
             Nothing -> if examInOtherSlot
                        then plan { slots = changedSlots }
                        else plan
@@ -119,16 +119,16 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
     -- step 3: add room to exam and put new exam into correct slot
     in plan
         { slots = M.alter
-                  (\(Just slot) -> Just
-                    slot
-                      { examsInSlot = M.alter (\(Just exam) -> Just
-                                                exam
+                  (\(Just slot') -> Just
+                    slot'
+                      { examsInSlot = M.alter (\(Just exam') -> Just
+                                                exam'
                                                   { rooms = room
-                                                          : rooms exam
+                                                          : rooms exam'
                                                   }
                                               )
                                               ancode
-                                              $ examsInSlot slot
+                                              $ examsInSlot slot'
 
                       }
                   )
@@ -145,10 +145,10 @@ makePlan :: [Exam] -> SemesterConfig -> Persons -> Maybe Students
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 
 -- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams semesterConfig pers maybeStudents handicaps' =
+makePlan exams' semesterConfig' pers maybeStudents handicaps' =
   foldr addExamFromListToSlot
         Plan
-          { semesterConfig = semesterConfig
+          { semesterConfig = semesterConfig'
           , slots = slots'
           , unscheduledExams = unscheduledExams''
           , persons = pers
@@ -157,12 +157,12 @@ makePlan exams semesterConfig pers maybeStudents handicaps' =
           , studentsExams = mkStudentsExams maybeStudents
           , handicaps = handicaps'
           , invigilators = M.empty
-          , initialPlan =  map (setPerson pers) exams
+          , initialPlan =  map (setPerson pers) exams'
           }
-        (fk10Exams semesterConfig)
+        (fk10Exams semesterConfig')
   where slots' = M.fromList
-              $ zip [ (d,t) | d <- [0..length (examDays    semesterConfig) - 1]
-                            , t <- [0..length (slotsPerDay semesterConfig) - 1]
+              $ zip [ (d,t) | d <- [0..length (examDays    semesterConfig') - 1]
+                            , t <- [0..length (slotsPerDay semesterConfig') - 1]
                     ]
                     $ repeat emptySlot
         emptySlot = Slot
@@ -170,8 +170,8 @@ makePlan exams semesterConfig pers maybeStudents handicaps' =
             , reserveInvigilator = Nothing
             }
         (examsPlannedNotByMe', unscheduledExams') =
-                    partition ((`elem` (map head $ fk10Exams semesterConfig))
-                              . anCode) exams
+                    partition ((`elem` (map head $ fk10Exams semesterConfig'))
+                              . anCode) exams'
         unscheduledExams'' = M.fromList $ map (\e -> (anCode e, e))
                                               $ unscheduledExams'
                                               ++ examsPlannedNotByMe
@@ -181,10 +181,11 @@ makePlan exams semesterConfig pers maybeStudents handicaps' =
                 addExamToSlot' a (fromInteger d) (fromInteger t) plan
         addExamFromListToSlot _       plan = plan
         mkStudentsExams Nothing = M.empty
-        mkStudentsExams (Just students) =
-            foldr insertAncodes M.empty $ M.toList students
-          where insertAncodes (ancode, students) studentsExams' =
-                 foldr (insertStudent ancode) studentsExams' $ S.toList students
+        mkStudentsExams (Just students') =
+            foldr insertAncodes M.empty $ M.toList students'
+          where insertAncodes (ancode, students'') studentsExams' =
+                          foldr (insertStudent ancode) studentsExams'
+                                                       $ S.toList students''
                 insertStudent ancode (m, n)=
                   M.alter (Just . maybe (n, S.singleton ancode)
                                         (second (S.insert ancode))) m
@@ -198,11 +199,6 @@ makePlan exams semesterConfig pers maybeStudents handicaps' =
             _ -> error $ "person " ++ show (personID pExam)
                         ++ " unknown (exam "++ show (anCode exam) ++ ")"
 
-
-addUnscheduledExams :: [Exam] -> Plan -> Plan
-addUnscheduledExams exams plan =
-  plan { unscheduledExams = M.fromList $ map (\e -> (anCode e, e)) exams}
-
 --------------------------------------------------------------------------------
 -- Add registrations
 --------------------------------------------------------------------------------
@@ -211,29 +207,25 @@ addRegistrationsListToExams :: [Exam] -> [Registrations] -> [Exam]
 addRegistrationsListToExams = foldr addRegistrationsToExams
 
 addRegistrationsToExams :: Registrations -> [Exam] -> [Exam]
-addRegistrationsToExams registrations =
-  map $ addRegistrationsToExam registrations
+addRegistrationsToExams = map . addRegistrationsToExam
 
 addRegistrationsToExam :: Registrations -> Exam -> Exam
-addRegistrationsToExam registrations exam =
+addRegistrationsToExam registrations' exam =
   if examNotForGroup
   then exam
   else maybe exam (addRegToExam exam) regForExam
-  where regForExam = M.lookup (anCode exam) (regs registrations)
+  where regForExam = M.lookup (anCode exam) (regs registrations')
         (_, otherGroups) =
           partition ((==regGroup) . groupDegree)
                   $ groups exam
-        addRegToExam exam regSum = exam
+        addRegToExam exam' regSum = exam'
           { groups = Group regGroup Nothing Nothing (Just regSum)
                      : otherGroups
           }
-        regGroup = read $ regsGroup registrations
-        examNotForGroup = notElem (regsGroup registrations)
+        regGroup = read $ regsGroup registrations'
+        examNotForGroup = notElem (regsGroup registrations')
                         $ map (show . groupDegree)
                         $ groups exam
-
-removeGroupsWithoutRegistrations :: [Exam] -> [Exam]
-removeGroupsWithoutRegistrations = undefined
 
 addConstraints :: Constraints -> Plan -> Plan
 addConstraints c p = p { constraints = Just c }

@@ -32,12 +32,8 @@ allZPAExamsInExams zpaExams plan =
   where
     zpaExamInExams :: ZPAExam -> [Exam]
                    -> Writer [Text] ValidationResult
-    zpaExamInExams zpaExam exams =
-      case filter ((== zpaExamAnCode zpaExam) . anCode) exams of
-        [] -> do
-          tell ["Exported exam " `append` showt (zpaExamAnCode zpaExam)
-                `append` " does not exist"]
-          return HardConstraintsBroken
+    zpaExamInExams zpaExam exams' =
+      case filter ((== zpaExamAnCode zpaExam) . anCode) exams' of
         [exam] -> do
           plannedByMeOk <-
             if plannedByMe exam
@@ -61,6 +57,10 @@ allZPAExamsInExams zpaExams plan =
                       `append` " has wrong time"]
                 return HardConstraintsBroken
           return $ validationResult [plannedByMeOk, dayOk, slotOk]
+        _ -> do
+          tell ["Exported exam " `append` showt (zpaExamAnCode zpaExam)
+                `append` " does not exist"]
+          return HardConstraintsBroken
 
 allPlannedExamsInZPAExams :: [ZPAExam] -> Plan
                           -> Writer [Text] ValidationResult
@@ -69,8 +69,8 @@ allPlannedExamsInZPAExams zpaExams plan = do
     validationResult <$> mapM (`examExported` zpaExams) examsPlannedByMe
   where
     examExported :: Exam -> [ZPAExam] -> Writer [Text] ValidationResult
-    examExported exam zpaExams =
-      if anCode exam `elem` map zpaExamAnCode zpaExams
+    examExported exam zpaExams' =
+      if anCode exam `elem` map zpaExamAnCode zpaExams'
       then return EverythingOk
       else do
         tell ["Exam " `append` showt (anCode exam) `append` " not exported"]

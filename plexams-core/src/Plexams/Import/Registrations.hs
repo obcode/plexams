@@ -18,10 +18,7 @@ import           Plexams.Types
 -- Registrations from YAML file
 --------------------------------------------------------------------------------
 
-data ImportRegistrations = ImportRegistrations
-  { iRegGroups :: String
-  , iRegs      :: [ImportRegistration]
-  }
+data ImportRegistrations = ImportRegistrations String [ImportRegistration]
 
 instance Y.FromJSON ImportRegistrations where
   parseJSON (Y.Object v) = ImportRegistrations
@@ -29,10 +26,7 @@ instance Y.FromJSON ImportRegistrations where
                         <*> v Y..: "registrations"
   parseJSON _            = empty
 
-data ImportRegistration = ImportRegistration
-  { iRegAncode :: Integer
-  , iRegSum    :: Integer
-  }
+data ImportRegistration = ImportRegistration Integer Integer
 
 instance Y.FromJSON ImportRegistration where
     parseJSON (Y.Object v) = ImportRegistration
@@ -40,15 +34,13 @@ instance Y.FromJSON ImportRegistration where
                           <*> v Y..: "sum"
     parseJSON _            = empty
 
-listToRegistrations :: (String, [(Integer, Integer)]) -> Registrations
-listToRegistrations (g, regs) = Registrations g (M.fromList regs)
-
 iRegsToRegs :: ImportRegistrations -> Registrations
 iRegsToRegs (ImportRegistrations g rs) = Registrations
   { regsGroup = g
   , regs = M.fromList $ map (\(ImportRegistration a s) -> (a, s)) rs
   }
 
+iRegsLToRegsL :: [ImportRegistrations] -> [Registrations]
 iRegsLToRegsL = map iRegsToRegs
 
 importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe [Registrations])
@@ -59,10 +51,7 @@ importRegistrationsFromYAMLFile =
 -- Overlaps from YAML file
 --------------------------------------------------------------------------------
 
-data ImportOverlaps = ImportOverlaps
-  { iOLGroup :: String
-  , iOLList  :: [ImportOverlapsList]
-  }
+data ImportOverlaps = ImportOverlaps String [ImportOverlapsList]
 
 instance Y.FromJSON ImportOverlaps where
   parseJSON (Y.Object v) = ImportOverlaps
@@ -70,10 +59,7 @@ instance Y.FromJSON ImportOverlaps where
                         <*> v Y..: "overlapsList"
   parseJSON _            = empty
 
-data ImportOverlapsList = ImportOverlapsList
-  { iOLAncode :: Integer
-  , iOL       :: [ImportOverlap]
-  }
+data ImportOverlapsList = ImportOverlapsList Integer [ImportOverlap]
 
 instance Y.FromJSON ImportOverlapsList where
   parseJSON (Y.Object v) = ImportOverlapsList
@@ -81,10 +67,7 @@ instance Y.FromJSON ImportOverlapsList where
                         <*> v Y..: "overlaps"
   parseJSON _            = empty
 
-data ImportOverlap = ImportOverlap
-  { iOLOtherAncode :: Integer
-  , iOLSum         :: Integer
-  }
+data ImportOverlap = ImportOverlap Integer Integer
 
 instance Y.FromJSON ImportOverlap where
     parseJSON (Y.Object v) = ImportOverlap
@@ -100,6 +83,7 @@ iOLToOL (ImportOverlaps g rs) = Overlaps
   }
   where toTupel (ImportOverlap a s) = (a,s)
 
+iOLToOLList :: [ImportOverlaps] -> [Overlaps]
 iOLToOLList = map iOLToOL
 
 importOverlapsFromYAMLFile :: FilePath -> IO (Maybe [Overlaps])
@@ -110,11 +94,7 @@ importOverlapsFromYAMLFile =
 -- Students from YAML file
 --------------------------------------------------------------------------------
 
-data ImportStudent = ImportStudent
-  { isMtkNr  :: Integer
-  , isName   :: Text
-  , isAncode :: Integer
-  }
+data ImportStudent = ImportStudent Integer Text Integer
 
 instance Y.FromJSON ImportStudent where
   parseJSON (Y.Object v) = ImportStudent
@@ -126,9 +106,9 @@ instance Y.FromJSON ImportStudent where
 importStudentsToStudents :: [ImportStudent] -> Students
 importStudentsToStudents = foldr insertStudent M.empty
   where
-    insertStudent (ImportStudent mtkNr name ancode) =
-      M.alter (Just . maybe (S.singleton (mtkNr,name))
-                            (S.insert (mtkNr,name))) ancode
+    insertStudent (ImportStudent mtkNr name' ancode) =
+      M.alter (Just . maybe (S.singleton (mtkNr,name'))
+                            (S.insert (mtkNr,name'))) ancode
 
 importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
 importStudentsFromYAMLFile =
@@ -137,16 +117,6 @@ importStudentsFromYAMLFile =
 --------------------------------------------------------------------------------
 -- Handicaps from YAML file
 --------------------------------------------------------------------------------
-
-instance Y.FromJSON Handicap where
-  parseJSON (Y.Object v) = Handicap
-                        <$> v Y..: "studentname"
-                        <*> v Y..: "mtknr"
-                        <*> v Y..: "compensation"
-                        <*> v Y..: "deltaDurationPercent"
-                        <*> v Y..: "exams"
-                        <*> v Y..:? "needsRoomAlone" Y..!= False
-  parseJSON _            = empty
 
 importHandicapsFromYAMLFile :: FilePath -> IO (Maybe [Handicap])
 importHandicapsFromYAMLFile =

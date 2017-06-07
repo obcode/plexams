@@ -4,13 +4,9 @@ module Plexams.Validation
     , module Plexams.Validation.Exports
     ) where
 
-import           Control.Arrow                     ((&&&))
 import           Control.Monad.Writer
 import           Data.List                         (nub)
-import qualified Data.Map                          as M
-import           Data.Maybe                        (isJust, mapMaybe)
 import           Data.Text                         (Text, append)
-import           GHC.Exts                          (groupWith)
 import           Plexams.Query
 import           Plexams.Types
 import           Plexams.Validation.Exports
@@ -27,13 +23,13 @@ validate' plan = do
   tell ["# Validation"]
   sourcesOk <- Plexams.Validation.Sources.validate plan
   lecturersMax3ExamDays <- validateLecturersMax3ExamDays plan
-  scheduledExams <- Plexams.Validation.ScheduledExams.validate plan
+  scheduledExams' <- Plexams.Validation.ScheduledExams.validate plan
   roomsOk <- Plexams.Validation.Rooms.validate plan
   tell ["# no more validations implemented yet"]
   return $ validationResult
             [ sourcesOk
             , lecturersMax3ExamDays
-            , scheduledExams
+            , scheduledExams'
             , roomsOk
             ]
 
