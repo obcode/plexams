@@ -71,8 +71,10 @@ module Plexams.Types
 
 import           Control.Applicative         (empty, (<$>), (<*>))
 import           Control.Arrow               ((&&&), (***))
-import           Data.Aeson                  (FromJSON, Value (Object),
-                                              parseJSON, (.:))
+import           Data.Aeson                  (FromJSON, ToJSON, Value (Object),
+                                              defaultOptions, genericToEncoding,
+                                              object, parseJSON, toJSON, (.:),
+                                              (.=))
 import           Data.Char                   (digitToInt)
 import           Data.List                   (elemIndex, intercalate, partition,
                                               sortBy, (\\))
@@ -85,11 +87,11 @@ import           Data.Text                   (Text, append, unpack)
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate (toWeekDate)
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
+import qualified Data.Vector                 as V
 import qualified Data.Yaml                   as Y
 import           GHC.Exts                    (groupWith)
 import           GHC.Generics
 import           TextShow                    (TextShow, showb)
-
 
 -- {{{ SemesterConfig
 data SemesterConfig = SemesterConfig
@@ -120,6 +122,9 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "rooms"
                         <*> v Y..: "notPlannedByMe"
     parseJSON _          = empty
+
+instance ToJSON SemesterConfig where
+    toEncoding = genericToEncoding defaultOptions
 
 makeSemesterConfig :: Text -> String -> String -> String -> [String]
                    -> FilePath -> FilePath -> FilePath
@@ -159,6 +164,9 @@ instance Y.FromJSON AvailableRoom where
                        <*> v Y..: "seats"
                        <*> v Y..:? "handicap" Y..!= False
     parseJSON _            = empty
+
+instance ToJSON AvailableRoom where
+    toEncoding = genericToEncoding defaultOptions
 
 type AvailableRooms = M.Map (DayIndex, SlotIndex)
                             -- ( Normale Räume (absteigend sortiert nach Größe)
@@ -702,6 +710,16 @@ instance FromJSON ZPAExam where
                          <*> v .: "rooms"
     parseJSON _          = empty
 
+instance ToJSON ZPAExam where
+  toJSON (ZPAExam anCode' date time totalNumber reserveInvigilator' rooms') =
+    object [ "anCode" .= anCode'
+           , "date"   .= date
+           , "time"   .= time
+           , "total_number" .= totalNumber
+           , "reserveInvigilator_id" .= reserveInvigilator'
+           , "rooms"  .= V.fromList (map toJSON rooms')
+           ]
+
 data ZPARoom = ZPARoom
     { zpaRoomNumber               :: String
     , zpaRoomInvigilatorId        :: Integer
@@ -721,5 +739,15 @@ instance FromJSON ZPARoom where
                          <*> v .: "duration"
                          <*> v .: "numberStudents"
     parseJSON _          = empty
+
+instance ToJSON ZPARoom where
+  toJSON (ZPARoom number invigilator' reserve handicap duration' numberStudents) =
+    object [ "number"               .= number
+           , "invigilator_id"       .= invigilator'
+           , "reserveRoom"          .= reserve
+           , "handicapCompensation" .= handicap
+           , "duration"             .= duration'
+           , "numberStudents"       .= numberStudents
+           ]
 
 -- }}}

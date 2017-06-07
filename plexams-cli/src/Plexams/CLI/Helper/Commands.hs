@@ -8,7 +8,7 @@ import           System.IO
 
 runCommand :: Config -> IO ()
 -- FIXME: für UTF-16 aus Excel
-runCommand config@(Config PrepareRegistrations g iPath mOPath) = do
+runCommand config@(Config PrepareRegistrations g iPath _) = do
     contents <- getContents' iPath
     let examLines =
           map (\e -> if null $ e!!4 then "" else
@@ -23,7 +23,7 @@ runCommand config@(Config PrepareRegistrations g iPath mOPath) = do
                      ++ intercalate "\n" (filter (not . null) examLines)
                      ++ "\n"
 -- FIXME: für UTF-16 aus Excel
-runCommand config@(Config PrepareOverlaps g iPath mOPath) = do
+runCommand config@(Config PrepareOverlaps g iPath _) = do
     contents <- getContents' iPath
     let (header : overlapsLines) = map (split ';') $ lines contents
         overlapsTupels =
@@ -40,11 +40,11 @@ runCommand config@(Config PrepareOverlaps g iPath mOPath) = do
                       "    - ancode: " ++ tail ac ++ "\n"
                    ++ "      overlaps:\n"
                    ++ concatMap mkOverlap overlaps
+    mkOverlapsYaml x = error $ "Cannot mkOverlap " ++ show x
     mkOverlap (ac, noOfStuds) =
                       "        - otherExam: " ++ tail ac ++ "\n"
                    ++ "          noOfStudents: " ++ noOfStuds ++ "\n"
-
-runCommand config@(Config PrepareStudents g iPath mOPath) = do
+runCommand config@(Config PrepareStudents g iPath _) = do
     contents <- getContents' iPath
     let (header : studentLines) = map (split '\t') $ lines contents
         studentTupels =
@@ -65,15 +65,10 @@ getContents' :: FilePath -> IO String
 getContents' iPath = do
   h <- openFile iPath ReadMode
   hSetEncoding h utf16le
-  -- map fixNewline <$>
   filter (/='\r') <$> hGetContents h
 
-fixNewline :: Char -> Char
-fixNewline '\r' = '\n'
-fixNewline x    = x
-
 split :: Char -> String -> [String]
-split c [] = []
+split _ [] = []
 split c xs =
     let (w, rest) = span (/=c) xs
     in if null rest

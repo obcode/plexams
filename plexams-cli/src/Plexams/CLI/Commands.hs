@@ -28,6 +28,7 @@ runCommand Export {}     = export
 runCommand PrintConfig   = printConfig
 runCommand Generate {}   = generate
 runCommand GenerateRooms = generateRooms
+runCommand _             = error "unsupported command"
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
@@ -81,6 +82,7 @@ export config plan =
           print valRes
     Export Handicaps ->
       stdoutOrFile config $ exportHandicaps plan
+    _ -> error "unsupported command"
 
 printConfig :: Config -> Plan -> IO ()
 printConfig config = stdoutOrFile config . semesterConfigAsString
@@ -94,6 +96,8 @@ generate config plan =
         $ exportAddExamToSlots
         $ snd
         $ scheduleExamsWithSameName plan
+      generate'  _ = error "unsupported command"
+
 
 generateRooms :: Config -> Plan -> IO ()
 generateRooms config plan =

@@ -16,21 +16,21 @@ import           System.IO                (hPutStrLn, stderr)
 
 makePlan :: Config -> IO Plan
 makePlan config = do
-    semesterConfig <- importSemesterConfig config
-    exams          <- importExams semesterConfig
-    persons        <- importPersons semesterConfig
-    examsWithRegs  <- importAndAddRegs config semesterConfig exams
-    maybeStudents  <- importStudents config
-    constraints    <- importConstraints config
-    handicaps      <- importHandicaps config
+    semesterConfig' <- importSemesterConfig config
+    exams'          <- importExams semesterConfig'
+    persons'        <- importPersons semesterConfig'
+    examsWithRegs   <- importAndAddRegs config exams'
+    maybeStudents   <- importStudents config
+    constraints'    <- importConstraints config
+    handicaps'      <- importHandicaps config
 
     return $ setHandicapsOnScheduledExams
-           $ addConstraints constraints
+           $ addConstraints constraints'
            $ Plexams.PlanManip.makePlan examsWithRegs
-                                        semesterConfig
-                                        persons
+                                        semesterConfig'
+                                        persons'
                                         maybeStudents
-                                        handicaps
+                                        handicaps'
 
 applyPlanManips :: Config -> Plan -> IO Plan
 applyPlanManips config plan =
