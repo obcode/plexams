@@ -1,65 +1,58 @@
+-- This file has been generated from package.yaml by hpack version 0.17.0.
+--
+-- see: https://github.com/sol/hpack
+
 name:                  plexams-core
 version:               0.9.0.0
-synopsis:              Planning exams
-description:           see Readme
+synopsis:              Core modules for planning exams
+description:           See README at <https://github.com/obcode/plexams#readme>
 homepage:              https://github.com/obcode/plexams#readme
+bug-reports:           https://github.com/obcode/plexams/issues
 license:               BSD3
 license-file:          LICENSE
-author:                Oliver Braun
-maintainer:            ob@obraun.net
-copyright:             2016-2017 Oliver Braun
+maintainer:            Oliver Braun <ob@obraun.net>
 category:              Plexams
 build-type:            Simple
-cabal-version:         >=1.10
-
-library
-  exposed-modules:     Plexams.Types
-                     , Plexams.Export.HTML
-                     , Plexams.Export.Markdown
-                     , Plexams.Export.Misc
-                     , Plexams.Export.ZPA
-                     , Plexams.Import.MasterData
-                     , Plexams.Import.Misc
-                     , Plexams.Import.PlanManip
-                     , Plexams.Import.Registrations
-                     , Plexams.PlanManip
-                     , Plexams.Query
-                     , Plexams.Statistics
-                     , Plexams.Validation
-  other-modules:       Plexams.Export.Common
-                     , Plexams.Validation.Rooms
-                     , Plexams.Validation.ScheduledExams
-                     , Plexams.Validation.Sources
-                     , Plexams.Validation.Exports
-  build-depends:       base >= 4.7 && < 5
-                     , aeson
-                     , aeson-pretty
-                     , bytestring
-                     , containers
-                     , mtl
-                     , text
-                     , text-show
-                     , time
-                     , vector
-                     , yaml
-  default-language:    Haskell2010
-
-test-suite plexamscore-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  other-modules:       ImportSpec
-                     , PlanManipSpec
-  build-depends:       base
-                     , hspec
-                     , aeson
-                     , bytestring
-                     , containers
-                     , time
-                     , plexams-core
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+cabal-version:         >= 1.10
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/obcode/plexams
+
+library
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  exposed-modules:
+      Plexams.Export.HTML
+      Plexams.Export.Markdown
+      Plexams.Export.Misc
+      Plexams.Export.ZPA
+      Plexams.Import.MasterData
+      Plexams.Import.Misc
+      Plexams.Import.PlanManip
+      Plexams.Import.Registrations
+      Plexams.PlanManip
+      Plexams.Query
+      Plexams.Statistics
+      Plexams.Types
+      Plexams.Validation
+  other-modules:
+      Plexams.Export.Common
+      Plexams.Validation.Rooms
+      Plexams.Validation.ScheduledExams
+      Plexams.Validation.Sources
+      Plexams.Validation.Exports
+  build-depends:
+      base  >= 4.7 && < 5
+    , aeson
+    , aeson-pretty
+    , bytestring
+    , containers
+    , mtl
+    , text
+    , text-show
+    , time
+    , vector
+    , yaml
+  default-language: Haskell2010

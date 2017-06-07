@@ -1,0 +1,18 @@
+name: plexams-generators
+version: '0.9.0.0'
+synopsis: Generator modules for planning exams
+description: See README at <https://github.com/obcode/plexams#readme>
+license: BSD3
+github: obcode/plexams
+maintainer: Oliver Braun <ob@obraun.net>
+category: Plexams
+
+ghc-options: -Wall
+
+dependencies:
+  - base  >= 4.7 && < 5
+  - containers
+  - plexams-core
+
+library:
+  source-dirs: src
