@@ -1,6 +1,7 @@
 module Plexams.CLI.Import
   ( importSemesterConfig
   , importExams
+  , importPersons
   , importAndAddRegs
   , importStudents
   , importConstraints
@@ -132,3 +133,14 @@ importHandicaps config =
     Nothing -> do
       hPutStrLn stderr "no handicaps file specified"
       return []
+
+importPersons :: SemesterConfig -> IO Persons
+importPersons semesterConfig = do
+  maybePersons <- importPersonsFromJSONFile $ personsFile semesterConfig
+  case maybePersons of
+    Just persons -> return persons
+    Nothing             -> do
+      hPutStrLn stderr $ "no initial persons found: "
+                        ++ personsFile semesterConfig
+                        ++ " does not exist or is not parsable."
+      exitWith $ ExitFailure 10

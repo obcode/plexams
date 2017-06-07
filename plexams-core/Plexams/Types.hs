@@ -84,7 +84,7 @@ import           GHC.Exts           (groupWith)
 import           GHC.Generics
 import           TextShow           (TextShow, showb)
 
--- fold SemesterConfig
+-- {{{ SemesterConfig
 data SemesterConfig = SemesterConfig
     { semester        :: Text     -- ^ Semester
     , firstDay        :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
@@ -93,7 +93,8 @@ data SemesterConfig = SemesterConfig
     , goSlots         :: [(Int, Int)]
     , slotsPerDay     :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
     , initialPlanFile :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
-    , planManipFile   :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
+    , personsFile     :: FilePath -- ^ Datei in der die Personen für das Semester vom ZPA stehen
+    , planManipFile   :: FilePath
     , availableRooms  :: [AvailableRoom]
     , fk10Exams       :: [[Integer]]
     }
@@ -145,9 +146,9 @@ mkAvailableRooms plan rooms =
               $ slots' \\ slots''
    in foldr (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
             allAvailableRooms $ M.toList roomSlots'
--- endfold
+-- }}}
 
--- fold Plan
+-- {{{ Plan
 data Plan = Plan
     { semesterConfig   :: SemesterConfig
     , slots            :: Slots
@@ -188,9 +189,9 @@ isUnknownExamAncode :: Ancode -> Plan -> Bool
 isUnknownExamAncode ancode plan =
      not (isScheduledAncode ancode plan)
   && not (isUnscheduledAncode ancode plan)
--- endfold
+-- }}}
 
--- fold Slots
+-- {{{ Slots
 type DayIndex = Int
 type SlotIndex = Int
 
@@ -234,9 +235,9 @@ data Slot = Slot
     , reserveInvigilator :: Maybe Integer  -- ^ Reserveaufsicht für die Prüfung
     }
   deriving (Show, Eq)
--- endfold
+-- }}}
 
--- fold Exam
+-- {{{ Exam
 type Ancode = Integer
 type Duration = Integer
 type ExamType = String
@@ -276,7 +277,7 @@ setFK10Exam ancodes exam =
 instance Show Exam where
     show exam = show (anCode exam) ++ ". "
                 ++ name exam
-                ++ ", " ++ personShortName (lecturer exam)
+                ++ ", " ++ unpack (personShortName (lecturer exam))
                 ++ (if reExam exam then ", W " else ", E ")
                 ++ show (groups exam)
                 ++ (if registrations exam > 0
@@ -292,7 +293,7 @@ instance Show Exam where
                    else "\n        - "
                         ++ intercalate "\n        - " (map show (rooms exam))
                    )
--- endfold
+-- }}}
 
 -- type BookableRooms = M.Map String (BookableRoom, [(Integer, Integer)])
 
@@ -397,19 +398,23 @@ parseGroup str = Group
                           'C' -> C
                           _   -> error $ "unknown group: " ++ str
 
-type Persons = M.Map Integer Person
+type Persons = M.Map PersonID Person
 type PersonID = Integer
 
 data Person = Person
     { personID        :: PersonID
-    , personShortName :: String
-    , personFullName  :: String
+    , personShortName :: Text
+    , personFullName  :: Text
+    , personEmail     :: Text
+    , personFK        :: Text
+    , personIsLBA     :: Bool
     }
   deriving (Eq, Show, Ord)
 
 instance TextShow Person where
-  showb (Person id shortName _) =
+  showb (Person id shortName _ email _ _) =
     showb id <> ". " <> showb shortName
+    <> " <" <> showb email <> "> "
 
 data AddExamToSlot =
     AddExamToSlot
@@ -528,7 +533,7 @@ setHandicapsOnScheduledExams plan =
            plan
            handicapsPerAncode
 
--- fold Invigilator
+-- {{{ Invigilator
 
 data Invigilator = Invigilator
   { invigilatorExcludedDays         :: [Int]
@@ -574,9 +579,9 @@ addInvigilators invigilatorList plan =
           M.fromList $ map (invigilatorID &&& addDays) invigilatorList
       }
 
--- endfold
+-- }}}
 
--- fold Validation
+-- {{{ Validation
 data ValidationResult = EverythingOk
                       | SoftConstraintsBroken
                       | HardConstraintsBroken
@@ -589,9 +594,9 @@ instance Show ValidationResult where
 
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum
--- endfold
+-- }}}
 
--- fold ZPAExport
+-- {{{ ZPAExport
 
 data ZPAExam = ZPAExam
     { zpaExamAnCode               :: Integer
@@ -611,4 +616,4 @@ data ZPARoom = ZPARoom
     , zpaRoomNumberStudents       :: Integer
     }
   deriving (Generic)
--- endfold
+-- }}}

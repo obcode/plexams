@@ -5,6 +5,7 @@ module Plexams.Statistics
 
 import           Data.List     (intercalate, nub)
 import qualified Data.Map      as M
+import           Data.Text     (unpack)
 import           GHC.Exts      (groupWith, sortWith)
 import           Plexams.Query
 import           Plexams.Types
@@ -89,7 +90,7 @@ examsForLecturerers =
   . (++"\n\n")
   . intercalate "\n"
   . map (\es -> "-   "
-                ++ personShortName (fst (head es))
+                ++ unpack (personShortName (fst (head es)))
                 ++ ": " ++ show (length es)
                 ++ " Prüfungen ("
                 ++ intercalate ", " (map (show . anCode . snd) es)
@@ -105,7 +106,7 @@ lecturerExamDaysToString =
     ("\n## Prüfungstage der Prüfer\n\n"++)
     . intercalate "\n"
     . map (\(person, listOfDays) -> "-   "
-                                    ++ personShortName person
+                                    ++ unpack (personShortName person)
                                     ++ ": "
                                     ++ intercalate ", " (map show listOfDays))
     . lecturerExamDays

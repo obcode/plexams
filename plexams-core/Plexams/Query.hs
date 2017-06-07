@@ -28,7 +28,7 @@ queryByName str = filter (isInfixOf str . name) . allExams
 
 queryByLecturer :: String -> Plan -> [Exam]
 queryByLecturer str =
-  filter (isInfixOf str . personShortName . lecturer) . allExams
+  filter (isInfixOf str . unpack . personShortName . lecturer) . allExams
 
 queryByGroup :: String -> Bool -> Plan -> [Exam]
 queryByGroup group unscheduledOnly =

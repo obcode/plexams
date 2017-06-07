@@ -95,4 +95,4 @@ planToHTMLTable maybeExams plan =
     unscheduledExamsPlannedByOthers = insideTag "ul"
             $ concatMap (insideTag "li" . show) plannedByOtherExams
     toString exam = show (anCode exam) ++ " " ++ name exam
-                    ++ " (" ++ personShortName (lecturer exam)  ++ ")"
+                    ++ " (" ++ unpack (personShortName (lecturer exam))  ++ ")"

@@ -140,24 +140,24 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
 -- Make the initial plan
 --------------------------------------------------------------------------------
 
-makePlan :: [Exam] -> SemesterConfig -> Maybe Persons -> Maybe Students
+makePlan :: [Exam] -> SemesterConfig -> Persons -> Maybe Students
          -> [Handicap] -> Plan
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 
 -- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams semesterConfig maybePers maybeStudents handicaps' =
+makePlan exams semesterConfig pers maybeStudents handicaps' =
   foldr addExamFromListToSlot
         Plan
           { semesterConfig = semesterConfig
           , slots = slots'
           , unscheduledExams = unscheduledExams''
-          , persons = fromMaybe M.empty maybePers
+          , persons = pers
           , constraints = Nothing
           , students = fromMaybe M.empty maybeStudents
           , studentsExams = mkStudentsExams maybeStudents
           , handicaps = handicaps'
           , invigilators = M.empty
-          , initialPlan = exams
+          , initialPlan =  map (setPerson pers) exams
           }
         (fk10Exams semesterConfig)
   where slots' = M.fromList
@@ -188,6 +188,15 @@ makePlan exams semesterConfig maybePers maybeStudents handicaps' =
                 insertStudent ancode (m, n)=
                   M.alter (Just . maybe (n, S.singleton ancode)
                                         (second (S.insert ancode))) m
+        setPerson :: Persons -> Exam -> Exam
+        setPerson ps exam =
+          let pExam = lecturer exam
+              maybePerson = M.lookup (personID pExam) ps
+          in case maybePerson of
+            Just person | personShortName person == personShortName pExam
+              -> exam { lecturer = person }
+            _ -> error $ "person " ++ show (personID pExam)
+                        ++ " unknown (exam "++ show (anCode exam) ++ ")"
 
 
 addUnscheduledExams :: [Exam] -> Plan -> Plan

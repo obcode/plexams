@@ -2,10 +2,12 @@
 module Plexams.Import.MasterData
     ( importSemesterConfigFromYAMLFile
     , importExamsFromJSONFile
+    , importPersonsFromJSONFile
     , importConstraintsFromYAMLFile
     , importInvigilatorsFromJSONFile
     ) where
 
+-- {{{ Imports
 import           Control.Applicative         (empty, (<$>), (<*>))
 import           Data.Aeson                  (FromJSON, Value (Object), decode,
                                               parseJSON, (.:))
@@ -14,16 +16,15 @@ import qualified Data.ByteString.Lazy        as BS
 import           Data.List                   (elemIndex)
 import qualified Data.Map                    as M
 import           Data.Maybe                  (fromMaybe)
-import           Data.Text                   (Text)
+import           Data.Text                   (Text, pack)
 import           Data.Time                   (Day)
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
 import qualified Data.Yaml                   as Y
 import           Plexams.Types
+-- }}}
 
---------------------------------------------------------------------------------
--- Semesterconfig from YAML File
---------------------------------------------------------------------------------
+-- {{{ Semesterconfig from YAML File
 
 instance Y.FromJSON SemesterConfig where
     parseJSON (Y.Object v) = makeSemesterConfig
@@ -33,6 +34,7 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "goDay0"
                         <*> v Y..: "slotsPerDay"
                         <*> v Y..: "initialPlan"
+                        <*> v Y..: "persons"
                         <*> v Y..: "planManip"
                         <*> v Y..: "rooms"
                         <*> v Y..: "notPlannedByMe"
@@ -46,7 +48,8 @@ instance Y.FromJSON AvailableRoom where
     parseJSON _            = empty
 
 makeSemesterConfig :: Text -> String -> String -> String -> [String]
-                   -> FilePath -> FilePath -> [AvailableRoom] -> [[Integer]]
+                   -> FilePath -> FilePath -> FilePath
+                   -> [AvailableRoom] -> [[Integer]]
                    -> SemesterConfig
 makeSemesterConfig s f l goDay0 =
         SemesterConfig s firstDay lastDay realExamDays goSlots
@@ -71,16 +74,18 @@ makeSemesterConfig s f l goDay0 =
 
 importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
 importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
+-- }}}
 
---------------------------------------------------------------------------------
--- Persons from JSON File
---------------------------------------------------------------------------------
+-- {{{ Persons from JSON File
 
 instance FromJSON Person where
     parseJSON (Object v) = Person
                         <$> v .: "person_id"
                         <*> v .: "person_shortname"
                         <*> v .: "person_fullname"
+                        <*> v .: "email"
+                        <*> v .: "fk"
+                        <*> v .: "is_lba"
     parseJSON _          = empty
 
 importPersonsFromJSONFile :: FilePath -> IO (Maybe Persons)
@@ -90,10 +95,9 @@ decodePersonsFromJSON :: BS.ByteString -> Maybe Persons
 decodePersonsFromJSON = fmap personsListToPersons . decode
   where personsListToPersons :: [Person] -> Persons
         personsListToPersons = M.fromList . map (\p -> (personID p, p))
+-- }}}
 
---------------------------------------------------------------------------------
--- Exams from JSON File
---------------------------------------------------------------------------------
+-- {{{ Exams from JSON File
 
 data ImportExam = ImportExam
     { ieExamType       :: String
@@ -127,7 +131,8 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
         importExamToExam ie = Exam
           { anCode = ieAnCode ie
           , name = ieModule ie
-          , lecturer = Person (ieMainExamerId ie) (ieMainExamer ie) ""
+          , lecturer = Person (ieMainExamerId ie) (pack (ieMainExamer ie))
+                              "" "" "" True
           , duration = ieDuration ie
           , rooms = []
           , plannedByMe = True
@@ -137,10 +142,9 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
           , studentsWithHandicaps = []
           , slot = Nothing
           }
+-- }}}
 
---------------------------------------------------------------------------------
--- Constraints from YAML file
---------------------------------------------------------------------------------
+-- {{{ Constraints from YAML file
 
 data ImportConstraints = ImportConstraints
   { iCNotOnSameDay                :: [[Ancode]]
@@ -214,10 +218,9 @@ iIToSlots (ImpossibleInvigilation p ss) =
 importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
 importConstraintsFromYAMLFile =
     fmap (fmap importConstraintsToConstraints . Y.decode) . BSI.readFile
+-- }}}
 
---------------------------------------------------------------------------------
--- Exams from JSON File
---------------------------------------------------------------------------------
+-- {{{ Invigilator from JSON File
 
 -- {
 --     "invigilator": "Braun, O.",
@@ -251,3 +254,4 @@ instance FromJSON Invigilator where
 
 importInvigilatorsFromJSONFile :: FilePath -> IO (Maybe [Invigilator])
 importInvigilatorsFromJSONFile = fmap decode . BS.readFile
+-- }}}
