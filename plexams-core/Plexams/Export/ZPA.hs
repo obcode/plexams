@@ -20,10 +20,11 @@ import           Plexams.Types
 --------------------------------------------------------------------------------
 
 instance ToJSON ZPAExam where
-  toJSON (ZPAExam anCode date time reserveInvigilator rooms) =
+  toJSON (ZPAExam anCode date time totalNumber reserveInvigilator rooms) =
     object [ "anCode" .= anCode
            , "date"   .= date
            , "time"   .= time
+           , "total_number" .= totalNumber
            , "reserveInvigilator_id" .= reserveInvigilator
            , "rooms"  .= V.fromList (map toJSON rooms)
            ]
@@ -33,6 +34,7 @@ examToZPAExam plan reserveInvigilator exam = ZPAExam
     { zpaExamAnCode = anCode exam
     , zpaExamDate = examDateAsString exam plan
     , zpaExamTime = examSlotAsString exam plan
+    , zpaTotalNumber = registrations exam
     , zpaExamReserveInvigilatorId = fromMaybe 0 reserveInvigilator
     , zpaExamRooms = map (roomToZPARoom $ duration exam) $ rooms exam
     }
@@ -108,6 +110,7 @@ planToZPA = unpack . encodePretty' config . planToZPAExams
     config = defConfig { confCompare = keyOrder [ "anCode"
                                                 , "date"
                                                 , "time"
+                                                , "total_number"
                                                 , "reserveInvigilator_id"
                                                 , "rooms"
                                                 , "number"

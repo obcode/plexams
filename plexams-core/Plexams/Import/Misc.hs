@@ -18,6 +18,7 @@ instance FromJSON ZPAExam where
                          <$> v .: "anCode"
                          <*> v .: "date"
                          <*> v .: "time"
+                         <*> v .: "total_number"
                          <*> v .: "reserveInvigilator_id"
                          <*> v .: "rooms"
     parseJSON _          = empty

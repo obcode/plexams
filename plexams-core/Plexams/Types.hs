@@ -602,6 +602,7 @@ data ZPAExam = ZPAExam
     { zpaExamAnCode               :: Integer
     , zpaExamDate                 :: String
     , zpaExamTime                 :: String
+    , zpaTotalNumber              :: Integer
     , zpaExamReserveInvigilatorId :: Integer
     , zpaExamRooms                :: [ZPARoom]
     }
