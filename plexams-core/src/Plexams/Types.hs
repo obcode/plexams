@@ -84,6 +84,7 @@ import           Data.Monoid                 ((<>))
 import           Data.Ord                    (Down (Down), comparing)
 import qualified Data.Set                    as S
 import           Data.Text                   (Text, append, unpack)
+import qualified Data.Text                   as Text
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate (toWeekDate)
 import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
@@ -617,6 +618,7 @@ setHandicapsOnScheduledExams plan =
 data Invigilator = Invigilator
   { invigilatorExcludedDays         :: [Int]
   , invigilatorExamDays             :: [Int]
+  , invigilatorPerson               :: Maybe Person
   , invigilatorName                 :: Text
   , invigilatorID                   :: Integer
   , invigilatorExcludedDates        :: [Text]
@@ -629,7 +631,7 @@ data Invigilator = Invigilator
   } deriving (Show, Eq)
 
 instance FromJSON Invigilator where
-    parseJSON (Object v ) = Invigilator [] []
+    parseJSON (Object v ) = Invigilator [] [] Nothing
                          <$> v .: "invigilator"
                          <*> v .: "inviligator_id"
                          <*> v .: "excluded_dates"
@@ -666,9 +668,37 @@ addInvigilators invigilatorList plan =
             mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
             $ invigilatorExcludedDates invigilator'
         }
+      personIsInvigilator person =
+        not (personIsLBA person)
+        && (personFK person == "FK07")
+        && ("Prof." `Text.isPrefixOf` personFullName person)
+      addInfoOrCreate :: Person -> Maybe Invigilator -> Maybe Invigilator
+      addInfoOrCreate person' Nothing = Just $ addDays' Invigilator
+        { invigilatorExcludedDays         = []
+        , invigilatorExamDays             = []
+        , invigilatorPerson               = Just person'
+        , invigilatorName                 = personShortName person'
+        , invigilatorID                   = personID person'
+        , invigilatorExcludedDates        = []
+        , invigilatorPartTime             = 1.0
+        , invigilatorFreeSemester         = 0.0
+        , invigilatorOvertimeThisSemester = 0.0
+        , invigilatorOvertimeLastSemester = 0.0
+        , invigilatorOralExams            = 0
+        , invigilatorMaster               = 0
+        }
+      addInfoOrCreate person' (Just invigilator') =
+        Just $ invigilator' { invigilatorPerson = Just person' }
+      addPersonsAndMissingInvigilators :: [Person] -> Invigilators
+                                       -> Invigilators
+      addPersonsAndMissingInvigilators persons' invigilators' =
+        foldr (\person invigilators'' ->
+            M.alter (addInfoOrCreate person) (personID person) invigilators''
+          ) invigilators' $ filter personIsInvigilator persons'
   in plan
       { invigilators =
-          M.fromList $ map (invigilatorID &&& addDays') invigilatorList
+          addPersonsAndMissingInvigilators (M.elems (persons plan))
+          $ M.fromList $ map (invigilatorID &&& addDays') invigilatorList
       }
 
 -- }}}

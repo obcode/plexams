@@ -28,9 +28,11 @@ data Config = Config
     , constraintsFile :: Maybe FilePath
     , studentsFile    :: Maybe FilePath
     , handicapFile    :: Maybe FilePath
+    , invigilatorFile :: Maybe FilePath
     , outfile         :: Maybe FilePath
     , configfile      :: FilePath
     , novalidation    :: Bool
+    , verbose         :: Bool
     }
 
 data QueryWhat =

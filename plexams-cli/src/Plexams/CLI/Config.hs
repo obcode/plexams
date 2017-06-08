@@ -70,6 +70,11 @@ config = Config
        <> help "import file containing handicap information"
         ))
       <*> optional (strOption
+        ( long "invigilators"
+       <> metavar "INVIGILATORSFILE"
+       <> help "import file containing invigilator information"
+        ))
+      <*> optional (strOption
         ( long "output"
        <> short 'o'
        <> metavar "OUTFILE"
@@ -86,6 +91,11 @@ config = Config
     <*> switch
         ( long "no-validation"
        <> help "turn of validation"
+        )
+    <*> switch
+        ( short 'v'
+       <> long "verbose"
+       <> help "turn on verbosity"
         )
 
 htmlOpts :: Parser Command

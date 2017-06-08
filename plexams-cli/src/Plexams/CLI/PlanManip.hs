@@ -4,6 +4,7 @@ module Plexams.CLI.PlanManip
   , applyAddRooms
   ) where
 
+import           Control.Monad            (when)
 import           Plexams.CLI.Import
 import           Plexams.CLI.Types
 import           Plexams.Import.PlanManip
@@ -13,6 +14,7 @@ import           Plexams.Types
 import           System.Directory         (doesFileExist)
 import           System.Exit
 import           System.IO                (hPutStrLn, stderr)
+import           Text.Show.Pretty         (ppShow)
 
 makePlan :: Config -> IO Plan
 makePlan config = do
@@ -23,14 +25,26 @@ makePlan config = do
     maybeStudents   <- importStudents config
     constraints'    <- importConstraints config
     handicaps'      <- importHandicaps config
-
-    return $ setHandicapsOnScheduledExams
+    invigilators'   <- importInvigilators config
+    let plan = addInvigilators invigilators'
+           $ setHandicapsOnScheduledExams
            $ addConstraints constraints'
            $ Plexams.PlanManip.makePlan examsWithRegs
                                         semesterConfig'
                                         persons'
                                         maybeStudents
                                         handicaps'
+    when (verbose config) $ do
+      hPutStrLn stderr $ ppShow semesterConfig'
+      hPutStrLn stderr $ ppShow exams'
+      hPutStrLn stderr $ ppShow persons'
+      hPutStrLn stderr $ ppShow examsWithRegs
+      hPutStrLn stderr $ ppShow maybeStudents
+      hPutStrLn stderr $ ppShow constraints'
+      hPutStrLn stderr $ ppShow handicaps'
+      hPutStrLn stderr $ ppShow invigilators'
+      hPutStrLn stderr $ ppShow plan
+    return plan
 
 applyPlanManips :: Config -> Plan -> IO Plan
 applyPlanManips config plan =

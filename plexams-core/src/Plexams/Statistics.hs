@@ -4,6 +4,7 @@ module Plexams.Statistics
     ) where
 
 import           Data.List     (intercalate, nub)
+import qualified Data.Map      as M
 import           Data.Text     (unpack)
 import           GHC.Exts      (groupWith, sortWith)
 import           Plexams.Query
@@ -25,6 +26,7 @@ planStatistics plan =
         [ examsWithoutRegistrations
         , examGroupsCorrelationToString
         , lecturerExamDaysToString
+        , invigilatorInfo
         ]
 
 shortGroupStatsToString :: Plan -> String
@@ -117,3 +119,16 @@ examsWithSameNameString =
   . map (\exams' -> "-   " ++ name (head exams')
                 ++ ": " ++ show (map anCode exams'))
   . examsWithSameName
+
+invigilatorInfo :: Plan -> String
+invigilatorInfo =
+    ("\n\n## Infos zu Aufsichten\n\n"++)
+    . concatMap (("\n-  "++) . (++"\n") . showInvigilator)
+    . M.elems
+    . invigilators
+  where
+    showInvigilator invigilator' =
+      show (invigilatorID invigilator') ++ " "
+      ++ unpack (invigilatorName invigilator') ++ ": "
+      ++ "e" ++ show (invigilatorExamDays invigilator')
+      ++ " -" ++ show (invigilatorExcludedDays invigilator')

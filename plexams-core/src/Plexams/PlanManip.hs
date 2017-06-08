@@ -112,7 +112,7 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
                 , deltaDuration = fromMaybe 0 maybeDeltaDuration
                 , invigilator = Nothing
                 , reserveRoom = not (availableRoomHandicap availableRoom) &&
-                    (seatsPlanned' < 3 && seatsPlanned' /= registrations exam)
+                    (seatsPlanned' < registrations exam `div` 5)
                 , handicapCompensation = availableRoomHandicap availableRoom
                 , seatsPlanned = seatsPlanned'
                 }

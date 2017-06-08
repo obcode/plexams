@@ -6,6 +6,7 @@ module Plexams.CLI.Import
   , importStudents
   , importConstraints
   , importHandicaps
+  , importInvigilators
   ) where
 
 import           Plexams.CLI.Types
@@ -144,3 +145,21 @@ importPersons semesterConfig' = do
                         ++ personsFile semesterConfig'
                         ++ " does not exist or is not parsable."
       exitWith $ ExitFailure 10
+
+importInvigilators :: Config -> IO [Invigilator]
+importInvigilators config =
+  case invigilatorFile config of
+    Just file -> do
+      maybeInvigilators <- importInvigilatorsFromJSONFile file
+      case maybeInvigilators of
+        Just invigilators' -> do
+          hPutStrLn stderr ">>> importing invigilators"
+          return invigilators'
+        Nothing -> do
+          hPutStrLn stderr $ "no invigilators found: "
+                            ++ file
+                            ++ " does not exist or is not parsable."
+          exitWith $ ExitFailure 11
+    Nothing -> do
+      hPutStrLn stderr "no invigilators file specified"
+      return []

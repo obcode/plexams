@@ -21,6 +21,7 @@ library:
     - plexams-core
     - plexams-generators
     - plexams-gui
+    - pretty-show
     - text
     - time
 
