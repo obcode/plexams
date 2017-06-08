@@ -51,3 +51,10 @@ install:
 script:
 # Build the package, its tests, and its docs and run the tests
 - stack --no-terminal test --haddock --no-haddock-deps
+
+notifications:
+  email:
+    recipients:
+      - ob@cs.hm.edu
+    on_success: never # default: change
+    on_failure: always # default: always
