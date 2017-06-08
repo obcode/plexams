@@ -9,7 +9,7 @@ import           Data.Ord      (Down (Down), comparing)
 import           GHC.Exts      (sortWith)
 import           Plexams.Types
 
-generateRooms :: Plan -> (Plan, [AddRoomToExam])
+generateRooms :: Plan -> [AddRoomToExam]
 generateRooms plan =
   let availableRooms' =  M.toList $ mkAvailableRooms plan
                                     (availableRooms $ semesterConfig plan)
@@ -20,27 +20,14 @@ generateRooms plan =
                       , s == s'
                       ]
       slotsWithRooms = map (second (uncurry setRoomsOnSlot)) roomsAndSlots
-  in ( plan { slots = foldr (\(s,(exams', _)) slots'' ->
-                              M.alter (\(Just slot')
-                                        -> Just $ slot' {
-                                            examsInSlot = M.fromList
-                                              $ map (\e -> (anCode e, e))
-                                                    exams'
-                                          }
-                                      ) s slots''
-                            )
-                            (slots plan)
-                            slotsWithRooms
-            }
-     , sortWith addRoomAnCode $ concatMap (snd . snd) slotsWithRooms
-     )
+  in sortWith addRoomAnCode $ concatMap snd slotsWithRooms
 
 setRoomsOnSlot :: ([AvailableRoom], [AvailableRoom]) -> [Exam]
-               -> ([Exam], [AddRoomToExam])
+               -> [AddRoomToExam]
 setRoomsOnSlot (n,h) e =
-  let (e', planManipsNormal) = setNormalRoomsOnSlot n e []
-      (e'', planManipsHandicap) = setHandicapRoomsOnSlot h e'
-  in (e'', planManipsNormal ++ planManipsHandicap)
+  let (_, planManipsNormal) = setNormalRoomsOnSlot n e []
+      (_, planManipsHandicap) = setHandicapRoomsOnSlot h e
+  in planManipsNormal ++ planManipsHandicap
 
 seatsMissing' :: Exam -> Integer
 seatsMissing' exam = seatsMissing exam -
@@ -117,14 +104,14 @@ setHandicapRoomOnAllExams room  = second concat
       in if withHandicaps exam && not (null studentsWithHandicaps')
         then
         (exam { rooms = Room
-              { roomID = roomName
-              , maxSeats = availableRoomMaxSeats availableRoom
-              , deltaDuration = deltaDuration'
-              , invigilator = Nothing
-              , reserveRoom = False
-              , handicapCompensation = True
-              , seatsPlanned = seatsPlanned'
-              }
+                { roomID = roomName
+                , maxSeats = availableRoomMaxSeats availableRoom
+                , deltaDuration = deltaDuration'
+                , invigilator = Nothing
+                , reserveRoom = False
+                , handicapCompensation = True
+                , seatsPlanned = seatsPlanned'
+                }
                    : rooms exam
              }
           , [AddRoomToExam (anCode exam)
