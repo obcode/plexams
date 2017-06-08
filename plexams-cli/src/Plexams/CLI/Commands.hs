@@ -106,5 +106,4 @@ generateRooms config plan =
       generateRooms'  =
         ("# Rooms for exams --- generated\n"++)
         $ exportAddRoomToExams
-        $ snd
         $ Plexams.Generators.Rooms.generateRooms plan
