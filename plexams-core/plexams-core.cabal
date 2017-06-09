@@ -36,6 +36,18 @@ library
       Plexams.Query
       Plexams.Statistics
       Plexams.Types
+      Plexams.Types.Common
+      Plexams.Types.Constraints
+      Plexams.Types.Exam
+      Plexams.Types.Groups
+      Plexams.Types.Persons
+      Plexams.Types.Plan
+      Plexams.Types.PlanManip
+      Plexams.Types.Rooms
+      Plexams.Types.SemesterConfig
+      Plexams.Types.Slots
+      Plexams.Types.Validation
+      Plexams.Types.ZPA
       Plexams.Validation
   other-modules:
       Plexams.Export.Common

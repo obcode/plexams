@@ -10,6 +10,7 @@ import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
 import           Data.List                  (intercalate)
 import           GHC.Exts                   (sortWith)
+import           Plexams.PlanManip          (setHandicapsOnScheduledExams)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------

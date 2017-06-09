@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Plexams.PlanManip
     ( addExamToSlot
     , applyAddExamToSlotListToPlan
@@ -5,13 +6,21 @@ module Plexams.PlanManip
     , addRegistrationsListToExams
     , applyAddRoomToExamListToPlan
     , addConstraints
+    , updateExamByAncodeWith
+    , setHandicapsOnScheduledExams
+    , addInvigilators
     ) where
 
-import           Control.Arrow (second)
-import           Data.List     (partition)
-import qualified Data.Map      as M
-import           Data.Maybe    (fromJust, fromMaybe, mapMaybe)
-import qualified Data.Set      as S
+import           Control.Arrow      (second, (&&&))
+import           Data.List          (elemIndex, partition)
+import qualified Data.Map           as M
+import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
+import qualified Data.Set           as S
+import           Data.Text          (Text, append, unpack)
+import qualified Data.Text          as Text
+import           Data.Time.Calendar
+import           Data.Time.Format   (defaultTimeLocale, parseTimeM)
+import           GHC.Exts           (groupWith)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -229,3 +238,98 @@ addRegistrationsToExam registrations' exam =
 
 addConstraints :: Constraints -> Plan -> Plan
 addConstraints c p = p { constraints = Just c }
+
+updateExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
+updateExamByAncodeWith plan ancode f
+  | isScheduledAncode ancode plan =
+                                updateScheduledExamByAncodeWith plan ancode f
+  | isUnscheduledAncode ancode plan =
+                                updateUnscheduledExamByAncodeWith plan ancode f
+  | otherwise = plan
+
+updateScheduledExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
+updateScheduledExamByAncodeWith plan ancode f =
+  let updatedExamsInSlot = M.alter (fmap f) ancode
+                                   $ examsInSlot oldSlotContents
+          -- map (second (filter ((==ancode) . anCode) . M.elems . examsInSlot))
+      (oldSlot, oldSlotContents) =
+        head -- should not fail
+        $ filter (elem ancode . map anCode . M.elems . examsInSlot . snd)
+        $ M.toList
+        $ slots plan
+  in plan { slots = M.alter (fmap $ \s -> s {examsInSlot = updatedExamsInSlot})
+                            oldSlot $ slots plan}
+
+updateUnscheduledExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
+updateUnscheduledExamByAncodeWith plan ancode f =
+  plan { unscheduledExams = M.alter (fmap f) ancode $ unscheduledExams plan}
+
+setHandicapsOnScheduledExams :: Plan -> Plan
+setHandicapsOnScheduledExams plan =
+  let handicapsPerAncode =
+        map (\aH -> (fst $ head aH, map snd aH))
+        $ groupWith fst
+        $ concatMap (\h -> map (\a -> (a,h)) $ exams h)
+        $ handicaps plan
+  in foldr (\(a,hs) p ->
+            updateExamByAncodeWith p a (\e -> e {
+              studentsWithHandicaps = hs
+            })
+           )
+           plan
+           handicapsPerAncode
+
+addInvigilators :: [Invigilator] -> Plan -> Plan
+addInvigilators invigilatorList plan =
+  let examDaysPerLecturer = M.fromList
+        $ map (\g -> (fst $ head g, map snd g))
+        $ groupWith fst
+        $ concatMap (\((d,_), s) -> map (\e -> (personID $ lecturer e, d))
+                                        $ M.elems
+                                        $ examsInSlot s)
+        $ M.toList
+        $ slots plan
+      makeDay :: Text -> Day
+      makeDay str =
+        fromMaybe (error $ unpack $ "cannot parse date: " `append` str)
+                  (parseTimeM True defaultTimeLocale "%d.%m.%y" (unpack str))
+      addDays' invigilator' = invigilator'
+        { invigilatorExamDays = M.findWithDefault []
+                                                  (invigilatorID invigilator')
+                                                  examDaysPerLecturer
+        , invigilatorExcludedDays =
+            mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
+            $ invigilatorExcludedDates invigilator'
+        }
+      personIsInvigilator person =
+        not (personIsLBA person)
+        && (personFK person == "FK07")
+        && ("Prof." `Text.isPrefixOf` personFullName person)
+      addInfoOrCreate :: Person -> Maybe Invigilator -> Maybe Invigilator
+      addInfoOrCreate person' Nothing = Just $ addDays' Invigilator
+        { invigilatorExcludedDays         = []
+        , invigilatorExamDays             = []
+        , invigilatorPerson               = Just person'
+        , invigilatorName                 = personShortName person'
+        , invigilatorID                   = personID person'
+        , invigilatorExcludedDates        = []
+        , invigilatorPartTime             = 1.0
+        , invigilatorFreeSemester         = 0.0
+        , invigilatorOvertimeThisSemester = 0.0
+        , invigilatorOvertimeLastSemester = 0.0
+        , invigilatorOralExams            = 0
+        , invigilatorMaster               = 0
+        }
+      addInfoOrCreate person' (Just invigilator') =
+        Just $ invigilator' { invigilatorPerson = Just person' }
+      addPersonsAndMissingInvigilators :: [Person] -> Invigilators
+                                       -> Invigilators
+      addPersonsAndMissingInvigilators persons' invigilators' =
+        foldr (\person invigilators'' ->
+            M.alter (addInfoOrCreate person) (personID person) invigilators''
+          ) invigilators' $ filter personIsInvigilator persons'
+  in plan
+      { invigilators =
+          addPersonsAndMissingInvigilators (M.elems (persons plan))
+          $ M.fromList $ map (invigilatorID &&& addDays') invigilatorList
+      }
