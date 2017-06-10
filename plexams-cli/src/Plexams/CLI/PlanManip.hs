@@ -3,6 +3,7 @@ module Plexams.CLI.PlanManip
   , applyPlanManips
   , applyAddRooms
   , addInvigilatorsToPlan
+  , applyAddInvigilators
   ) where
 
 import           Control.Monad            (when)
@@ -74,8 +75,8 @@ applyAddRooms :: Config -> Plan -> IO Plan
 applyAddRooms config plan =
   case roomsFile config of
     Just file -> do
-      maybyRoomsForExams <- importAddRoomToExamFromYAMLFile file
-      case maybyRoomsForExams of
+      maybeRoomsForExams <- importAddRoomToExamFromYAMLFile file
+      case maybeRoomsForExams of
         Just roomsForExams -> do
           hPutStrLn stderr ">>> adding rooms to exams"
           return $ applyAddRoomToExamListToPlan plan roomsForExams
@@ -95,3 +96,21 @@ addInvigilatorsToPlan config plan = do
   when (verbose config) $
     hPutStrLn stderr $ ppShow invigilators'
   return plan'
+
+applyAddInvigilators :: Config -> Plan -> IO Plan
+applyAddInvigilators config plan =
+  case addInvigilatorFile config of
+    Just file -> do
+      maybeInvigilators <- importAddInvigilatorToRoomOrSlotFromYAMLFile file
+      case maybeInvigilators of
+        Just invigilatorsForSlots -> do
+          hPutStrLn stderr ">>> adding invigilators to exams and slots"
+          return $ applyAddInvigilatorsToPlan plan invigilatorsForSlots
+        Nothing -> do
+          hPutStrLn stderr $ "no add-invigilators file found: "
+                            ++ file
+                            ++ " does not exist or is not parsable."
+          exitWith $ ExitFailure 17
+    Nothing -> do
+      hPutStrLn stderr "no add-invigilators file specified"
+      return plan

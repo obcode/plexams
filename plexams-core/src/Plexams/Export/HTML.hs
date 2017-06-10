@@ -70,13 +70,12 @@ planToHTMLTable maybeExams plan =
           isActiveExam exam = maybe False (elem $ anCode exam) maybeExams
           isConflict exam = anCode exam `elem` conflicts
           conflicts = maybe [] (concatMap mkConflicts) maybeExams
-          mkConflicts ancode = maybe []
-            ( concatMap ( M.keys
-                          . M.findWithDefault M.empty ancode
-                          . olOverlaps
-                        )
-              . overlaps
-            )
+          mkConflicts ancode =
+            concatMap ( M.keys
+                        . M.findWithDefault M.empty ancode
+                        . olOverlaps
+                      )
+            $ overlaps
             $ constraints plan
           slotsAsMatrix = zipWith (:) columns
                $ map (map showExams)

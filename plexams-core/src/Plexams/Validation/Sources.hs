@@ -19,13 +19,8 @@ validate plan = do
 -- und das ganze muss symmetrisch sein.
 validateRegsAndOverlaps :: Plan -> Writer [Text] ValidationResult
 validateRegsAndOverlaps plan = do
-  let maybeOverlaps = overlaps <$> constraints plan
-  case maybeOverlaps of
-    Nothing -> do
-      tell ["### no constraints for plan defined"]
-      return HardConstraintsBroken
-    Just overlaps' ->
-      validationResult <$> mapM validateOverlapsForGroups overlaps'
+  let overlaps' = overlaps $ constraints plan
+  validationResult <$> mapM validateOverlapsForGroups overlaps'
 
 -- Überprüft die Symmetrie der Overlaps
 validateOverlapsForGroups :: Overlaps -> Writer [Text] ValidationResult

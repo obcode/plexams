@@ -86,7 +86,7 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
 -- {{{ Constraints from YAML file
 
 data ImportConstraints =
-  ImportConstraints [[Ancode]] [[Int]] [[Int]] [[Integer]]
+  ImportConstraints [[Ancode]] [[Int]] [[Int]] [Integer] [[Int]] [[Integer]]
                     [ImpossibleInvigilation] (Maybe [RoomOnlyForSlots])
 
 instance Y.FromJSON ImportConstraints where
@@ -94,6 +94,8 @@ instance Y.FromJSON ImportConstraints where
                         <$> v Y..: "notOnSameDay"
                         <*> v Y..: "onOneOfTheseDays"
                         <*> v Y..: "fixedSlot"
+                        <*> v Y..: "noInvigilations"
+                        <*> v Y..: "noInvigilationDays"
                         <*> v Y..: "invigilatesExam"
                         <*> v Y..: "impossibleInvigilationSlots"
                         <*> v Y..:? "roomOnlyForSlots"
@@ -124,6 +126,8 @@ importConstraintsToConstraints
   (ImportConstraints iCNotOnSameDay
                      iCOnOneOfTheseDays
                      iCFixedSlot
+                     icNoInvigilations
+                     icNoInvigilationDays
                      iCInvigilatesExam
                      iCImpossibleInvigilationSlots
                      iCRoomOnlyForSlots
@@ -133,6 +137,12 @@ importConstraintsToConstraints
     , notOnSameDay = iCNotOnSameDay
     , onOneOfTheseDays = map (\(x:xs) -> (toInteger x, xs)) iCOnOneOfTheseDays
     , fixedSlot =  map (\[a,d,s] -> (toInteger a, (d,s))) iCFixedSlot
+    , noInvigilations = icNoInvigilations
+    , noInvigilationDays = concatMap (\xs -> if null xs
+                                             then []
+                                             else [( toInteger (head xs)
+                                                   , tail xs)])
+                                     icNoInvigilationDays
     , invigilatesExam = map (\[a,p] -> (a,p)) iCInvigilatesExam
     , impossibleInvigilationSlots = map iIToSlots iCImpossibleInvigilationSlots
     , roomSlots = maybe M.empty (M.fromList . map roomOnlyForSlotsToTuple)

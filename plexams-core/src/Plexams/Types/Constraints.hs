@@ -13,6 +13,8 @@ data Constraints = Constraints
   , notOnSameDay                :: [[Ancode]]
   , onOneOfTheseDays            :: [(Ancode, [Int])]
   , fixedSlot                   :: [(Ancode, (Int,Int))]
+  , noInvigilations             :: [PersonID]
+  , noInvigilationDays          :: [(PersonID, [DayIndex])]
   , invigilatesExam             :: [(Ancode, PersonID)]
   , impossibleInvigilationSlots :: [(PersonID, [(Int, Int)])]
   , roomSlots                   :: M.Map RoomID [(DayIndex, SlotIndex)]
@@ -20,7 +22,7 @@ data Constraints = Constraints
   deriving (Show, Eq)
 
 noConstraints :: Constraints
-noConstraints = Constraints [] [] [] [] [] [] M.empty
+noConstraints = Constraints [] [] [] [] [] [] [] [] M.empty
 
 data Overlaps = Overlaps
   { olGroup :: Group

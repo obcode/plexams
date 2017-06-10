@@ -75,6 +75,11 @@ config = Config
        <> help "import file containing invigilator information"
         ))
       <*> optional (strOption
+        ( long "add-invigilations"
+       <> metavar "ADDINVIGILATIONSFILE"
+       <> help "import file containing invigilator mappings"
+        ))
+      <*> optional (strOption
         ( long "output"
        <> short 'o'
        <> metavar "OUTFILE"

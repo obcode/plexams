@@ -2,10 +2,12 @@
 module Plexams.Types.PlanManip
   ( AddExamToSlot(..)
   , AddRoomToExam(..)
+  , AddInvigilatorToRoomOrSlot(..)
   ) where
 
-import           Control.Applicative (empty)
-import qualified Data.Yaml           as Y
+import           Control.Applicative  (empty)
+import qualified Data.Yaml            as Y
+import           Plexams.Types.Common
 
 data AddExamToSlot =
     AddExamToSlot
@@ -30,3 +32,11 @@ instance Y.FromJSON AddRoomToExam where
                        <*> v Y..: "seatsPlanned"
                        <*> v Y..:? "deltaDuration" Y..!= Nothing
     parseJSON _            = empty
+
+data AddInvigilatorToRoomOrSlot =
+  AddInvigilatorToRoomOrSlot
+    { addInvigilatorID   :: PersonID
+    , addInvigilatorSlot :: (DayIndex, SlotIndex)
+    -- Nothing means ReserveInvigilator for Slot
+    , addInvigilatorRoom :: Maybe String
+    }

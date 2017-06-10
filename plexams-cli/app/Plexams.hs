@@ -9,13 +9,10 @@ main :: IO ()
 main = configmain main'
 
 main' :: Config -> IO ()
-main' config = do
-
-  unscheduledPlan <- makePlan config
-  scheduledPlan <- applyPlanManips config unscheduledPlan
-  scheduledPlanWithRooms <- applyAddRooms config scheduledPlan
-
-  scheduledPlanWithRoomsAndInvigilators
-                <- addInvigilatorsToPlan config scheduledPlanWithRooms
-
-  runCommand (optCommand config) config scheduledPlanWithRoomsAndInvigilators
+main' config =
+  makePlan config >>=
+  applyPlanManips config >>=
+  applyAddRooms config >>=
+  addInvigilatorsToPlan config >>=
+  applyAddInvigilators config >>=
+  runCommand (optCommand config) config

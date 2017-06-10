@@ -3,10 +3,11 @@ module Plexams.Statistics
     , planStatistics
     ) where
 
-import           Data.List     (intercalate, nub)
-import qualified Data.Map      as M
-import           Data.Text     (unpack)
-import           GHC.Exts      (groupWith, sortWith)
+import           Data.List            (intercalate, nub)
+import qualified Data.Map             as M
+import           Data.Text            (unpack)
+import           GHC.Exts             (groupWith, sortWith)
+import           Plexams.Invigilation
 import           Plexams.Query
 import           Plexams.Types
 
@@ -26,7 +27,9 @@ planStatistics plan =
         [ examsWithoutRegistrations
         , examGroupsCorrelationToString
         , lecturerExamDaysToString
+        , invigilationInfo
         , invigilatorInfo
+        , invigilatorsPerDayToString
         ]
 
 shortGroupStatsToString :: Plan -> String
@@ -131,3 +134,27 @@ invigilatorInfo =
       ++ " -" ++ show (invigilatorExcludedDays invigilator')
       ++ " w" ++ show (invigilatorWantDays invigilator')
       ++ " c" ++ show (invigilatorCanDays invigilator')
+
+invigilatorsPerDayToString :: Plan -> String
+invigilatorsPerDayToString =
+    ("\n## Aufsichten pro Tag\n\n"++)
+    . concatMap (\(day, (ws, cs)) ->
+        "Tag " ++ show day ++ "\n\n"
+        ++ "-    wollen(" ++ show (length ws) ++ "):\n\n"
+        ++ concatMap (("    - "++) . (++"\n\n") . unpack . invigilatorName) ws
+        ++ "\n\n-    können(" ++ show (length cs) ++ "):\n\n"
+        ++ concatMap (("    - "++)  . (++"\n\n"). unpack . invigilatorName) cs
+      )
+    . M.toList
+    . invigilatorsPerDay
+
+invigilationInfo :: Plan -> String
+invigilationInfo =
+    ("\n\n## Infos zu Aufsichtsbedarf\n\n"++)
+  . (\(sumExams, sumReserve, sumMasterAndOralExams) ->
+        "- Summe Aufsichten: " ++ show sumExams ++ " Minuten \n\n"
+     ++ "- Summe Reserveaufsichten: " ++ show sumReserve ++ " Minuten \n\n"
+     ++ "- Summe Beisitz/Master: " ++ show sumMasterAndOralExams
+        ++ " Minuten \n\n"
+    )
+  . sumInvigilation

@@ -32,7 +32,7 @@ data Plan = Plan
     , unscheduledExams :: M.Map Ancode Exam  -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
                                               -- Ancode -> Exam
     , persons          :: Persons
-    , constraints      :: Maybe Constraints
+    , constraints      :: Constraints
     , students         :: Students
     , studentsExams    :: StudentsExams
     , handicaps        :: [Handicap]
@@ -82,7 +82,7 @@ mkAvailableRooms plan rooms' =
           (map snd *** map snd)
           $  partition fst
           $ zip (concat $ repeat [True,False]) handicapCompensationRooms
-      roomSlots' = maybe M.empty roomSlots $ constraints plan
+      roomSlots' = roomSlots $ constraints plan
       -- normalRoomsAlways =
       --  filter (not . (`elem` M.keys roomSlots') . availableRoomName) normalRooms
       allAvailableRooms = M.fromList $ zip slots' $ concat

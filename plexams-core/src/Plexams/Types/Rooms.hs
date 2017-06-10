@@ -2,7 +2,9 @@ module Plexams.Types.Rooms
   ( Room(..)
   ) where
 
+import           Data.Text             (unpack)
 import           Plexams.Types.Common
+import           Plexams.Types.Persons
 
 data Room = Room
     { roomID               :: RoomID        -- ^ Raum-Nr, z.B. @"R3.014"@
@@ -10,7 +12,7 @@ data Room = Room
     , deltaDuration        :: Duration      -- ^ falls der Raum für NTA genutzt wird, Anzahl der Minuten
                                             --   die die Prüfung länger
                                             --   dauert
-    , invigilator          :: Maybe Integer -- ^ Aufsicht
+    , invigilator          :: Maybe Invigilator -- ^ Aufsicht
     , reserveRoom          :: Bool          -- ^ @True@, Raum ist eingeplant, wird aber nicht im ZPA
                                             --   veröffentlicht
     , handicapCompensation :: Bool          -- ^ @True@ Raum für NTA
@@ -25,3 +27,5 @@ instance Show Room where
            ++ (if handicapCompensation room
                then ", H (+"++ show (deltaDuration room) ++ "Min)"
                else "")
+           ++ maybe "" ((", Aufsicht: "++) . unpack . invigilatorName)
+                       (invigilator room)

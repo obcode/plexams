@@ -6,7 +6,6 @@ module Plexams.Export.ZPA
 import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.Map                   as M
-import           Data.Maybe                 (fromMaybe)
 import           GHC.Exts                   (sortWith)
 import           Plexams.Types
 
@@ -14,20 +13,20 @@ import           Plexams.Types
 -- Export for ZPA
 --------------------------------------------------------------------------------
 
-examToZPAExam :: Plan -> Maybe Integer -> Exam -> ZPAExam
+examToZPAExam :: Plan -> Maybe Invigilator -> Exam -> ZPAExam
 examToZPAExam plan reserveInvigilator' exam = ZPAExam
     { zpaExamAnCode = anCode exam
     , zpaExamDate = examDateAsString exam plan
     , zpaExamTime = examSlotAsString exam plan
     , zpaTotalNumber = registrations exam
-    , zpaExamReserveInvigilatorId = fromMaybe 0 reserveInvigilator'
+    , zpaExamReserveInvigilatorId = maybe 0 invigilatorID reserveInvigilator'
     , zpaExamRooms = map (roomToZPARoom $ duration exam) $ rooms exam
     }
 
 roomToZPARoom :: Integer -> Room -> ZPARoom
 roomToZPARoom duration' room = ZPARoom
     { zpaRoomNumber = roomID room
-    , zpaRoomInvigilatorId = fromMaybe 0 $ invigilator room
+    , zpaRoomInvigilatorId = maybe 0 invigilatorID $ invigilator room
     , zpaRoomReserveRoom = reserveRoom room
     , zpaRoomHandicapCompensation = handicapCompensation room
     , zpaRoomDuration = duration' + deltaDuration room
@@ -38,7 +37,7 @@ planToZPAExams :: Plan -> [ZPAExam]
 planToZPAExams plan = map (uncurry (examToZPAExam plan))
                $ scheduledExamsWithReserveInvigilator plan
 
-scheduledExamsWithReserveInvigilator :: Plan -> [(Maybe Integer, Exam)]
+scheduledExamsWithReserveInvigilator :: Plan -> [(Maybe Invigilator, Exam)]
 scheduledExamsWithReserveInvigilator =
     sortWith (anCode . snd)
     . filter (plannedByMe . snd)

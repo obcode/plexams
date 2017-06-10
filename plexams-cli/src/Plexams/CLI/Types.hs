@@ -20,19 +20,20 @@ data Command
   deriving (Eq)
 
 data Config = Config
-    { optCommand      :: Command
-    , planManipFile'  :: Maybe FilePath
-    , roomsFile       :: Maybe FilePath
-    , regsFile        :: Maybe FilePath
-    , overlapsFile    :: Maybe FilePath
-    , constraintsFile :: Maybe FilePath
-    , studentsFile    :: Maybe FilePath
-    , handicapFile    :: Maybe FilePath
-    , invigilatorFile :: Maybe FilePath
-    , outfile         :: Maybe FilePath
-    , configfile      :: FilePath
-    , novalidation    :: Bool
-    , verbose         :: Bool
+    { optCommand         :: Command
+    , planManipFile'     :: Maybe FilePath
+    , roomsFile          :: Maybe FilePath
+    , regsFile           :: Maybe FilePath
+    , overlapsFile       :: Maybe FilePath
+    , constraintsFile    :: Maybe FilePath
+    , studentsFile       :: Maybe FilePath
+    , handicapFile       :: Maybe FilePath
+    , invigilatorFile    :: Maybe FilePath
+    , addInvigilatorFile :: Maybe FilePath
+    , outfile            :: Maybe FilePath
+    , configfile         :: FilePath
+    , novalidation       :: Bool
+    , verbose            :: Bool
     }
 
 data QueryWhat =

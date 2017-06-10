@@ -9,10 +9,11 @@ module Plexams.PlanManip
     , updateExamByAncodeWith
     , setHandicapsOnScheduledExams
     , addInvigilators
+    , applyAddInvigilatorsToPlan
     ) where
 
 import           Control.Arrow      (second, (&&&))
-import           Data.List          (elemIndex, partition, (\\))
+import           Data.List          (elemIndex, nub, partition, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set           as S
@@ -147,6 +148,38 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
         }
 
 --------------------------------------------------------------------------------
+-- Add invigilators to exams and slot
+--------------------------------------------------------------------------------
+-- Add invigilators NOT before the room allocation is frozen
+
+applyAddInvigilatorsToPlan :: Plan -> [AddInvigilatorToRoomOrSlot] -> Plan
+applyAddInvigilatorsToPlan = foldr applyAddInvigilators
+  where
+    applyAddInvigilators (AddInvigilatorToRoomOrSlot personID' slot' maybeRoom)
+      = addInvigilatorToExamOrSlot personID' slot' maybeRoom
+
+addInvigilatorToExamOrSlot :: Integer -> (DayIndex, SlotIndex) -> Maybe String
+                           -> Plan -> Plan
+addInvigilatorToExamOrSlot personID' slotKey maybeRoom plan =
+  let invigilator' = M.lookup personID' $ invigilators plan
+      addInvigilator invigilator'' room exam =
+        exam { rooms = map (addInvigilator' invigilator'' room )
+                           $ rooms exam}
+      addInvigilator' invigilator'' roomName' room' =
+        if roomID room' == roomName'
+        then room' { invigilator = invigilator'' }
+        else room'
+  in plan
+      { slots = M.alter (fmap $ \slot' ->
+            case maybeRoom of
+              Nothing   -> slot' { reserveInvigilator = invigilator' }
+              Just room -> slot'
+                { examsInSlot = M.map (addInvigilator invigilator' room)
+                                    $ examsInSlot slot'}
+          ) slotKey $ slots plan
+      }
+
+--------------------------------------------------------------------------------
 -- Make the initial plan
 --------------------------------------------------------------------------------
 
@@ -162,7 +195,7 @@ makePlan exams' semesterConfig' pers maybeStudents handicaps' =
           , slots = slots'
           , unscheduledExams = unscheduledExams''
           , persons = pers
-          , constraints = Nothing
+          , constraints = noConstraints
           , students = fromMaybe M.empty maybeStudents
           , studentsExams = mkStudentsExams maybeStudents
           , handicaps = handicaps'
@@ -238,7 +271,7 @@ addRegistrationsToExam registrations' exam =
                         $ groups exam
 
 addConstraints :: Constraints -> Plan -> Plan
-addConstraints c p = p { constraints = Just c }
+addConstraints c p = p { constraints = c }
 
 updateExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
 updateExamByAncodeWith plan ancode f
@@ -290,12 +323,16 @@ addInvigilators invigilatorList plan =
       allDays = [0 .. maxDayIndex plan]
       examDays' invigilator' = M.findWithDefault [] (invigilatorID invigilator')
                                       examDaysPerLecturer'
-      excludedDays' invigilator' =
-            mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
-            $ invigilatorExcludedDates invigilator'
+      excludedDays' invigilator' = nub $
+            concatMap snd (filter ((== invigilatorID invigilator') . fst)
+                          (noInvigilationDays $ constraints plan))
+            ++ mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
+                        (invigilatorExcludedDates invigilator')
       wantDays invigilator'= examDays' invigilator' \\ excludedDays' invigilator'
-      canDays invigilator' = (allDays \\ wantDays invigilator')
-                                      \\ excludedDays' invigilator'
+      canDays invigilator' =
+        if length (wantDays invigilator') >= 3
+        then []
+        else (allDays \\ wantDays invigilator') \\ excludedDays' invigilator'
       addDays' invigilator' = invigilator'
         { invigilatorExamDays     = examDays' invigilator'
         , invigilatorExcludedDays = excludedDays' invigilator'
@@ -306,6 +343,7 @@ addInvigilators invigilatorList plan =
         not (personIsLBA person)
         && (personFK person == "FK07")
         && ("Prof." `Text.isPrefixOf` personFullName person)
+        && (personID person `notElem` noInvigilations (constraints plan))
       addInfoOrCreate :: Person -> Maybe Invigilator -> Maybe Invigilator
       addInfoOrCreate person' Nothing = Just $ addDays' Invigilator
         { invigilatorExcludedDays         = []

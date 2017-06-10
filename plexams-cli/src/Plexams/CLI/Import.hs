@@ -98,7 +98,6 @@ importConstraints' config =
       hPutStrLn stderr "no constraints file specified"
       return noConstraints
 
-
 importOverlaps :: Config -> IO [Overlaps]
 importOverlaps config =
   case overlapsFile config of

@@ -28,7 +28,10 @@ planToMD plan =
     dayToMD ((d,_), slots') =
       "## " ++ dateString ((!!d) $ examDays $ semesterConfig plan) ++ "\n\n"
       ++ intercalate "\n\n" (map slotToMD slots')
-    slotToMD (ds, slot') = "- " ++ slotToStr ds ++ "\n\n"
+    slotToMD (ds, slot') = "- " ++ slotToStr ds
+      ++ maybe "" ((", Reserve: "++). unpack . invigilatorName)
+                  (reserveInvigilator slot')
+      ++ "\n\n"
       ++ intercalate "\n\n" (map (("    "++) . examToMD)
                                  $ M.elems $ examsInSlot slot')
     slotToStr (_,s) = slotsPerDay (semesterConfig plan)!!s ++ " Uhr"

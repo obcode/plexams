@@ -59,7 +59,7 @@ validateSameNameSameSlot plan = do
             filter ((>1) . length . nub . map slot)
             $ groupWith name
             $ filter (not
-                     . (`elem` (maybe [] (concat . notOnSameDay)
+                     . (`elem` concat (notOnSameDay
                                       $ constraints plan))
                      . anCode
                      )
@@ -79,15 +79,15 @@ validateSameNameSameSlot plan = do
 validateOverlapsInSameSlot :: Plan -> Writer [Text] ValidationResult
 validateOverlapsInSameSlot plan = do
   tell ["### Checking overlaps in same slot (hard)"]
-  validateOverlaps (overlaps <$> constraints plan)
+  validateOverlaps (overlaps $ constraints plan)
                    (map (M.elems . examsInSlot) $ M.elems $ slots plan)
 
-validateOverlaps :: Maybe [Overlaps] -> [[Exam]]
+validateOverlaps :: [Overlaps] -> [[Exam]]
                  -> Writer [Text] ValidationResult
-validateOverlaps Nothing _ = do
+validateOverlaps [] _ = do
   tell ["#### no overlaps found"]
   return EverythingOk
-validateOverlaps (Just overlaps') exams' =
+validateOverlaps overlaps' exams' =
   validationResult <$> mapM (validateOverlapsForExams overlaps') exams'
 
 validateOverlapsForExams :: [Overlaps] -> [Exam]
@@ -114,7 +114,7 @@ validateOverlapsInAdjacentSlots plan = do
         M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
       exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
                   daySlotPairs
-  validateOverlapsTwoLists (overlaps <$> constraints plan) exams'
+  validateOverlapsTwoLists (overlaps $ constraints plan) exams'
 
 validateOverlapsSameDay :: Plan -> Writer [Text] ValidationResult
 validateOverlapsSameDay plan = do
@@ -129,17 +129,17 @@ validateOverlapsSameDay plan = do
         M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
       exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
                   daySlotPairs
-  valRes <- validateOverlapsTwoLists (overlaps <$> constraints plan) exams'
+  valRes <- validateOverlapsTwoLists (overlaps $ constraints plan) exams'
   return $ case valRes of
     HardConstraintsBroken -> SoftConstraintsBroken
     _                     -> valRes
 
-validateOverlapsTwoLists :: Maybe [Overlaps] -> [([Exam],[Exam])]
+validateOverlapsTwoLists :: [Overlaps] -> [([Exam],[Exam])]
                  -> Writer [Text] ValidationResult
-validateOverlapsTwoLists Nothing _ = do
+validateOverlapsTwoLists [] _ = do
   tell ["#### no overlaps found"]
   return EverythingOk
-validateOverlapsTwoLists (Just overlaps') exams' =
+validateOverlapsTwoLists overlaps' exams' =
   validationResult <$> mapM (validateOverlapsTwoListsForExams overlaps') exams'
 
 validateOverlapsTwoListsForExams :: [Overlaps] -> ([Exam],[Exam])
@@ -180,17 +180,14 @@ validateOverlapsForExam overlaps' exam exams' = do
 validateScheduleConstraints :: Plan -> Writer [Text] ValidationResult
 validateScheduleConstraints plan = do
   tell ["## Validate schedule constraints from file"]
-  let maybeConstraints = constraints plan
-  case maybeConstraints of
-    Nothing -> tell ["- no constraints found"] >> return EverythingOk
-    Just constraints' -> do
-      notOnSameDayOk <- validateNotOnSameDay plan (notOnSameDay constraints')
-      onOneOfTheseDaysOk <- validateOneOfTheseDays plan
-                                                (onOneOfTheseDays constraints')
-      _ <- validateFixSlot plan (fixedSlot constraints')
-      tell ["TODO: invigilatesExam"]
-      tell ["TODO: impossibleInvigilationSlots"]
-      return $ validationResult [notOnSameDayOk, onOneOfTheseDaysOk]
+  let constraints' = constraints plan
+  notOnSameDayOk <- validateNotOnSameDay plan (notOnSameDay constraints')
+  onOneOfTheseDaysOk <- validateOneOfTheseDays plan
+                                            (onOneOfTheseDays constraints')
+  _ <- validateFixSlot plan (fixedSlot constraints')
+  tell ["TODO: invigilatesExam"]
+  tell ["TODO: impossibleInvigilationSlots"]
+  return $ validationResult [notOnSameDayOk, onOneOfTheseDaysOk]
 
 ------------------
 -- not on same day
