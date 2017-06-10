@@ -15,4 +15,7 @@ main' config = do
   scheduledPlan <- applyPlanManips config unscheduledPlan
   scheduledPlanWithRooms <- applyAddRooms config scheduledPlan
 
-  runCommand (optCommand config) config  scheduledPlanWithRooms
+  scheduledPlanWithRoomsAndInvigilators
+                <- addInvigilatorsToPlan config scheduledPlanWithRooms
+
+  runCommand (optCommand config) config scheduledPlanWithRoomsAndInvigilators

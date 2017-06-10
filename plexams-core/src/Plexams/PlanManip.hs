@@ -12,7 +12,7 @@ module Plexams.PlanManip
     ) where
 
 import           Control.Arrow      (second, (&&&))
-import           Data.List          (elemIndex, partition)
+import           Data.List          (elemIndex, partition, (\\))
 import qualified Data.Map           as M
 import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set           as S
@@ -21,6 +21,7 @@ import qualified Data.Text          as Text
 import           Data.Time.Calendar
 import           Data.Time.Format   (defaultTimeLocale, parseTimeM)
 import           GHC.Exts           (groupWith)
+import           Plexams.Query      (examDaysPerLecturer)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -281,25 +282,25 @@ setHandicapsOnScheduledExams plan =
 
 addInvigilators :: [Invigilator] -> Plan -> Plan
 addInvigilators invigilatorList plan =
-  let examDaysPerLecturer = M.fromList
-        $ map (\g -> (fst $ head g, map snd g))
-        $ groupWith fst
-        $ concatMap (\((d,_), s) -> map (\e -> (personID $ lecturer e, d))
-                                        $ M.elems
-                                        $ examsInSlot s)
-        $ M.toList
-        $ slots plan
-      makeDay :: Text -> Day
+  let makeDay :: Text -> Day
       makeDay str =
         fromMaybe (error $ unpack $ "cannot parse date: " `append` str)
                   (parseTimeM True defaultTimeLocale "%d.%m.%y" (unpack str))
-      addDays' invigilator' = invigilator'
-        { invigilatorExamDays = M.findWithDefault []
-                                                  (invigilatorID invigilator')
-                                                  examDaysPerLecturer
-        , invigilatorExcludedDays =
+      examDaysPerLecturer' = examDaysPerLecturer plan
+      allDays = [0 .. maxDayIndex plan]
+      examDays' invigilator' = M.findWithDefault [] (invigilatorID invigilator')
+                                      examDaysPerLecturer'
+      excludedDays' invigilator' =
             mapMaybe (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
             $ invigilatorExcludedDates invigilator'
+      wantDays invigilator'= examDays' invigilator' \\ excludedDays' invigilator'
+      canDays invigilator' = (allDays \\ wantDays invigilator')
+                                      \\ excludedDays' invigilator'
+      addDays' invigilator' = invigilator'
+        { invigilatorExamDays     = examDays' invigilator'
+        , invigilatorExcludedDays = excludedDays' invigilator'
+        , invigilatorWantDays     = wantDays invigilator'
+        , invigilatorCanDays      = canDays invigilator'
         }
       personIsInvigilator person =
         not (personIsLBA person)
@@ -309,6 +310,8 @@ addInvigilators invigilatorList plan =
       addInfoOrCreate person' Nothing = Just $ addDays' Invigilator
         { invigilatorExcludedDays         = []
         , invigilatorExamDays             = []
+        , invigilatorWantDays             = []
+        , invigilatorCanDays              = allDays
         , invigilatorPerson               = Just person'
         , invigilatorName                 = personShortName person'
         , invigilatorID                   = personID person'

@@ -84,6 +84,8 @@ type InvigilatorID = Integer
 data Invigilator = Invigilator
   { invigilatorExcludedDays         :: [Int]
   , invigilatorExamDays             :: [Int]
+  , invigilatorWantDays             :: [Int]
+  , invigilatorCanDays              :: [Int]
   , invigilatorPerson               :: Maybe Person
   , invigilatorName                 :: Text
   , invigilatorID                   :: Integer
@@ -97,7 +99,7 @@ data Invigilator = Invigilator
   } deriving (Show, Eq)
 
 instance FromJSON Invigilator where
-    parseJSON (Object v ) = Invigilator [] [] Nothing
+    parseJSON (Object v ) = Invigilator [] [] [] [] Nothing
                          <$> v .: "invigilator"
                          <*> v .: "inviligator_id"
                          <*> v .: "excluded_dates"

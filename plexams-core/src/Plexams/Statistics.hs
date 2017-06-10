@@ -105,12 +105,8 @@ examsForLecturerers =
 lecturerExamDaysToString :: Plan -> String
 lecturerExamDaysToString =
     ("\n## Prüfungstage der Prüfer\n\n"++)
-    . intercalate "\n"
-    . map (\(person, listOfDays) -> "-   "
-                                    ++ unpack (personShortName person)
-                                    ++ ": "
-                                    ++ intercalate ", " (map show listOfDays))
-    . lecturerExamDays
+    . show
+    . examDaysPerLecturer
 
 examsWithSameNameString :: Plan -> String
 examsWithSameNameString =
@@ -123,6 +119,7 @@ examsWithSameNameString =
 invigilatorInfo :: Plan -> String
 invigilatorInfo =
     ("\n\n## Infos zu Aufsichten\n\n"++)
+    . ("Legende: e=Exams, -=Excluded, w=Want, c=Can\n\n"++)
     . concatMap (("\n-  "++) . (++"\n") . showInvigilator)
     . M.elems
     . invigilators
@@ -132,3 +129,5 @@ invigilatorInfo =
       ++ unpack (invigilatorName invigilator') ++ ": "
       ++ "e" ++ show (invigilatorExamDays invigilator')
       ++ " -" ++ show (invigilatorExcludedDays invigilator')
+      ++ " w" ++ show (invigilatorWantDays invigilator')
+      ++ " c" ++ show (invigilatorCanDays invigilator')

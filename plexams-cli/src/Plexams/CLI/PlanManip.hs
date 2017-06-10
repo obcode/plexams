@@ -2,6 +2,7 @@ module Plexams.CLI.PlanManip
   ( makePlan
   , applyPlanManips
   , applyAddRooms
+  , addInvigilatorsToPlan
   ) where
 
 import           Control.Monad            (when)
@@ -25,9 +26,7 @@ makePlan config = do
     maybeStudents   <- importStudents config
     constraints'    <- importConstraints config
     handicaps'      <- importHandicaps config
-    invigilators'   <- importInvigilators config
-    let plan = addInvigilators invigilators'
-           $ setHandicapsOnScheduledExams
+    let plan = setHandicapsOnScheduledExams
            $ addConstraints constraints'
            $ Plexams.PlanManip.makePlan examsWithRegs
                                         semesterConfig'
@@ -42,7 +41,6 @@ makePlan config = do
       hPutStrLn stderr $ ppShow maybeStudents
       hPutStrLn stderr $ ppShow constraints'
       hPutStrLn stderr $ ppShow handicaps'
-      hPutStrLn stderr $ ppShow invigilators'
       hPutStrLn stderr $ ppShow plan
     return plan
 
@@ -89,3 +87,11 @@ applyAddRooms config plan =
     Nothing -> do
       hPutStrLn stderr "no rooms file specified"
       return plan
+
+addInvigilatorsToPlan :: Config -> Plan -> IO Plan
+addInvigilatorsToPlan config plan = do
+  invigilators'   <- importInvigilators config
+  let plan' = addInvigilators invigilators' plan
+  when (verbose config) $
+    hPutStrLn stderr $ ppShow invigilators'
+  return plan'

@@ -4,12 +4,13 @@ module Plexams.Query
     , queryByLecturer
     , queryByGroup
     , querySlot
+    , examDaysPerLecturer
     , lecturerExamDays
     , examsWithSameName
     , queryStudentByName
     ) where
 
-import           Data.List     (isInfixOf, sortBy)
+import           Data.List     (isInfixOf, nub, sortBy)
 import qualified Data.Map      as M
 import           Data.Maybe    (maybe)
 import           Data.Set      (Set)
@@ -48,6 +49,16 @@ querySlot :: (Int, Int) -> Plan -> [Exam]
 querySlot s = maybe [] (M.elems . examsInSlot)
             . M.lookup s
             . slots
+
+examDaysPerLecturer :: Plan -> M.Map PersonID [DayIndex]
+examDaysPerLecturer = M.fromList
+      . map (\g -> (fst $ head g, nub $ map snd g))
+      . groupWith fst
+      . concatMap (\((d,_), s) -> map (\e -> (personID $ lecturer e, d))
+                                      $ M.elems
+                                      $ examsInSlot s)
+      . M.toList
+      . slots
 
 lecturerExamDays :: Plan -> [(Person, [Int])]
 lecturerExamDays =

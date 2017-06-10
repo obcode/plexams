@@ -32,6 +32,7 @@ library
       Plexams.Import.Misc
       Plexams.Import.PlanManip
       Plexams.Import.Registrations
+      Plexams.Invigilation
       Plexams.PlanManip
       Plexams.Query
       Plexams.Statistics
