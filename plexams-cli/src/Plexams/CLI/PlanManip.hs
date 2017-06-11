@@ -10,6 +10,7 @@ import           Control.Monad            (when)
 import           Plexams.CLI.Import
 import           Plexams.CLI.Types
 import           Plexams.Import.PlanManip
+import           Plexams.Invigilation
 import           Plexams.PlanManip        hiding (makePlan)
 import qualified Plexams.PlanManip
 import           Plexams.Types
@@ -105,7 +106,8 @@ applyAddInvigilators config plan =
       case maybeInvigilators of
         Just invigilatorsForSlots -> do
           hPutStrLn stderr ">>> adding invigilators to exams and slots"
-          return $ applyAddInvigilatorsToPlan plan invigilatorsForSlots
+          return $ invigilatorAddMinutes
+                 $ applyAddInvigilatorsToPlan plan invigilatorsForSlots
         Nothing -> do
           hPutStrLn stderr $ "no add-invigilators file found: "
                             ++ file
@@ -113,4 +115,4 @@ applyAddInvigilators config plan =
           exitWith $ ExitFailure 17
     Nothing -> do
       hPutStrLn stderr "no add-invigilators file specified"
-      return plan
+      return $ invigilatorAddMinutes plan

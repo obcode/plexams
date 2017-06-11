@@ -50,6 +50,7 @@ library
       Plexams.Types.Validation
       Plexams.Types.ZPA
       Plexams.Validation
+      Plexams.Validation.Invigilation
   other-modules:
       Plexams.Export.Common
       Plexams.Validation.Rooms

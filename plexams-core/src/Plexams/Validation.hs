@@ -10,6 +10,7 @@ import           Data.Text                         (Text, append)
 import           Plexams.Query
 import           Plexams.Types
 import           Plexams.Validation.Exports
+import qualified Plexams.Validation.Invigilation
 import qualified Plexams.Validation.Rooms
 import qualified Plexams.Validation.ScheduledExams
 import qualified Plexams.Validation.Sources
@@ -25,12 +26,14 @@ validate' plan = do
   lecturersMax3ExamDays <- validateLecturersMax3ExamDays plan
   scheduledExams' <- Plexams.Validation.ScheduledExams.validate plan
   roomsOk <- Plexams.Validation.Rooms.validate plan
+  invigilationsOk <- Plexams.Validation.Invigilation.validate plan
   tell ["# no more validations implemented yet"]
   return $ validationResult
             [ sourcesOk
             , lecturersMax3ExamDays
             , scheduledExams'
             , roomsOk
+            , invigilationsOk
             ]
 
 validateLecturersMax3ExamDays :: Plan -> Writer [Text] ValidationResult

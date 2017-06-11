@@ -1,10 +1,26 @@
 module Plexams.Invigilation
   ( sumInvigilation
   , invigilatorsPerDay
+  , sumPercentInvigilator
+  , sumPercentAllInvigilators
+  , hundertPercentInMinutes
+  , removeInvigilatorsWithEnough
+  , invigilatorsWithMinutesPlanned
+  , invigilatorAddMinutes
   ) where
 
 import qualified Data.Map      as M
+import           Data.Maybe    (mapMaybe)
+import           GHC.Exts      (groupWith)
 import           Plexams.Types
+
+allSumInvigilation :: Plan -> Integer
+allSumInvigilation plan =
+  let (e,r,o) = sumInvigilation plan
+  in e + r + o
+
+minutesForReserve :: Integer
+minutesForReserve = 60
 
 sumInvigilation :: Plan -> (Integer, Integer, Integer)
 sumInvigilation plan =
@@ -17,7 +33,7 @@ sumInvigilation plan =
         sum
         $ map (\slot' -> if M.null (examsInSlot slot')
                          then 0
-                         else 60)
+                         else minutesForReserve)
         $ M.elems
         $ slots plan
       sumMasterAndOralExams =
@@ -48,3 +64,90 @@ invigilatorsPerDay =
     )
   . M.elems
   . invigilators
+
+sumPercentInvigilator :: Invigilator -> Integer
+sumPercentInvigilator invigilator' =
+  let percent = 100 * invigilatorPartTime invigilator'
+      overthis = if invigilatorOvertimeThisSemester invigilator' == 1.5
+                 then 0.5
+                 else 0
+      overlast = if invigilatorOvertimeLastSemester invigilator' == 1.5
+                 then 0.5
+                 else 0
+      freeSemester = invigilatorFreeSemester invigilator'
+      percent' = (1 + overthis - freeSemester - overlast) * percent
+   in if percent' < 0 then 0 else round percent'
+
+sumPercentAllInvigilators :: Plan -> Integer
+sumPercentAllInvigilators =
+  sum . map sumPercentInvigilator . M.elems . invigilators
+
+hundertPercentInMinutes :: Plan -> Integer
+hundertPercentInMinutes plan =
+  let overallSum = allSumInvigilation plan
+      sumPercentInvigilators = sumPercentAllInvigilators plan
+  in overallSum * 100 `div` sumPercentInvigilators
+
+removeInvigilatorsWithEnough :: Plan -> Plan
+removeInvigilatorsWithEnough plan =
+  let hundertPercentInMinutes' = hundertPercentInMinutes plan
+  in plan
+    { invigilators = M.filter (\invigilator' ->
+        invigilatorOralExams invigilator' + invigilatorMaster invigilator'
+        < sumPercentInvigilator invigilator' * hundertPercentInMinutes'
+            `div` 100
+        ) $ invigilators plan
+    }
+
+invigilatorsWithMinutesPlanned :: Plan -> M.Map PersonID Integer
+invigilatorsWithMinutesPlanned plan =
+  let reserves :: [(PersonID, Integer)]
+      reserves = mapMaybe
+        (fmap (\invigilator' -> (invigilatorID invigilator', minutesForReserve))
+          . reserveInvigilator) $ M.elems $ slots plan
+      examsDurations :: [(PersonID, Integer)]
+      examsDurations =
+        concatMap
+          ( concatMap (\exam' ->
+              concatMap (\room' ->
+                          maybe []
+                                (\invigilator' ->
+                                  [( invigilatorID invigilator'
+                                  , deltaDuration room' + duration exam'
+                                  )]
+                                )
+                                $ invigilator room'
+                        ) $ rooms exam'
+            )
+            . M.elems
+            . examsInSlot
+          ) $ slots plan
+  in M.fromList
+    $ map (\groupedInvigilator ->
+            ( fst $ head groupedInvigilator
+            , sum $ map snd groupedInvigilator
+            )
+          )
+    $ groupWith fst
+    $ reserves ++ examsDurations
+
+invigilatorAddMinutes :: Plan -> Plan
+invigilatorAddMinutes plan =
+  let plan' = removeInvigilatorsWithEnough plan
+      invigilatorsWithMinutesPlanned' = invigilatorsWithMinutesPlanned plan
+      hundertPercentInMinutes' = hundertPercentInMinutes plan
+      invigilatorsWithMinutes = M.map (\invigilator' ->
+          invigilator'
+            { invigilatorMinutesTodo =
+                ((sumPercentInvigilator invigilator' * hundertPercentInMinutes')
+                `div` 100)
+                - invigilatorOralExams invigilator'
+                - invigilatorMaster invigilator'
+            , invigilatorsMinutesPlanned =
+                M.findWithDefault 0 (invigilatorID invigilator')
+                                    invigilatorsWithMinutesPlanned'
+            }
+        ) $ invigilators plan'
+  in  plan'
+        { invigilators = invigilatorsWithMinutes
+        }

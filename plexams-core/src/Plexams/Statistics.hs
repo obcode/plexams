@@ -122,7 +122,8 @@ examsWithSameNameString =
 invigilatorInfo :: Plan -> String
 invigilatorInfo =
     ("\n\n## Infos zu Aufsichten\n\n"++)
-    . ("Legende: e=Exams, -=Excluded, w=Want, c=Can\n\n"++)
+    . ("Legende: e=Exams, -=Excluded, w=Want, c=Can f=Freisemester, p=partTime"++)
+    . (", ot=overThis, ol=overLast, o=oralExams, m=master, pe=percent\n\n"++)
     . concatMap (("\n-  "++) . (++"\n") . showInvigilator)
     . M.elems
     . invigilators
@@ -134,6 +135,17 @@ invigilatorInfo =
       ++ " -" ++ show (invigilatorExcludedDays invigilator')
       ++ " w" ++ show (invigilatorWantDays invigilator')
       ++ " c" ++ show (invigilatorCanDays invigilator')
+      ++ " f" ++ show (invigilatorFreeSemester invigilator')
+      ++ " p" ++ show (invigilatorPartTime invigilator')
+      ++ " ot" ++ show (invigilatorOvertimeThisSemester invigilator')
+      ++ " ol" ++ show (invigilatorOvertimeLastSemester invigilator')
+      ++ " o" ++ show (invigilatorOralExams invigilator')
+      ++ " m" ++ show (invigilatorMaster invigilator')
+      ++ " pe" ++ show (sumPercentInvigilator invigilator')
+      ++ "\n\n    todo: " ++ show (invigilatorMinutesTodo invigilator')
+      ++ " already planned: " ++ show (invigilatorsMinutesPlanned invigilator')
+      ++ " open: " ++ show (invigilatorMinutesTodo invigilator'
+                            - invigilatorsMinutesPlanned invigilator')
 
 invigilatorsPerDayToString :: Plan -> String
 invigilatorsPerDayToString =
@@ -149,12 +161,15 @@ invigilatorsPerDayToString =
     . invigilatorsPerDay
 
 invigilationInfo :: Plan -> String
-invigilationInfo =
-    ("\n\n## Infos zu Aufsichtsbedarf\n\n"++)
-  . (\(sumExams, sumReserve, sumMasterAndOralExams) ->
-        "- Summe Aufsichten: " ++ show sumExams ++ " Minuten \n\n"
-     ++ "- Summe Reserveaufsichten: " ++ show sumReserve ++ " Minuten \n\n"
-     ++ "- Summe Beisitz/Master: " ++ show sumMasterAndOralExams
-        ++ " Minuten \n\n"
-    )
-  . sumInvigilation
+invigilationInfo plan =
+  let (sumExams, sumReserve, sumMasterAndOralExams) = sumInvigilation plan
+      sumPercent = sumPercentAllInvigilators plan
+      hundertPercentInMinutes' = hundertPercentInMinutes plan
+  in
+     "\n\n## Infos zu Aufsichtsbedarf\n\n"
+  ++ "- Summe Aufsichten: " ++ show sumExams ++ " Minuten\n\n"
+  ++ "- Summe Reserveaufsichten: " ++ show sumReserve ++ " Minuten\n\n"
+  ++ "- Summe Beisitz/Master: " ++ show sumMasterAndOralExams ++ " Minuten\n\n"
+  ++ "- Summe der Prozente aller Aufsichten: " ++ show sumPercent ++ "%\n\n"
+  ++ "- Hundert Prozent entspricht also " ++ show hundertPercentInMinutes'
+     ++ " Minuten\n\n"

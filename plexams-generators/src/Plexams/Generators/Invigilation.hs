@@ -13,8 +13,16 @@ module Plexams.Generators.Invigilation where
 
 -- Ziel: jeder macht +/- 90 Minuten Aufsicht
 
+import           Control.Monad.Writer
+import qualified Data.Map             as M
 import           Plexams.Invigilation
 import           Plexams.Types
 
 generateInvigilations :: Plan -> [AddInvigilatorToRoomOrSlot]
-generateInvigilations = undefined
+generateInvigilations plan =
+  let plan' = invigilatorAddMinutes plan
+  in undefined
+
+
+
+-- generateSelfInvigilations :: Plan ->
