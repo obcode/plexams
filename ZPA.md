@@ -27,7 +27,7 @@ JSON-Array bestehend aus  Objekten der folgenden Form:
     "module": "Compiler",
     "main_examer": "Mustermann, M.",
     "is_repeater_exam": false,
-    "main_examer_id": 180,
+    "main_examer_id": 15,
     "groups": [
         "IC",
         "IF4A"
