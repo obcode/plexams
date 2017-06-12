@@ -41,6 +41,7 @@ library
       Plexams.Types.Constraints
       Plexams.Types.Exam
       Plexams.Types.Groups
+      Plexams.Types.Invigilation
       Plexams.Types.Persons
       Plexams.Types.Plan
       Plexams.Types.PlanManip

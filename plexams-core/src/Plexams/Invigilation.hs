@@ -7,10 +7,12 @@ module Plexams.Invigilation
   , removeInvigilatorsWithEnough
   , invigilatorsWithMinutesPlanned
   , invigilatorAddMinutes
+  , invigilationsPerPerson
   ) where
 
+import           Data.List     (nub)
 import qualified Data.Map      as M
-import           Data.Maybe    (mapMaybe)
+import           Data.Maybe    (catMaybes, mapMaybe)
 import           GHC.Exts      (groupWith)
 import           Plexams.Types
 
@@ -151,3 +153,70 @@ invigilatorAddMinutes plan =
   in  plan'
         { invigilators = invigilatorsWithMinutes
         }
+
+invigilatorsPlanned :: Plan -> [PersonID]
+invigilatorsPlanned plan =
+  let reserveInvigilators =
+        mapMaybe (fmap invigilatorID . reserveInvigilator)
+                 $ M.elems $ slots plan
+      examInvigilators = catMaybes
+        $ concatMap (map (fmap invigilatorID .  invigilator) . rooms)
+        $ concatMap (M.elems . examsInSlot) $ M.elems $ slots plan
+  in nub (reserveInvigilators ++ examInvigilators)
+
+invigilationsPerPerson :: Plan -> M.Map PersonID [Invigilation]
+invigilationsPerPerson plan =
+  let invigilatorsPlanned' = invigilatorsPlanned plan
+      mkInvigilations invigilatorID' =
+        mkReserveInvigilations invigilatorID'
+        ++ mkExamInvigilations invigilatorID'
+      mkReserveInvigilations invigilatorID' =
+        map (\((d,s),_) ->
+              Invigilation
+                { invigilationInvigilatorID = invigilatorID'
+                , invigilationDay = d
+                , invigilationSlot = s
+                , invigilationRoom = Nothing
+                , invigilationDuration = minutesForReserve
+                }
+            )
+        $ filter ((== Just invigilatorID')
+                 . fmap invigilatorID
+                 . reserveInvigilator
+                 . snd)
+        $ M.toList
+        $ slots plan
+      mkExamInvigilations invigilatorID' =
+        map (\((d,s),((roomID', duration'),_)) ->
+              Invigilation
+                { invigilationInvigilatorID = invigilatorID'
+                , invigilationDay = d
+                , invigilationSlot = s
+                , invigilationRoom = Just roomID'
+                , invigilationDuration = duration'
+                }
+            )
+        $ filter ((== Just invigilatorID')
+                 . fmap invigilatorID
+                 . snd
+                 . snd)
+        $ concatMap (\(idx, slot') ->
+                      concatMap (\e ->
+                        map (\r ->
+                              (idx, ( (roomID r, duration e + deltaDuration r)
+                                    , invigilator r))
+                            )
+                            $ rooms e
+                      )
+                      $ M.elems
+                      $ examsInSlot slot'
+                    )
+        $ M.toList
+        $ slots plan
+  in M.fromList
+    $ map (\invigilatorID' ->
+            ( invigilatorID'
+            , mkInvigilations invigilatorID'
+            )
+          )
+          invigilatorsPlanned'

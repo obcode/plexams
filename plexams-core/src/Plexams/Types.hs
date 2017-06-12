@@ -3,6 +3,7 @@ module Plexams.Types
     , module Plexams.Types.Constraints
     , module Plexams.Types.Exam
     , module Plexams.Types.Groups
+    , module Plexams.Types.Invigilation
     , module Plexams.Types.Persons
     , module Plexams.Types.Plan
     , module Plexams.Types.PlanManip
@@ -17,6 +18,7 @@ import           Plexams.Types.Common
 import           Plexams.Types.Constraints
 import           Plexams.Types.Exam
 import           Plexams.Types.Groups
+import           Plexams.Types.Invigilation
 import           Plexams.Types.Persons
 import           Plexams.Types.Plan
 import           Plexams.Types.PlanManip
