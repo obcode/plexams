@@ -27,5 +27,6 @@ instance Show Room where
            ++ (if handicapCompensation room
                then ", H (+"++ show (deltaDuration room) ++ "Min)"
                else "")
-           ++ maybe "" ((", Aufsicht: "++) . unpack . invigilatorName)
-                       (invigilator room)
+           ++ maybe " **Aufsicht fehlt**"
+                    ((", Aufsicht: "++) . unpack . invigilatorName)
+                    (invigilator room)

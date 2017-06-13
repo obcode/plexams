@@ -27,6 +27,8 @@ config = Config
                                   (progDesc "generate part of the plan"))
          <> command "generate-rooms"  (info (pure GenerateRooms)
                                   (progDesc "generate rooms for the schedule"))
+         <> command "generate-invigilations"  (info (pure GenerateInvigilations)
+                          (progDesc "generate invigilations for the schedule"))
           )
       <*> optional (strOption
         ( long "planManip"

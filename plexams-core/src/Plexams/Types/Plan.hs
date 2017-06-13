@@ -27,17 +27,18 @@ import           Plexams.Types.SemesterConfig
 import           Plexams.Types.Slots
 
 data Plan = Plan
-    { semesterConfig   :: SemesterConfig
-    , slots            :: Slots
-    , unscheduledExams :: M.Map Ancode Exam  -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
+    { semesterConfig     :: SemesterConfig
+    , slots              :: Slots
+    , unscheduledExams   :: M.Map Ancode Exam  -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
                                               -- Ancode -> Exam
-    , persons          :: Persons
-    , constraints      :: Constraints
-    , students         :: Students
-    , studentsExams    :: StudentsExams
-    , handicaps        :: [Handicap]
-    , invigilators     :: Invigilators
-    , initialPlan      :: [Exam]
+    , persons            :: Persons
+    , constraints        :: Constraints
+    , students           :: Students
+    , studentsExams      :: StudentsExams
+    , handicaps          :: [Handicap]
+    , invigilators       :: Invigilators
+    , invigilatorsPerDay :: M.Map DayIndex ([PersonID],[PersonID])
+    , initialPlan        :: [Exam]
     }
   deriving (Show, Eq)
 

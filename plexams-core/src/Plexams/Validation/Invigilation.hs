@@ -5,7 +5,7 @@ module Plexams.Validation.Invigilation
 
 import           Control.Arrow        (second, (&&&))
 import           Control.Monad.Writer
-import           Data.List            (nub, (\\))
+import           Data.List            (intersect, nub, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (catMaybes, isNothing, mapMaybe)
 import           Data.Text            (Text, append, pack)
@@ -76,8 +76,9 @@ validateInvigilator plan = do
                                   ++ invigilatorIds))
 
 validateInvigilator' :: Plan -> PersonID -> Writer [Text] ValidationResult
-validateInvigilator' plan invigilatorID' = do
-  let maybeInvigilator = M.lookup invigilatorID' $ invigilators plan
+validateInvigilator' plan' invigilatorID' = do
+  let plan = setSlotsOnExams plan'
+      maybeInvigilator = M.lookup invigilatorID' $ invigilators plan
       invigilationsPerPerson' = invigilationsPerPerson plan
   case maybeInvigilator of
     Nothing -> do
@@ -111,13 +112,47 @@ validateInvigilator' plan invigilatorID' = do
           notMoreThanOnceInSlotOk
             | null notMoreThanOnceInSlot = EverythingOk
             | otherwise = HardConstraintsBroken
+          -- TODO: Prüfen wenn Aufsicht und Prüfer, dann nur dieser Raum
+          ownReserveSlots =
+            map fst
+            $ filter ((==Just True) . snd)
+            $ map (second (fmap ((==invigilatorID') . invigilatorID)
+                            . reserveInvigilator
+                          )
+                  )
+            $ M.toList
+            $ slots plan
+          ownExamSlots =
+            mapMaybe slot
+            $ filter ((==invigilatorID') . personID . lecturer)
+            $ scheduledExams plan
+          ownInvigilatorSlots =
+            mapMaybe slot
+            $ filter (\e -> not (   personID (lecturer e) == invigilatorID'
+                                 && length (rooms e) == 1
+                                )
+                     )
+            $ filter (elem (Just invigilatorID')
+                . map (fmap invigilatorID . invigilator)
+                . rooms)
+            $ scheduledExams plan
+          notReserveOrInvigilatorIfExamInSlotOk =
+            if null (ownExamSlots `intersect` ownReserveSlots)
+              && null (ownExamSlots `intersect` ownInvigilatorSlots)
+              && null (ownReserveSlots `intersect` ownInvigilatorSlots)
+            then EverythingOk
+            else HardConstraintsBroken
       unless (maxThreeDays == EverythingOk) $
         tell ["- " `append` invigilatorName invigilator'
                    `append` " invigilations on more than three days: "
                    `append` showt invigilationDays]
-      unless (daysOk == EverythingOk) $
+      when (daysOk == HardConstraintsBroken) $
         tell ["- " `append` invigilatorName invigilator'
                    `append` " invigilations on wrong days: "
+                   `append` showt invigilationDays]
+      when (daysOk == SoftConstraintsBroken) $
+        tell ["- " `append` invigilatorName invigilator'
+                   `append` " invigilations on can days: "
                    `append` showt invigilationDays]
       unless (numberOfMinutesOk == EverythingOk) $
         tell ["- " `append` invigilatorName invigilator'
@@ -127,14 +162,19 @@ validateInvigilator' plan invigilatorID' = do
         tell ["- " `append` invigilatorName invigilator'
                    `append` " has been scheduled more then once in slot  "
                    `append` showt notMoreThanOnceInSlot]
+      unless (notReserveOrInvigilatorIfExamInSlotOk == EverythingOk) $
+        tell ["- " `append` invigilatorName invigilator'
+                   `append` " has been scheduled as a reserve or invigilator"
+                   `append` " during his or her own exam (exam, invig, reserve)"
+                   `append` showt ( ownExamSlots
+                                  , ownInvigilatorSlots
+                                  , ownReserveSlots)]
       return $ validationResult [ maxThreeDays
                                 , daysOk
                                 , numberOfMinutesOk
                                 , notMoreThanOnceInSlotOk
+                                , notReserveOrInvigilatorIfExamInSlotOk
                                 ]
-
-
-  -- 2. nie gleichzeitig in mehreren Räumen
 
 validateHandicapsInvigilator :: Plan -> Writer [Text] ValidationResult
 validateHandicapsInvigilator plan = do

@@ -7,9 +7,12 @@ module Plexams.Invigilation
   , removeInvigilatorsWithEnough
   , invigilatorsWithMinutesPlanned
   , invigilatorAddMinutes
+  , addInvigilatorsPerDay
+  , mkInvigilatorsPerDay
   , invigilationsPerPerson
   ) where
 
+import           Control.Arrow ((***))
 import           Data.List     (nub)
 import qualified Data.Map      as M
 import           Data.Maybe    (catMaybes, mapMaybe)
@@ -45,9 +48,17 @@ sumInvigilation plan =
         $ invigilators plan
   in (sumExams, sumReserve, sumMasterAndOralExams)
 
+
+addInvigilatorsPerDay :: Plan -> Plan
+addInvigilatorsPerDay plan =
+  plan
+    { invigilatorsPerDay =
+        M.map (map invigilatorID *** map invigilatorID)
+              $ mkInvigilatorsPerDay plan
+    }
                                          -- ( want      , can        )
-invigilatorsPerDay :: Plan -> M.Map DayIndex ([Invigilator], [Invigilator])
-invigilatorsPerDay =
+mkInvigilatorsPerDay :: Plan -> M.Map DayIndex ([Invigilator], [Invigilator])
+mkInvigilatorsPerDay =
   foldr (\(invigilator', want, day) ->
       M.alter (\invigilators' -> Just $
         case invigilators' of

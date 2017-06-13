@@ -17,6 +17,7 @@ data Command
     | Generate { scheduleSameNames :: Bool
                }
     | GenerateRooms
+    | GenerateInvigilations
   deriving (Eq)
 
 data Config = Config

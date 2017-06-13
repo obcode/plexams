@@ -3,6 +3,7 @@ module Plexams.Export.Misc
   ( semesterConfigAsString
   , exportAddExamToSlots
   , exportAddRoomToExams
+  , exportAddInvigilatorToRoomOrSlot
   , exportHandicaps
   ) where
 
@@ -45,6 +46,21 @@ exportAddRoomToExam (AddRoomToExam a r s d) =
   ++ "\n  seatsPlanned: " ++ show s ++
   (case d of Nothing -> ""
              Just dd -> "\n  deltaDuration: " ++ show dd)
+
+--------------------------------------------------------------------------------
+-- Export AddRoomToExam to Yaml
+--------------------------------------------------------------------------------
+
+exportAddInvigilatorToRoomOrSlot :: [AddInvigilatorToRoomOrSlot] -> String
+exportAddInvigilatorToRoomOrSlot = intercalate "\n"
+                                  . map exportAddInvigilatorToRoomOrSlot'
+
+exportAddInvigilatorToRoomOrSlot' :: AddInvigilatorToRoomOrSlot -> String
+exportAddInvigilatorToRoomOrSlot' (AddInvigilatorToRoomOrSlot i (d,s) mR) =
+       "- id: " ++ show i
+  ++ "\n  slot: [" ++ show d ++ "," ++ show s ++ "]"
+  ++ (case mR of Nothing -> ""
+                 Just r  -> "\n  room: " ++ r)
 
 --------------------------------------------------------------------------------
 -- Export Handicaps for Lecturers

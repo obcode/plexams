@@ -200,6 +200,7 @@ makePlan exams' semesterConfig' pers maybeStudents handicaps' =
           , studentsExams = mkStudentsExams maybeStudents
           , handicaps = handicaps'
           , invigilators = M.empty
+          , invigilatorsPerDay = M.empty
           , initialPlan =  map (setPerson pers) exams'
           }
         (fk10Exams semesterConfig')
@@ -351,6 +352,8 @@ addInvigilators invigilatorList plan =
         , invigilatorWantDays             = []
         , invigilatorCanDays              = allDays
         , invigilatorPerson               = Just person'
+        , invigilatorMinutesTodo          = 0
+        , invigilatorsMinutesPlanned      = 0
         , invigilatorName                 = personShortName person'
         , invigilatorID                   = personID person'
         , invigilatorExcludedDates        = []

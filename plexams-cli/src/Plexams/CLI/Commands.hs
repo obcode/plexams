@@ -3,32 +3,35 @@ module Plexams.CLI.Commands
   ( runCommand
   ) where
 
-import           Data.List                   (intercalate)
-import qualified Data.Text                   as Text
-import qualified Data.Text.IO                as Text
+import           Data.List                       (intercalate)
+import qualified Data.Text                       as Text
+import qualified Data.Text.IO                    as Text
 import           Plexams.CLI.Types
 import           Plexams.Export.HTML
 import           Plexams.Export.Markdown
 import           Plexams.Export.Misc
 import           Plexams.Export.ZPA
+import qualified Plexams.Generators.Invigilation
 import qualified Plexams.Generators.Rooms
 import           Plexams.Generators.Schedule
 import           Plexams.Query
 import           Plexams.Statistics
 import           Plexams.Types
-import qualified Plexams.Validation          as P (validate, validateZPAExport)
+import qualified Plexams.Validation              as P (validate,
+                                                       validateZPAExport)
 
 runCommand :: Command -> (Config -> Plan -> IO ())
-runCommand Markdown      = markdown
-runCommand HTML {}       = html
-runCommand Statistics {} = stats
-runCommand Validate      = validate
-runCommand Query {}      = query
-runCommand Export {}     = export
-runCommand PrintConfig   = printConfig
-runCommand Generate {}   = generate
-runCommand GenerateRooms = generateRooms
-runCommand _             = error "unsupported command"
+runCommand Markdown              = markdown
+runCommand HTML {}               = html
+runCommand Statistics {}         = stats
+runCommand Validate              = validate
+runCommand Query {}              = query
+runCommand Export {}             = export
+runCommand PrintConfig           = printConfig
+runCommand Generate {}           = generate
+runCommand GenerateRooms         = generateRooms
+runCommand GenerateInvigilations = generateInvigilations
+runCommand _                     = error "unsupported command"
 
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
@@ -107,3 +110,12 @@ generateRooms config plan =
         ("# Rooms for exams --- generated\n"++)
         $ exportAddRoomToExams
         $ Plexams.Generators.Rooms.generateRooms plan
+
+generateInvigilations :: Config -> Plan -> IO ()
+generateInvigilations config plan =
+  stdoutOrFile config generateInvigilations'
+    where
+      generateInvigilations'  =
+        ("# Invigilations for exams --- generated\n"++)
+        $ exportAddInvigilatorToRoomOrSlot
+        $ Plexams.Generators.Invigilation.generateInvigilations plan

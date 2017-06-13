@@ -158,7 +158,7 @@ invigilatorsPerDayToString =
         ++ concatMap (("    - "++)  . (++"\n\n"). unpack . invigilatorName) cs
       )
     . M.toList
-    . invigilatorsPerDay
+    . mkInvigilatorsPerDay
 
 invigilationInfo :: Plan -> String
 invigilationInfo plan =
