@@ -3,6 +3,7 @@ module Plexams.Statistics
     , planStatistics
     ) where
 
+import           Control.Arrow        (first)
 import           Data.List            (intercalate, nub)
 import qualified Data.Map             as M
 import           Data.Text            (unpack)
@@ -30,6 +31,7 @@ planStatistics plan =
         , invigilationInfo
         , invigilatorInfo
         , invigilatorsPerDayToString
+        , invigilationsPerPersonToString
         ]
 
 shortGroupStatsToString :: Plan -> String
@@ -173,3 +175,20 @@ invigilationInfo plan =
   ++ "- Summe der Prozente aller Aufsichten: " ++ show sumPercent ++ "%\n\n"
   ++ "- Hundert Prozent entspricht also " ++ show hundertPercentInMinutes'
      ++ " Minuten\n\n"
+
+invigilationsPerPersonToString :: Plan -> String
+invigilationsPerPersonToString plan =
+  ("\n\n# Einplanungen Aufsichten\n\n"++)
+  $ intercalate "\n\n"
+  $ map
+      ((\(maybeName, invigilations') ->
+        case maybeName of
+          Nothing -> "- ???: " ++ show invigilations'
+          Just name' -> "- " ++ name' ++ "\n"
+            ++ intercalate "\n\n" (map (("    - "++) . show) invigilations')
+            ++ "\n\n"
+      )
+      . first (fmap (unpack . invigilatorName)
+                 . flip M.lookup (invigilators plan)))
+  $ M.toList
+  $ invigilationsPerPerson plan
