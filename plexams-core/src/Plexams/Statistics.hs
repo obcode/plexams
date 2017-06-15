@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module Plexams.Statistics
     ( initialPlanStatistics
     , planStatistics
@@ -30,6 +31,7 @@ planStatistics plan =
         , lecturerExamDaysToString
         , invigilationInfo
         , invigilatorInfo
+        , invigilatorsInfo
         , invigilatorsPerDayToString
         , invigilationsPerPersonToString
         ]
@@ -148,6 +150,28 @@ invigilatorInfo =
       ++ " already planned: " ++ show (invigilatorsMinutesPlanned invigilator')
       ++ " open: " ++ show (invigilatorMinutesTodo invigilator'
                             - invigilatorsMinutesPlanned invigilator')
+
+invigilatorsInfo :: Plan -> String
+invigilatorsInfo plan =
+  let invigilators' =  M.elems $ invigilators plan
+      invigilatorMinutes =
+        map (\i -> invigilatorMinutesTodo i - invigilatorsMinutesPlanned i)
+            invigilators'
+      sumInvigilationsTodo =
+          sum $ map invigilatorMinutesTodo invigilators'
+      sumInvigilationsPlanned =
+          sum $ map invigilatorsMinutesPlanned invigilators'
+      standardDeviation = sqrt (fromInteger
+          (sum (map (^2) invigilatorMinutes) `div ` toInteger (length invigilatorMinutes)))
+  in "\n\n## Mittelwert und Standardabweichung der eingeplanten Minuten\n\n"
+     ++ "- Werte: " ++ show invigilatorMinutes ++ "\n\n"
+     ++ "- Summe aller Todos: " ++ show sumInvigilationsTodo ++ "\n\n"
+     ++ "- Summe aller Planungen: " ++ show sumInvigilationsPlanned ++ "\n\n"
+     ++ "- Mittelwert: "
+        ++ show (sum invigilatorMinutes
+                `div ` toInteger (length invigilatorMinutes))
+        ++ "\n\n"
+     ++ "- Standardabweichung: " ++ show standardDeviation ++ "\n\n"
 
 invigilatorsPerDayToString :: Plan -> String
 invigilatorsPerDayToString =
