@@ -1,0 +1,50 @@
+-- This file has been generated from package.yaml by hpack version 0.17.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           plexams-server
+version:        0.9.0.0
+synopsis:       Server for planning exams
+description:    See README at <https://github.com/obcode/plexams#readme>
+category:       Plexams
+homepage:       https://github.com/obcode/plexams#readme
+bug-reports:    https://github.com/obcode/plexams/issues
+maintainer:     Oliver Braun <ob@obraun.net>
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/obcode/plexams
+
+library
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base  >= 4.7 && < 5
+    , aeson
+    , servant-server
+    , text
+    , wai
+    , warp
+  exposed-modules:
+      Plexams.Server
+  default-language: Haskell2010
+
+executable plexams-server
+  main-is: Plexams-Server.hs
+  hs-source-dirs:
+      app
+  ghc-options: -Wall
+  build-depends:
+      base  >= 4.7 && < 5
+    , aeson
+    , servant-server
+    , text
+    , wai
+    , warp
+    , plexams-server
+  default-language: Haskell2010
