@@ -19,7 +19,7 @@ cache:
   directories:
   - $HOME/.ghc
   - $HOME/.cabal
-  - $HOME/.stack-work
+  - $HOME/.stack
 
 os:
   - linux
