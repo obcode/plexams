@@ -15,15 +15,16 @@ let _fetchUserList = function(waitTime, maxAttempts, currentAttemptNo) {
         <tr>
           <th>Prüfung</th>
           <th>Prüfer</th>
-          <th>Datum, Zeit</th>
-          <th>Anmeldungen</th>
+          <th>Anmeldecode</th>
+          <th>Wiederholungsklausur</th>
        </tr>`;
     for (let i in exams) {
       let exam = exams[i]
-      output += `<tr><td>${exam.name}</td>
-                 <td>${exam.lecturer}</td>
-                 <td>${exam.datetime}</td>
-                 <td>${exam.registrations}</td>
+      output += `<tr>
+                 <td>${exam.name}</td>
+                 <td>${exam.lecturer.personShortName}</td>
+                 <td>${exam.anCode}</td>
+                 <td>${exam.reExam}</td>
                  </tr>`
     }
     output += `</table>`
