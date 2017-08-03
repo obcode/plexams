@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.17.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,6 +30,11 @@ library
     , text
     , wai
     , warp
+    , plexams-core
+    , optparse-applicative
+    , mtl
+    , directory
+    , time
   exposed-modules:
       Plexams.Server
   default-language: Haskell2010
@@ -46,5 +51,10 @@ executable plexams-server
     , text
     , wai
     , warp
+    , plexams-core
+    , optparse-applicative
+    , mtl
+    , directory
+    , time
     , plexams-server
   default-language: Haskell2010
