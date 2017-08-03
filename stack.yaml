@@ -2,6 +2,7 @@ resolver: lts-8.17
 packages:
     - ./plexams-core
     - ./plexams-cli
+    - ./plexams-gui
     - ./plexams-generators
     - ./plexams-server
 local-bin-path: ./elexams/resources

@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
-
 module Plexams.Types.Groups
   ( Group(..)
   , Degree(..)
@@ -9,12 +7,10 @@ module Plexams.Types.Groups
   , parseGroup
   ) where
 
-import           Data.Aeson
-import           Data.Char    (digitToInt)
-import qualified Data.Map     as M
-import           Data.Monoid  ((<>))
-import           GHC.Generics
-import           TextShow     (TextShow, showb)
+import           Data.Char   (digitToInt)
+import qualified Data.Map    as M
+import           Data.Monoid ((<>))
+import           TextShow    (TextShow, showb)
 
 data Group = Group
     { groupDegree        :: Degree
@@ -22,10 +18,7 @@ data Group = Group
     , groupSubgroup      :: Maybe Subgroup
     , groupRegistrations :: Maybe Integer
     }
-  deriving (Eq, Ord, Generic)
-
-instance FromJSON Group
-instance ToJSON Group
+  deriving (Eq, Ord)
 
 instance Show Group where
     show (Group d mI mS mReg) = show d
@@ -40,10 +33,7 @@ instance TextShow Group where
     <> maybe "" (("("<>) . (<>")") . showb) mReg
 
 data Degree = IB | IC | IF | GO | IG | IN | IS
-  deriving (Show, Eq, Ord, Read, Enum, Generic)
-
-instance FromJSON Degree
-instance ToJSON Degree
+  deriving (Show, Eq, Ord, Read, Enum)
 
 allDegrees :: [Degree]
 allDegrees = [IB .. IS]
@@ -58,10 +48,7 @@ instance TextShow Degree where
   showb IS = "IS"
 
 data Subgroup = A | B | C
-  deriving (Show, Eq, Ord, Generic)
-
-instance FromJSON Subgroup
-instance ToJSON Subgroup
+  deriving (Show, Eq, Ord)
 
 instance TextShow Subgroup where
   showb A = "A"

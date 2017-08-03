@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Plexams.Types.Exam
   ( Exam(..)
   , registrations
@@ -10,11 +8,9 @@ module Plexams.Types.Exam
   , seatsMissing
   ) where
 
-import           Data.Aeson
 import           Data.List             (intercalate)
 import           Data.Maybe            (isJust, mapMaybe)
 import           Data.Text             (unpack)
-import           GHC.Generics
 import           Plexams.Types.Common
 import           Plexams.Types.Groups
 import           Plexams.Types.Persons
@@ -34,10 +30,7 @@ data Exam = Exam
     , studentsWithHandicaps :: [Handicap]
     , slot                  :: Maybe (Int, Int) -- ^ (Tag, Slot)
     }
-  deriving (Eq, Generic)
-
-instance FromJSON Exam
-instance ToJSON Exam
+  deriving (Eq)
 
 isScheduled :: Exam -> Bool
 isScheduled = isJust . slot

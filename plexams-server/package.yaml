@@ -16,11 +16,6 @@ dependencies:
   - text
   - wai
   - warp
-  - plexams-core
-  - optparse-applicative
-  - mtl
-  - directory
-
 
 library:
   source-dirs: src
