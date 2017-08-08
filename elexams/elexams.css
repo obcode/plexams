@@ -1,0 +1,44 @@
+.inline-div {
+    display:inline-block;
+}
+#noBorder  {
+  border: none;
+}
+td table {
+    border-collapse: collapse;
+}
+td table, th, td {
+  border: 2px solid black;
+  border-spacing: 0;
+  padding: 0;
+}
+div#inner {
+  border: 1px solid black;
+}
+table#inner, td#inner, tr#inner{
+  table-layout: fixed;
+  overflow: hidden;
+  border: 1px solid;
+  height: 120px;
+  width: 100%;
+  min-width: 50px;
+  border-top: 0;
+  border-bottom: 0;
+  padding: 5px;
+}
+td#inner:hover{
+  /*overflow: visible;*/
+  width: 220%;
+}
+table#inner{
+  border: 0;
+}
+td#inner:first-child {
+  border-left: 0;
+}
+tr#inner:first-child {
+  border-left: 0;
+}
+table#inner:last-child, td#inner:last-child, tr#inner:last-child {
+  border-right: 0;
+}
