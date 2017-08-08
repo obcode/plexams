@@ -17,13 +17,13 @@ import           Plexams.Types
 import           System.Exit
 import           System.IO                    (hPutStrLn, stderr)
 
-importSemesterConfig :: Config -> IO SemesterConfig
-importSemesterConfig config = do
-  maybeSemesterConfig <- importSemesterConfigFromYAMLFile $ configfile config
+importSemesterConfig :: FilePath -> IO SemesterConfig
+importSemesterConfig configfile = do
+  maybeSemesterConfig <- importSemesterConfigFromYAMLFile configfile
   case maybeSemesterConfig of
     Just semesterConfig' -> return semesterConfig'
     Nothing             -> do
-      hPutStrLn stderr $ "no config found: " ++ configfile config
+      hPutStrLn stderr $ "no config found: " ++ configfile
                         ++ " does not exist or is not parsable."
       exitWith $ ExitFailure 1
 
@@ -56,9 +56,9 @@ importAndAddRegs config exams' =
       hPutStrLn stderr "no registration file specified"
       return exams'
 
-importStudents :: Config -> IO (Maybe Students)
-importStudents config =
-  case studentsFile config of
+importStudents :: Maybe FilePath -> IO (Maybe Students)
+importStudents studentsFile =
+  case studentsFile of
     Just file -> do
       maybeStuds <- importStudentsFromYAMLFile file
       case maybeStuds of
@@ -116,9 +116,9 @@ importOverlaps config =
       hPutStrLn stderr "no overlaps file specified"
       return []
 
-importHandicaps :: Config -> IO [Handicap]
-importHandicaps config =
-  case handicapFile config of
+importHandicaps :: Maybe FilePath -> IO [Handicap]
+importHandicaps handicapFile =
+  case handicapFile of
     Just file -> do
       maybeHandicaps <- importHandicapsFromYAMLFile file
       case maybeHandicaps of

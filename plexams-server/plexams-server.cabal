@@ -31,6 +31,7 @@ library
     , wai
     , warp
     , plexams-core
+    , plexams-cli
     , optparse-applicative
     , mtl
     , directory
@@ -52,6 +53,7 @@ executable plexams-server
     , wai
     , warp
     , plexams-core
+    , plexams-cli
     , optparse-applicative
     , mtl
     , directory

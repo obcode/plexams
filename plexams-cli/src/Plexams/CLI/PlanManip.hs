@@ -1,6 +1,7 @@
 module Plexams.CLI.PlanManip
   ( makePlan
   , applyPlanManips
+  , applyPlanManips'
   , applyAddRooms
   , addInvigilatorsToPlan
   , applyAddInvigilators
@@ -21,13 +22,13 @@ import           Text.Show.Pretty         (ppShow)
 
 makePlan :: Config -> IO Plan
 makePlan config = do
-    semesterConfig' <- importSemesterConfig config
+    semesterConfig' <- importSemesterConfig $ configfile config
     exams'          <- importExams semesterConfig'
     persons'        <- importPersons semesterConfig'
     examsWithRegs   <- importAndAddRegs config exams'
-    maybeStudents   <- importStudents config
+    maybeStudents   <- importStudents $ studentsFile config
     constraints'    <- importConstraints config
-    handicaps'      <- importHandicaps config
+    handicaps'      <- importHandicaps $ handicapFile config
     let plan = setHandicapsOnScheduledExams
            $ addConstraints constraints'
            $ Plexams.PlanManip.makePlan examsWithRegs

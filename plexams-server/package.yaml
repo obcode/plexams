@@ -17,6 +17,7 @@ dependencies:
   - wai
   - warp
   - plexams-core
+  - plexams-cli
   - optparse-applicative
   - mtl
   - directory
