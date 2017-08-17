@@ -1,20 +1,11 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Plexams --- planning exams with Haskell and Electron!</title>
-    <link href="elexams.css" rel="stylesheet" type="text/css" />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="elexams.js"></script>
-  </head>
-  <body>
-    <h1>Prüfungsliste:</h1>
-    <div id="status"><!-- The request status --></div>
-    <div id="plan"></div>
-    <div id="plexams-api">
-      <!-- We'll fill this with the user information -->
-    </div>
-  </body>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Plexams --- planning exams with Haskell and Electron!</title>
+  <link href="elexams.css" rel="stylesheet" type="text/css" />
+
   <script>
     // Avoid clashing Node.js/Electron with jQuery as per
     // http://electron.atom.io/docs/v0.37.8/faq/electron-faq/#i-can-not-use-jqueryrequirejsmeteorangularjs-in-electron
@@ -27,4 +18,46 @@
     // The JS file that will do the heavy lifting
     nodeRequire('./renderer.js')
   </script>
+  <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
+  <script src="resources/jquery-3.2.1.min.js"></script>
+  <script src="elexams.js"></script>
+  <script src="renderer.js"></script>
+</head>
+
+<body>
+  <ul class="tabs">
+    <li class="tab">
+      <input type="radio" name="tabs" checked="checked" id="tab1" />
+      <label for="tab1">Plan</label>
+      <div id="tab-content1" class="content">
+        <div id="plan"></div>
+      </div>
+    </li>
+
+    <li class="tab">
+      <input type="radio" name="tabs" id="tab2" />
+      <label for="tab2">Prüfungsliste</label>
+      <div id="tab-content2" class="content">
+        <div id="plexams-api"></div>
+      </div>
+    </li>
+  </ul>
+  <div id="status"></div>
+  <div class="fixed" id="error"></div>
+
+</body>
+
+<!-- <script>
+  // Avoid clashing Node.js/Electron with jQuery as per
+  // http://electron.atom.io/docs/v0.37.8/faq/electron-faq/#i-can-not-use-jqueryrequirejsmeteorangularjs-in-electron
+  window.nodeRequire = require;
+  delete window.require;
+  delete window.exports;
+  delete window.module;
+  // Fetch jQuery
+  window.$ = window.jQuery = nodeRequire('./resources/jquery-3.2.1.min.js')
+  // The JS file that will do the heavy lifting
+  nodeRequire('./renderer.js')
+</script> -->
+
 </html>

@@ -36,8 +36,11 @@ library
     , mtl
     , directory
     , time
+    , bytestring
   exposed-modules:
-      Plexams.Server
+      Plexams.Server.Import
+      Plexams.Server.PlanManip
+      Plexams.Server.Server
   default-language: Haskell2010
 
 executable plexams-server
@@ -58,5 +61,6 @@ executable plexams-server
     , mtl
     , directory
     , time
+    , bytestring
     , plexams-server
   default-language: Haskell2010

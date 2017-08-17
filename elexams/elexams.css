@@ -1,44 +1,135 @@
-.inline-div {
-    display:inline-block;
-}
-#noBorder  {
-  border: none;
-}
-td table {
-    border-collapse: collapse;
-}
-td table, th, td {
-  border: 2px solid black;
-  border-spacing: 0;
+td,
+table,
+th {
   padding: 0;
+  border-spacing: 0;
+  border-collapse: collapse;
+  user-select: none;
+  border: 2px solid black;
 }
+
 div#inner {
   border: 1px solid black;
 }
-table#inner, td#inner, tr#inner{
-  table-layout: fixed;
+
+div.fixed {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 300px;
+  border: 3px solid #e22d2d;
+}
+
+table#inner,
+td#inner,
+tr#inner {
   overflow: hidden;
-  border: 1px solid;
-  height: 120px;
   width: 100%;
   min-width: 50px;
+  height: 125px;
+  padding: 5px;
+  table-layout: fixed;
+  border: 1px solid;
   border-top: 0;
   border-bottom: 0;
-  padding: 5px;
 }
-td#inner:hover{
-  /*overflow: visible;*/
-  width: 220%;
+
+td#inner:hover {
+  width: 250%;
+  background-color: rgb(60, 145, 207);
+  cursor: pointer;
 }
-table#inner{
+
+td#inner.td_select {
+  width: 250%;
+  background-color: rgb(212, 81, 81);
+}
+
+table#inner {
   border: 0;
 }
+
 td#inner:first-child {
   border-left: 0;
 }
+
 tr#inner:first-child {
   border-left: 0;
 }
-table#inner:last-child, td#inner:last-child, tr#inner:last-child {
+
+table#inner:last-child,
+td#inner:last-child,
+tr#inner:last-child {
   border-right: 0;
+}
+
+ul#groups,
+li#groups {
+  padding-left: 15px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+h1,
+h3 {
+  font-weight: normal;
+  text-transform: uppercase;
+}
+
+.tabs {
+  top: 0;
+  left: 0;
+  display: block;
+  width: auto;
+}
+
+.tabs .tab {
+  display: block;
+  float: left;
+}
+
+.tabs .tab>input[type='radio'] {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+}
+
+.tabs .tab>label {
+  font-size: 16px;
+  position: relative;
+  display: block;
+  padding: 6px 21px;
+  cursor: pointer;
+  text-transform: uppercase;
+  color: #000;
+  background: #4a83fd;
+}
+
+.tabs .content {
+  position: absolute;
+  z-index: 0;
+  top: 27px;
+  left: 0;
+  overflow: hidden;
+  width: auto;
+  padding: 25px;
+  transition: opacity 200ms ease-out;
+  opacity: 0;
+  color: #000;
+  background: #fff;
+}
+
+.tabs>.tab>[id^='tab']:checked+label {
+  top: 0;
+  color: #000;
+  background: #fff;
+}
+
+.tabs>.tab>[id^='tab']:checked~[id^='tab-content'] {
+  z-index: 1;
+  transition: opacity 200ms ease-out;
+  opacity: 1;
 }

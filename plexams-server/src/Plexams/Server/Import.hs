@@ -1,46 +1,49 @@
-module Plexams.CLI.Import
-  ( importSemesterConfig
-  , importExams
-  , importPersons
-  , importAndAddRegs
-  , importStudents
-  , importConstraints
-  , importHandicaps
-  , importInvigilators
-  ) where
+module Plexams.Server.Import where
 
-import           Plexams.CLI.Types
 import           Plexams.Import.MasterData
 import           Plexams.Import.Registrations
 import           Plexams.PlanManip
 import           Plexams.Types
 import           System.Exit
+import           System.Directory
 import           System.IO                    (hPutStrLn, stderr)
 
-importSemesterConfig :: Config -> IO SemesterConfig
-importSemesterConfig config = do
-  maybeSemesterConfig <- importSemesterConfigFromYAMLFile $ configfile config
+semesterConfig' :: IO (Either String SemesterConfig)
+semesterConfig' = importSemesterConfig configFile'
+
+configFile' :: FilePath
+configFile' = "plexams.yaml"
+
+studentsFile' :: FilePath
+studentsFile' = "input/students.yaml"
+
+handicapsFile' :: FilePath
+handicapsFile' = "input/handicaps.yaml"
+
+planManipFile' :: FilePath
+planManipFile' = "input/planmanip.yaml"
+
+exportTestFile :: FilePath
+exportTestFile = "input/exportTest.yaml"
+
+importSemesterConfig :: FilePath -> IO (Either String SemesterConfig)
+importSemesterConfig configfile = do
+  maybeSemesterConfig <- importSemesterConfigFromYAMLFile configfile
   case maybeSemesterConfig of
-    Just semesterConfig' -> return semesterConfig'
-    Nothing             -> do
-      hPutStrLn stderr $ "no config found: " ++ configfile config
-                        ++ " does not exist or is not parsable."
-      exitWith $ ExitFailure 1
+    Just semesterConfig'' -> return (Right semesterConfig'')
+    Nothing               -> return (Left "SemesterConfig import failed.")
 
-importExams :: SemesterConfig -> IO [Exam]
-importExams semesterConfig' = do
-  maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig'
+importExams :: SemesterConfig -> IO (Either String [Exam])
+importExams semesterConfig'' = do
+  maybeExams <- importExamsFromJSONFile $ initialPlanFile semesterConfig''
   case maybeExams of
-    Just exams' -> return exams'
-    Nothing             -> do
-      hPutStrLn stderr $ "no initial exams found: "
-                        ++ initialPlanFile semesterConfig'
-                        ++ " does not exist or is not parsable."
-      exitWith $ ExitFailure 2
+    Just exams' -> return (Right exams')
+    Nothing     -> return (Left (initialPlanFile semesterConfig''
+                              ++ " does not exist or is not parsable."))
 
-importAndAddRegs :: Config -> [Exam] -> IO [Exam]
-importAndAddRegs config exams' =
-  case regsFile config of
+importAndAddRegs :: Maybe FilePath -> [Exam] -> IO [Exam]
+importAndAddRegs regsFile exams' =
+  case regsFile of
     Just file -> do
       maybeRegs <- importRegistrationsFromYAMLFile file
       case maybeRegs of
@@ -56,33 +59,35 @@ importAndAddRegs config exams' =
       hPutStrLn stderr "no registration file specified"
       return exams'
 
-importStudents :: Config -> IO (Maybe Students)
-importStudents config =
-  case studentsFile config of
-    Just file -> do
-      maybeStuds <- importStudentsFromYAMLFile file
+importStudents :: FilePath -> IO (Maybe Students)
+importStudents studentsFile = do
+  exists <- doesFileExist studentsFile
+  if (exists)
+    then do
+      maybeStuds <- importStudentsFromYAMLFile studentsFile
       case maybeStuds of
         Just _ -> do
           hPutStrLn stderr ">>> importing students"
           return maybeStuds
         Nothing -> do
           hPutStrLn stderr $ "no students found: "
-                            ++ file
+                            ++ studentsFile
                             ++ " does not exist or is not parsable."
           exitWith $ ExitFailure 4
-    Nothing -> do
-      hPutStrLn stderr "no students file specified"
+    else do
+      print $"no students file found at " ++ studentsFile
       return Nothing
 
-importConstraints :: Config -> IO Constraints
-importConstraints config = do
-  overlaps' <- importOverlaps config
-  constraints' <- importConstraints' config
+
+importConstraints :: Maybe FilePath -> Maybe FilePath -> IO Constraints
+importConstraints overlapsFile' constraintsFile' = do
+  overlaps' <- importOverlaps overlapsFile'
+  constraints' <- importConstraints' constraintsFile'
   return constraints' { overlaps = overlaps' }
 
-importConstraints' :: Config -> IO Constraints
-importConstraints' config =
-  case constraintsFile config of
+importConstraints' :: Maybe FilePath -> IO Constraints
+importConstraints' constraintsFile =
+  case constraintsFile of
     Just file -> do
       maybeConstraints <- importConstraintsFromYAMLFile file
       case maybeConstraints of
@@ -98,9 +103,9 @@ importConstraints' config =
       hPutStrLn stderr "no constraints file specified"
       return noConstraints
 
-importOverlaps :: Config -> IO [Overlaps]
-importOverlaps config =
-  case overlapsFile config of
+importOverlaps :: Maybe FilePath -> IO [Overlaps]
+importOverlaps overlapsFile =
+  case overlapsFile of
     Just file -> do
       maybeOverlaps <- importOverlapsFromYAMLFile file
       case maybeOverlaps of
@@ -116,9 +121,9 @@ importOverlaps config =
       hPutStrLn stderr "no overlaps file specified"
       return []
 
-importHandicaps :: Config -> IO [Handicap]
-importHandicaps config =
-  case handicapFile config of
+importHandicaps :: Maybe FilePath -> IO [Handicap]
+importHandicaps handicapFile =
+  case handicapFile of
     Just file -> do
       maybeHandicaps <- importHandicapsFromYAMLFile file
       case maybeHandicaps of
@@ -134,20 +139,17 @@ importHandicaps config =
       hPutStrLn stderr "no handicaps file specified"
       return []
 
-importPersons :: SemesterConfig -> IO Persons
-importPersons semesterConfig' = do
-  maybePersons <- importPersonsFromJSONFile $ personsFile semesterConfig'
+importPersons :: SemesterConfig -> IO (Either String Persons)
+importPersons semesterConfig'' = do
+  maybePersons <- importPersonsFromJSONFile $ personsFile semesterConfig''
   case maybePersons of
-    Just persons' -> return persons'
-    Nothing             -> do
-      hPutStrLn stderr $ "no initial persons found: "
-                        ++ personsFile semesterConfig'
-                        ++ " does not exist or is not parsable."
-      exitWith $ ExitFailure 10
+    Just persons' -> return (Right persons')
+    Nothing       -> return (Left (personsFile semesterConfig''
+                              ++ " does not exist or is not parsable."))
 
-importInvigilators :: Config -> IO [Invigilator]
-importInvigilators config =
-  case invigilatorFile config of
+importInvigilators :: Maybe FilePath -> IO [Invigilator]
+importInvigilators invigilatorFile =
+  case invigilatorFile of
     Just file -> do
       maybeInvigilators <- importInvigilatorsFromJSONFile file
       case maybeInvigilators of

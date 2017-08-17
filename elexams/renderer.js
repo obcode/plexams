@@ -11,11 +11,9 @@ let maxNoOfAttempts = 50,
 
 let _fetchExams = function (waitTime, maxAttempts, currentAttemptNo) {
   $.getJSON(host + endpointExams, function (exams) {
-    $('#status').html(`Fetched the content after attemt no.
-                       ${currentAttemptNo}!`);
     // Construct the user list HTML output
     let output =
-      `<table>
+      `<table style="border: 1px solid black;">
         <tr>
           <th>Prüfung</th>
           <th>Prüfer</th>
@@ -34,15 +32,10 @@ let _fetchExams = function (waitTime, maxAttempts, currentAttemptNo) {
     output += `</table>`;
     $('#plexams-api').html(output);
   }).fail(function () {
-    $('#status').html(`Attempt no. <b>${currentAttemptNo}</b>. Are you sure the
-                       server is running on <b>${host}</b>, and the endpoint
-                       <b>${endpointExams}</b> is correct?`);
-    // Keep trying until we get an answer or reach the maximum number of retries
-    if(currentAttemptNo < maxAttempts) {
-      setTimeout(function () {
-        _fetchExams(waitTime, maxAttempts, currentAttemptNo + 1);
-      }, waitTime);
-    }
+    $.ajax(host + endpointExams).fail(function(jqXHR, textStatus, errorThrown) {
+      alert(jqXHR.responseText);
+      $('#error').html(jqXHR.responseText);
+    })
   });
 };
 
@@ -88,11 +81,11 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
           // Construct the plan output
           let output =
             `<table>
-                          <tr>
-                            <td>
-                              <table>
-                                <tr>
-                                  <th></th>`;
+                    <tr>
+                    <td>
+                      <table>
+                        <tr>
+                          <th></th>`;
           for(let i in examDays) {
             let examDay = examDays[i];
             output += `<th>${examDay}</th>`;
@@ -107,43 +100,57 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
               let examDay = examDays[j];
               let examData = _fetchExamsData(j, i, slots);
               output += `<td>
-                            <table id="inner">
+                            <table id="inner" class="table">
                               <tr id="inner">`;
               for(let k in examData) {
-                output += `<td id="inner" onclick="myFunction(${j}, ${i}, ${k})">${examData[k]}</td>`;
+                output += `<td id="inner" onclick="viewDetails(${j}, ${i}, ${k})">${examData[k]}</td>`;
               }
               output += `</tr>
-                        </table>
+                        </table id="inner">
                       </td>`;
             }
             output += `</tr>`;
           }
+          output += `</tr>
+                </table>
+                </td>
+                  <td border="0" style="padding:0; vertical-align:top; height: 100%; width: 20%;">
+                    <table style="width:100%; height: 100%">
+                      <tr style="min-height: 50%;">
+                        <td border="0" style="vertical-align:top; height: 100%; width: 100%;">
+                          <div id="inner" height="100%" style="border: 0; padding: 5px;">
+                            <textbox id="description" >
+                            </textbox>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="min-height: 50%;">
+                        <td style="padding:0; vertical-align:bottom; height: 100%">
+                          <table style="padding:5px; height: 100%; width: 100%">`;
+          for(let i in slotsPerDay) {
+            output += `<tr>`;
+            for(let j in examDays) {
+              output += `<td onclick="addExamToSlot(${j},${i})" style="padding: 3px;"> ${j},${i} </td>`;
+            }
+            output += `</tr>`;
+          }
           output += `</table>
-                  </td>
-                  <td border="0" style="padding:0;">
-                    <div id="inner" height="100%">
-                      <textbox id="description" >
-                      </textbox>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              </br>`;
+                        </td>
+                      </tr>
+                    </table>
+                </td>
+              </tr>
+            </table>
+            </br>`;
           $('#plan').html(output);
         });
       });
     })
     .fail(function () {
-      $('#status')
-        .html(`Attempt no. <b>${currentAttemptNo}</b>. Are you sure the
-                       server is running on <b>${host}</b>, and the endpoint
-                       <b>${endpointExamDays}</b> is correct?`);
-      // Keep trying until we get an answer or reach the maximum number of retries
-      if(currentAttemptNo < maxAttempts) {
-        setTimeout(function () {
-          _fetchExamDays(waitTime, maxAttempts, currentAttemptNo + 1);
-        }, waitTime);
-      }
+      $.ajax(host + endpointExamDays).fail(function(jqXHR, textStatus, errorThrown) {
+        // alert(jqXHR.responseText);
+        $('#error').append(jqXHR.responseText);
+      })
     });
 };
 
