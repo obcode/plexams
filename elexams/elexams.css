@@ -8,9 +8,61 @@ th {
   border: 2px solid black;
 }
 
-div#inner {
-  border: 1px solid black;
+td.exams {
+  height: 40px;
 }
+
+td.times {
+  width: 20px;
+}
+div#description {
+  padding: 4px;
+}
+
+div.inner {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+}
+
+div.innerUnscheduled {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: top;
+}
+div.innerUnscheduled:hover {
+  background-color: rgb(60, 145, 207);
+  cursor: pointer;
+}
+
+div.outer {
+  height: 100%;
+  max-width: 100px
+}
+div.outerUnscheduled {
+  display: inline-block;
+  border: 1px solid black;
+  width: 900px;
+  max-width: 1000px;
+  min-width: 300px;
+  min-height: 100px;
+}
+
+div.inner:hover {
+  background-color: rgb(60, 145, 207);
+  cursor: pointer;
+}
+
+div.div_select {
+  background-color: rgb(212, 81, 81) !important;
+}
+
+
+/*Div for error display*/
 
 div.fixed {
   position: fixed;
@@ -20,47 +72,11 @@ div.fixed {
   border: 3px solid #e22d2d;
 }
 
-table#inner,
-td#inner,
-tr#inner {
-  overflow: hidden;
-  width: 100%;
-  min-width: 50px;
-  height: 125px;
-  padding: 5px;
-  table-layout: fixed;
-  border: 1px solid;
-  border-top: 0;
-  border-bottom: 0;
-}
-
-td#inner:hover {
-  width: 250%;
-  background-color: rgb(60, 145, 207);
-  cursor: pointer;
-}
-
-td#inner.td_select {
-  width: 250%;
-  background-color: rgb(212, 81, 81);
-}
-
-table#inner {
+div.description {
+  user-select: text;
   border: 0;
-}
-
-td#inner:first-child {
-  border-left: 0;
-}
-
-tr#inner:first-child {
-  border-left: 0;
-}
-
-table#inner:last-child,
-td#inner:last-child,
-tr#inner:last-child {
-  border-right: 0;
+  padding: 5px;
+  min-width: 400px;
 }
 
 ul#groups,

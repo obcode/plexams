@@ -4,6 +4,7 @@ const endpointExams = '/exams';
 const endpointExamDays = '/examDays';
 const endpointSlots = '/slots';
 const endpointSlotsPerDay = '/slotsPerDay';
+const endpointUnscheduledExams = '/unscheduledExams';
 
 // Retry configuration
 let maxNoOfAttempts = 50,
@@ -12,27 +13,45 @@ let maxNoOfAttempts = 50,
 let _fetchExams = function (waitTime, maxAttempts, currentAttemptNo) {
   $.getJSON(host + endpointExams, function (exams) {
     // Construct the user list HTML output
-    let output =
-      `<table style="border: 1px solid black;">
-        <tr>
-          <th>Prüfung</th>
-          <th>Prüfer</th>
-          <th>Anmeldecode</th>
-          <th>Wiederholungsklausur</th>
-       </tr>`;
-    for(let i in exams) {
-      let exam = exams[i];
-      output += `<tr>
-               <td>${exam.name}</td>
-               <td>${exam.lecturer.personShortName}</td>
-               <td>${exam.anCode}</td>
-               <td>${exam.reExam}</td>
-               </tr>`;
-    }
-    output += `</table>`;
+  let output =
+    `<table style="border: 1px solid black;">
+      <tr>
+        <th>Prüfung</th>
+        <th>Prüfer</th>
+        <th>Anmeldecode</th>
+        <th>Wiederholungsklausur</th>
+     </tr>`;
+  for(let i in exams) {
+    let exam = exams[i];
+    output += `<tr>
+             <td>${exam.name}</td>
+             <td>${exam.lecturer.personShortName}</td>
+             <td>${exam.anCode}</td>
+             <td>${exam.reExam}</td>
+             </tr>`;
+  }
+  output += `</table>`;
     $('#plexams-api').html(output);
   }).fail(function () {
     $.ajax(host + endpointExams).fail(function(jqXHR, textStatus, errorThrown) {
+      alert(jqXHR.responseText);
+      $('#error').html(jqXHR.responseText);
+    })
+  });
+};
+
+let _fetchUnscheduledExams = function (waitTime, maxAttempts, currentAttemptNo) {
+  $.getJSON(host + endpointUnscheduledExams, function (uExams) {
+    // Construct the user list HTML output
+    let output =``
+    for(var i in uExams){
+      var exam = uExams[i];
+      output += `<div id="${exam.anCode}" class="innerUnscheduled" ondrop="return false;"
+                draggable="true" ondragstart="dragExam(event)" onclick="viewDetails(${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
+    }
+    $('#unscheduled').html(output);
+  }).fail(function () {
+    $.ajax(host + endpointUnscheduledExams).fail(function(jqXHR, textStatus, errorThrown) {
       alert(jqXHR.responseText);
       $('#error').html(jqXHR.responseText);
     })
@@ -48,9 +67,7 @@ let _fetchExamsData = function (inDay, inTime, slots) {
     let time = timeSlot[1];
     if(day == inDay && time == inTime) {
       let examsInSlot = exams.examsInSlot;
-      let reserveInvigilator = exams.reserveInvigilator;
       var arr = [];
-
       for(var j in Object.keys(examsInSlot)) {
         let anCode = Object.keys(examsInSlot)[j];
         let exam = examsInSlot[anCode];
@@ -67,7 +84,28 @@ let _fetchExamsData = function (inDay, inTime, slots) {
     }
   }
 };
+let _getAncodesForSlot = function (inDay, inTime, slots) {
+  for(var i in slots) {
+    let slot = slots[i];
+    let timeSlot = slot[0];
+    let exams = slot[1];
+    let day = timeSlot[0];
+    let time = timeSlot[1];
+    if(day == inDay && time == inTime) {
+      let examsInSlot = exams.examsInSlot;
+      var arr = [];
 
+      for(var j in Object.keys(examsInSlot)) {
+        let anCode = Object.keys(examsInSlot)[j];
+        if(anCode == null) {
+          anCode = '';
+        }
+        arr.push(anCode);
+      }
+      return arr;
+    }
+  }
+};
 let _fetchExamDescription = function (inDay, inTime, slots) {
   var description = 'text';
 
@@ -95,50 +133,32 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
           for(let i in slotsPerDay) {
             let slot = slotsPerDay[i];
             output += `<tr>
-                          <td>${slot}</td>`;
+                          <td class="times">${slot}</td>`;
             for(let j in examDays) {
               let examDay = examDays[j];
               let examData = _fetchExamsData(j, i, slots);
-              output += `<td>
-                            <table id="inner" class="table">
-                              <tr id="inner">`;
+              var anCodes = _getAncodesForSlot(j, i, slots);
+              output += `<td class="exams">
+                        <div class="outer" ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
               for(let k in examData) {
-                output += `<td id="inner" onclick="viewDetails(${j}, ${i}, ${k})">${examData[k]}</td>`;
+                output += `<div id="${anCodes[k]}" class="inner" ondrop="return false;"
+                            draggable="true" ondragstart="dragExam(event)"
+                            onclick="viewDetails(${anCodes[k]})">${examData[k]}
+                            </div>`;
               }
-              output += `</tr>
-                        </table id="inner">
-                      </td>`;
+              output += `</div>
+                        </td>`;
             }
             output += `</tr>`;
           }
+          // Detailed description of the selected exams
           output += `</tr>
                 </table>
                 </td>
-                  <td border="0" style="padding:0; vertical-align:top; height: 100%; width: 20%;">
-                    <table style="width:100%; height: 100%">
-                      <tr style="min-height: 50%;">
-                        <td border="0" style="vertical-align:top; height: 100%; width: 100%;">
-                          <div id="inner" height="100%" style="border: 0; padding: 5px;">
-                            <textbox id="description" >
-                            </textbox>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr style="min-height: 50%;">
-                        <td style="padding:0; vertical-align:bottom; height: 100%">
-                          <table style="padding:5px; height: 100%; width: 100%">`;
-          for(let i in slotsPerDay) {
-            output += `<tr>`;
-            for(let j in examDays) {
-              output += `<td onclick="addExamToSlot(${j},${i})" style="padding: 3px;"> ${j},${i} </td>`;
-            }
-            output += `</tr>`;
-          }
-          output += `</table>
-                        </td>
-                      </tr>
-                    </table>
-                </td>
+                  <td border="0" style="vertical-align:top; width: 200px; word-break: break-word">
+                    <div id="description">
+                    </div>
+                  </td>
               </tr>
             </table>
             </br>`;
@@ -163,7 +183,12 @@ let fetchExamDays = function (waitTimeBetweenAttempt, maxNoOfAttempts) {
   _fetchExamDays(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
 };
 
+let fetchUnscheduledExams = function (waitTimeBetweenAttempt, maxNoOfAttempts){
+  _fetchUnscheduledExams(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
+};
 // Start trying to fetch the exam list
 fetchExams(waitTimeBetweenAttempt, maxNoOfAttempts);
 
 fetchExamDays(waitTimeBetweenAttempt, maxNoOfAttempts);
+
+fetchUnscheduledExams(waitTimeBetweenAttempt, maxNoOfAttempts);

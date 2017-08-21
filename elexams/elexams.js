@@ -4,17 +4,16 @@ const endpointAddExam = '/addExam';
 const slotsPerDay = 6;
 var _anCode = 0;
 
-function viewDetails(day, time, x) {
-  $.getJSON(host + endpointSlots, function (slots) {
-    $(".table").on("click", "td", function () {
-      $(this).parents("table").find('td').removeClass("td_select");
-      $(this).toggleClass("td_select");
-    });
-    var slot = slots[(slotsPerDay * day) + time];
-    var exams = slot[1];
+function viewDetails(anCode) {
+  $.getJSON(host + endpointExams, function (exams) {
+    toggleSelect();
     var output = "";
-    let examsInSlot = exams.examsInSlot;
-    let exam = examsInSlot[Object.keys(examsInSlot)[x]];
+    var exam = null;
+    for(var i in exams) {
+      if(exams[i].anCode == anCode) {
+        exam = exams[i];
+      }
+    }
     let groupsOutput = groupsToHTML(exam.groups);
     output += ` <h2 >${exam.name}</h1></br>
                 AnCode: ${exam.anCode}</br>
@@ -34,6 +33,19 @@ function viewDetails(day, time, x) {
     _anCode = exam.anCode;
   });
   // .fail(function () {});
+}
+
+function toggleSelect() {
+  $(".inner").on("click", function () {
+    $(this).parents("table").find('div').removeClass("div_select");
+    $(this).parents("div").find('div').removeClass("div_select");
+    $(this).toggleClass("div_select");
+  });
+  $(".innerUnscheduled").on("click", function () {
+    $(this).parents("div").find('div').removeClass("div_select");
+    $(this).parents("table").find('div').removeClass("div_select");
+    $(this).toggleClass("div_select");
+  });
 }
 
 function groupsToHTML(groups) {
@@ -79,5 +91,25 @@ function addExamToSlot(dayIdx, slotIdx) {
     fetchExamDays(100, 100);
   } else {
     // Do nothing!
+  }
+}
+
+function dropExam(ev) {
+  var data = ev.dataTransfer.getData("text");
+  ev.currentTarget.appendChild(document.getElementById(data));
+  if(ev.currentTarget.className == "outer") {
+    document.getElementById(data).className = "inner";
+  } else if(ev.currentTarget.className == "outerUnscheduled") {
+    document.getElementById(data).className = "innerUnscheduled";
+  }
+}
+
+function dragExam(ev) {
+  ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function allowDropExam(ev) {
+  if((ev.currentTarget.className == "outer") || (ev.currentTarget.className == "outerUnscheduled")) {
+    ev.preventDefault();
   }
 }

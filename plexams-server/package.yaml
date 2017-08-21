@@ -23,6 +23,7 @@ dependencies:
   - directory
   - time
   - bytestring
+  - containers
 
 
 library:

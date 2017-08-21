@@ -37,6 +37,7 @@ library
     , directory
     , time
     , bytestring
+    , containers
   exposed-modules:
       Plexams.Server.Import
       Plexams.Server.PlanManip
@@ -62,5 +63,6 @@ executable plexams-server
     , directory
     , time
     , bytestring
+    , containers
     , plexams-server
   default-language: Haskell2010

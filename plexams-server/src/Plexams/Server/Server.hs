@@ -9,6 +9,7 @@ module Plexams.Server.Server
 
 import           Control.Monad.Except
 import           Data.ByteString.Lazy.Char8
+import qualified Data.Map                   as M
 import           Data.Time.Calendar
 import           Network.Wai
 import           Network.Wai.Handler.Warp
@@ -22,6 +23,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "slots" :> Get '[JSON] Slots
       :<|> "slotsPerDay" :> Get '[JSON] [String]
       :<|> "addExam" :> ReqBody '[JSON] AddExam :> Post '[JSON] String
+      :<|> "unscheduledExams" :> Get '[JSON] (M.Map Ancode Exam)
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -38,6 +40,7 @@ server = exams'
     :<|> slots'
     :<|> slotsPerDay'
     :<|> addExam'
+    :<|> unscheduledExams'
 
       where
         exams' :: Handler [Exam]
@@ -76,6 +79,12 @@ server = exams'
         addExam' exam = do
           emtpy <- liftIO $ appendManipFile  planManipFile' exam
           return  $ "- [" ++ show (anCode1 exam) ++ ", " ++ show (day exam) ++ ", " ++ show (slot1 exam) ++ "]"
+
+        unscheduledExams' = do
+          plan'' <- liftIO appliedPlan
+          case plan'' of
+            Left error'   -> (failingHandler $pack error')
+            Right plan''' ->   return (unscheduledExams plan''')
 
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr
