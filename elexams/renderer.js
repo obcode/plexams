@@ -13,27 +13,27 @@ let maxNoOfAttempts = 50,
 let _fetchExams = function (waitTime, maxAttempts, currentAttemptNo) {
   $.getJSON(host + endpointExams, function (exams) {
     // Construct the user list HTML output
-  let output =
-    `<table style="border: 1px solid black;">
+    let output =
+      `<table style="border: 1px solid black;">
       <tr>
         <th>Prüfung</th>
         <th>Prüfer</th>
         <th>Anmeldecode</th>
         <th>Wiederholungsklausur</th>
      </tr>`;
-  for(let i in exams) {
-    let exam = exams[i];
-    output += `<tr>
+    for(let i in exams) {
+      let exam = exams[i];
+      output += `<tr>
              <td>${exam.name}</td>
              <td>${exam.lecturer.personShortName}</td>
              <td>${exam.anCode}</td>
              <td>${exam.reExam}</td>
              </tr>`;
-  }
-  output += `</table>`;
+    }
+    output += `</table>`;
     $('#plexams-api').html(output);
   }).fail(function () {
-    $.ajax(host + endpointExams).fail(function(jqXHR, textStatus, errorThrown) {
+    $.ajax(host + endpointExams).fail(function (jqXHR, textStatus, errorThrown) {
       alert(jqXHR.responseText);
       $('#error').html(jqXHR.responseText);
     })
@@ -43,15 +43,23 @@ let _fetchExams = function (waitTime, maxAttempts, currentAttemptNo) {
 let _fetchUnscheduledExams = function (waitTime, maxAttempts, currentAttemptNo) {
   $.getJSON(host + endpointUnscheduledExams, function (uExams) {
     // Construct the user list HTML output
-    let output =``
-    for(var i in uExams){
+    let outputPlannedByMe = ``
+    let outputNotPlannedByMe = ``
+    for(var i in uExams) {
       var exam = uExams[i];
-      output += `<div id="${exam.anCode}" class="innerUnscheduled" ondrop="return false;"
-                draggable="true" ondragstart="dragExam(event)" onclick="viewDetails(${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
+      var draggable = false;
+      if(exam.plannedByMe == true) {
+        outputPlannedByMe += `<div id="${exam.anCode}" class="innerUnscheduled" ondrop="return false;"
+                  draggable="true" ondragstart="dragExam(event)" onclick="viewDetails(${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
+      } else {
+        outputNotPlannedByMe += `<div id="${exam.anCode}" class="innerUnNotPbyMe" ondrop="return false;"
+                  draggable="false" onclick="viewDetails(${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
+      }
     }
-    $('#unscheduled').html(output);
+    $('#unscheduled').html(outputPlannedByMe);
+    $('#notPlannedByMe').html(outputNotPlannedByMe);
   }).fail(function () {
-    $.ajax(host + endpointUnscheduledExams).fail(function(jqXHR, textStatus, errorThrown) {
+    $.ajax(host + endpointUnscheduledExams).fail(function (jqXHR, textStatus, errorThrown) {
       alert(jqXHR.responseText);
       $('#error').html(jqXHR.responseText);
     })
@@ -139,7 +147,8 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
               let examData = _fetchExamsData(j, i, slots);
               var anCodes = _getAncodesForSlot(j, i, slots);
               output += `<td class="exams">
-                        <div class="outer" ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
+                        <div class="outer" data-day="${j}" data-slot="${i}"
+                        ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
               for(let k in examData) {
                 output += `<div id="${anCodes[k]}" class="inner" ondrop="return false;"
                             draggable="true" ondragstart="dragExam(event)"
@@ -155,10 +164,10 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
           output += `</tr>
                 </table>
                 </td>
-                  <td border="0" style="vertical-align:top; width: 200px; word-break: break-word">
-                    <div id="description">
-                    </div>
-                  </td>
+                <td style="vertical-align:top; word-break: break-word; width:15em;">
+                  <div id="description">
+                  </div>
+                </td>
               </tr>
             </table>
             </br>`;
@@ -167,7 +176,7 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
       });
     })
     .fail(function () {
-      $.ajax(host + endpointExamDays).fail(function(jqXHR, textStatus, errorThrown) {
+      $.ajax(host + endpointExamDays).fail(function (jqXHR, textStatus, errorThrown) {
         // alert(jqXHR.responseText);
         $('#error').append(jqXHR.responseText);
       })
@@ -183,7 +192,7 @@ let fetchExamDays = function (waitTimeBetweenAttempt, maxNoOfAttempts) {
   _fetchExamDays(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
 };
 
-let fetchUnscheduledExams = function (waitTimeBetweenAttempt, maxNoOfAttempts){
+let fetchUnscheduledExams = function (waitTimeBetweenAttempt, maxNoOfAttempts) {
   _fetchUnscheduledExams(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
 };
 // Start trying to fetch the exam list

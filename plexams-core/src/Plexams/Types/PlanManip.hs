@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Plexams.Types.PlanManip
   ( AddExamToSlot(..)
   , AddRoomToExam(..)
@@ -6,7 +8,9 @@ module Plexams.Types.PlanManip
   ) where
 
 import           Control.Applicative  (empty)
+import           Data.Aeson
 import qualified Data.Yaml            as Y
+import           GHC.Generics
 import           Plexams.Types.Common
 
 data AddExamToSlot =
@@ -14,7 +18,10 @@ data AddExamToSlot =
       { planManipAnCode :: Integer
       , planManipDay    :: Int
       , planManipSlot   :: Int
-      }
+      } deriving (Eq, Show, Generic)
+
+instance ToJSON AddExamToSlot
+instance FromJSON AddExamToSlot
 
 data AddRoomToExam =
     AddRoomToExam

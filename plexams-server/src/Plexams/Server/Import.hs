@@ -4,8 +4,8 @@ import           Plexams.Import.MasterData
 import           Plexams.Import.Registrations
 import           Plexams.PlanManip
 import           Plexams.Types
-import           System.Exit
 import           System.Directory
+import           System.Exit
 import           System.IO                    (hPutStrLn, stderr)
 
 semesterConfig' :: IO (Either String SemesterConfig)
@@ -13,6 +13,12 @@ semesterConfig' = importSemesterConfig configFile'
 
 configFile' :: FilePath
 configFile' = "plexams.yaml"
+
+overlapsFile :: FilePath
+overlapsFile = "input/overlaps.yaml"
+
+constraintsFile :: FilePath
+constraintsFile = "input/constraints.yaml"
 
 studentsFile' :: FilePath
 studentsFile' = "input/students.yaml"
@@ -79,47 +85,52 @@ importStudents studentsFile = do
       return Nothing
 
 
-importConstraints :: Maybe FilePath -> Maybe FilePath -> IO Constraints
+importConstraints :: Maybe FilePath -> Maybe FilePath -> IO (Either String Constraints)
 importConstraints overlapsFile' constraintsFile' = do
   overlaps' <- importOverlaps overlapsFile'
-  constraints' <- importConstraints' constraintsFile'
-  return constraints' { overlaps = overlaps' }
+  case overlaps' of
+    Left errorMsg -> return $ Left errorMsg
+    Right overlaps'' -> do
+      constraints' <- importConstraints' constraintsFile'
+      case constraints' of
+        Left errorMsg -> return $ Left errorMsg
+        Right constraints'' -> return $ Right $ constraints'' { overlaps = overlaps'' }
 
-importConstraints' :: Maybe FilePath -> IO Constraints
-importConstraints' constraintsFile =
-  case constraintsFile of
+importConstraints' :: Maybe FilePath -> IO (Either String Constraints)
+importConstraints' constraintsFile' =
+  case constraintsFile' of
     Just file -> do
       maybeConstraints <- importConstraintsFromYAMLFile file
       case maybeConstraints of
         Just constraints' -> do
           hPutStrLn stderr ">>> importing constraints"
-          return constraints'
+          return $ Right constraints'
         Nothing -> do
           hPutStrLn stderr $ "no constraints found: "
                             ++ file
                             ++ " does not exist or is not parsable."
-          exitWith $ ExitFailure 6
+          return $ Left $ "no contraints found: " ++ file
     Nothing -> do
       hPutStrLn stderr "no constraints file specified"
-      return noConstraints
+      return $ Left "no contraints file found"
 
-importOverlaps :: Maybe FilePath -> IO [Overlaps]
-importOverlaps overlapsFile =
-  case overlapsFile of
+importOverlaps :: Maybe FilePath -> IO (Either String [Overlaps])
+importOverlaps overlapsFile' =
+  case overlapsFile' of
     Just file -> do
       maybeOverlaps <- importOverlapsFromYAMLFile file
       case maybeOverlaps of
         Just overlaps' -> do
           hPutStrLn stderr ">>> importing overlaps"
-          return overlaps'
+          return $ Right overlaps'
         Nothing -> do
           hPutStrLn stderr $ "no overlaps found: "
                             ++ file
                             ++ " does not exist or is not parsable."
-          exitWith $ ExitFailure 5
+          return $ Left $ "not overlaps found: " ++ file
     Nothing -> do
       hPutStrLn stderr "no overlaps file specified"
-      return []
+      return $ Left "no overlaps file found"
 
 importHandicaps :: Maybe FilePath -> IO [Handicap]
 importHandicaps handicapFile =

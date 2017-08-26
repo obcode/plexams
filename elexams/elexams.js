@@ -2,11 +2,15 @@
 // const endpointSlots = '/slots';
 const endpointAddExam = '/addExam';
 const slotsPerDay = 6;
-var _anCode = 0;
 
 function viewDetails(anCode) {
   $.getJSON(host + endpointExams, function (exams) {
-    toggleSelect();
+    $(".inner").on("click", function () {
+      toggleSelect($(this));
+    });
+    $(".innerUn").on("click", function () {
+      toggleSelect($(this));
+    });
     var output = "";
     var exam = null;
     for(var i in exams) {
@@ -30,22 +34,14 @@ function viewDetails(anCode) {
                 ReExam: ${exam.reExam} </br>
                 ExamType: ${exam.examType}`;
     $('#description').html(output);
-    _anCode = exam.anCode;
   });
   // .fail(function () {});
 }
 
-function toggleSelect() {
-  $(".inner").on("click", function () {
-    $(this).parents("table").find('div').removeClass("div_select");
-    $(this).parents("div").find('div').removeClass("div_select");
-    $(this).toggleClass("div_select");
-  });
-  $(".innerUnscheduled").on("click", function () {
-    $(this).parents("div").find('div').removeClass("div_select");
-    $(this).parents("table").find('div').removeClass("div_select");
-    $(this).toggleClass("div_select");
-  });
+function toggleSelect(thisObj) {
+  thisObj.parents("table").find('div').removeClass("div_select");
+  thisObj.parents("div").find('div').removeClass("div_select");
+  thisObj.toggleClass("div_select");
 }
 
 function groupsToHTML(groups) {
@@ -66,41 +62,51 @@ function groupsToHTML(groups) {
       groupSubgroup +
       groupRegistrations + `
         </div>
-      </<li>
+      </li>
       `;
   }
   output += `</ul>`;
   return output;
 }
 
-function addExamToSlot(dayIdx, slotIdx) {
-  if(confirm('Are you sure you want to save this thing into the database?')) {
-    // Save it!
-    $.ajax({
-      type: 'POST',
-      url: host + endpointAddExam,
-      data: JSON.stringify({
-        anCode1: _anCode,
-        day: dayIdx,
-        slot1: slotIdx
-      }),
-      success: function (data) {},
-      contentType: "application/json",
-      dataType: 'json'
-    });
-    fetchExamDays(100, 100);
-  } else {
-    // Do nothing!
-  }
+function addExamToSlot(anCode, dayIdx, slotIdx) {
+  // if(confirm('Are you sure you want to move this exam?')) {
+  // Save it!
+  var result = false;
+  $.ajax({
+    type: 'POST',
+    url: host + endpointAddExam,
+    data: JSON.stringify({
+      planManipAnCode: anCode,
+      planManipDay: dayIdx,
+      planManipSlot: slotIdx
+    }),
+    success: function (data) {
+      if(data != "true") {
+        alert(data);
+      } else {
+        fetchExamDays(100, 100);
+        result = true;
+      }
+    },
+    contentType: "application/json",
+    dataType: 'json'
+  });
+  return result;
 }
 
 function dropExam(ev) {
-  var data = ev.dataTransfer.getData("text");
-  ev.currentTarget.appendChild(document.getElementById(data));
-  if(ev.currentTarget.className == "outer") {
-    document.getElementById(data).className = "inner";
-  } else if(ev.currentTarget.className == "outerUnscheduled") {
-    document.getElementById(data).className = "innerUnscheduled";
+  var data = parseInt(ev.dataTransfer.getData("text"));
+  var day = parseInt(ev.currentTarget.getAttribute("data-day"));
+  var slot = parseInt(ev.currentTarget.getAttribute("data-slot"));
+  let dropped = addExamToSlot(data, day, slot)
+  if(dropped) {
+    ev.currentTarget.appendChild(document.getElementById(data));
+    if(ev.currentTarget.className == "outer") {
+      document.getElementById(data).className = "inner";
+    } else if(ev.currentTarget.className == "outerUnscheduled") {
+      document.getElementById(data).className = "innerUnscheduled";
+    }
   }
 }
 
