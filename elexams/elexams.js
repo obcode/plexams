@@ -82,8 +82,8 @@ function addExamToSlot(anCode, dayIdx, slotIdx) {
       planManipSlot: slotIdx
     }),
     success: function (data) {
-      if(data != "true") {
-        alert(data);
+      if(data.tag != "Ok") {
+        alert(data.contents);
       } else {
         fetchExamDays(100, 100);
         result = true;

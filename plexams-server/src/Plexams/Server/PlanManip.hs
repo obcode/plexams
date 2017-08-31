@@ -1,4 +1,7 @@
-module Plexams.Server.PlanManip where
+module Plexams.Server.PlanManip
+  ( appliedPlan
+  , updateManipFile
+  ) where
 
 import           Control.Monad.Except
 import qualified Data.ByteString          as BSI

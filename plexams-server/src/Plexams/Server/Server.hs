@@ -13,6 +13,7 @@ import qualified Data.Map                   as M
 import           Data.Time.Calendar
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Plexams.Server.Check
 import           Plexams.Server.Import
 import           Plexams.Server.PlanManip
 import           Plexams.Types
@@ -22,7 +23,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "examDays" :> Get '[JSON] [Day]
       :<|> "slots" :> Get '[JSON] Slots
       :<|> "slotsPerDay" :> Get '[JSON] [String]
-      :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] String
+      :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
       :<|> "unscheduledExams" :> Get '[JSON] (M.Map Ancode Exam)
       -- :<|> "validate" :> Get '[JSON] String
 
@@ -49,28 +50,28 @@ server = exams'
         exams' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg   -> (failingHandler $pack errorMsg)
+            Left errorMsg -> (failingHandler $pack errorMsg)
             Right plan''' ->   return (allExams plan''')
 
         examDays' :: Handler [Day]
         examDays' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
-            Left errorMsg    -> failingHandler $pack errorMsg
+            Left errorMsg  -> failingHandler $pack errorMsg
             Right config'' -> return (examDays config'')
 
         slots' :: Handler Slots
         slots' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg   -> (failingHandler $pack errorMsg)
+            Left errorMsg -> (failingHandler $pack errorMsg)
             Right plan''' ->   return (slots plan''')
 
         slotsPerDay' :: Handler [String]
         slotsPerDay' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
-            Left errorMsg    -> (failingHandler $pack errorMsg)
+            Left errorMsg  -> (failingHandler $pack errorMsg)
             Right config'' -> return (slotsPerDay config'')
 
         addExam' exam = do
@@ -79,40 +80,20 @@ server = exams'
             Left errorMsg   -> (failingHandler $pack errorMsg)
             Right plan''' ->   do
               constraints' <- return $ constraints plan'''
-              check <- return $ checkFixedSlot (fixedSlot constraints') exam
+              check <- return $ checkConstraints constraints' plan''' exam
               case check of
-                Left errorMsg -> return errorMsg
-                Right response -> do
-                  liftIO $ updateManipFile  planManipFile' exam
-                  return response
+                Ok -> do
+                  liftIO $ updateManipFile planManipFile' exam
+                  return check
+                _ -> return check
 
         unscheduledExams' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg   -> (failingHandler $pack errorMsg)
+            Left errorMsg -> (failingHandler $pack errorMsg)
             Right plan''' ->   return (unscheduledExams plan''')
-
-        -- validate' = do
-        --   plan'' <- liftIO appliedPlan
-        --   case plan'' of
-        --     Left errorMsg   -> (failingHandler $pack errorMsg)
-        --     Right plan''' ->   return (show $ constraints plan''')
 
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr
   where myerr :: ServantErr
         myerr = err503 { errBody = s }
-
-checkFixedSlot :: [(Integer, (Int, Int))] -> AddExamToSlot -> Either String String
-checkFixedSlot fixedSlots exam =
-  if ([] == entry')
-    then Right "true"
-    else if (entry == exam)
-      then Right "true"
-      else Left $ "Exam is bound to the fixed Slot: (Day: " ++ (show $ planManipDay entry)
-                ++ " Slot: " ++ (show $ planManipSlot entry) ++ ")."
-  where
-    entry = AddExamToSlot {planManipAnCode = fst $ Prelude.head entry'
-                          , planManipDay = fst $ snd $ Prelude.head entry'
-                          , planManipSlot = snd $ snd $ Prelude.head entry' }
-    entry' = Prelude.filter (\(x,_) -> x == planManipAnCode exam) fixedSlots
