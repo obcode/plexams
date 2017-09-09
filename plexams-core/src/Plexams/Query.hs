@@ -4,6 +4,7 @@ module Plexams.Query
     , queryByLecturer
     , queryByGroup
     , querySlot
+    , queryDay
     , examDaysPerLecturer
     , lecturerExamDays
     , examsWithSameName
@@ -49,6 +50,12 @@ querySlot :: (Int, Int) -> Plan -> [Exam]
 querySlot s = maybe [] (M.elems . examsInSlot)
             . M.lookup s
             . slots
+
+queryDay ::  Int -> Plan -> [Exam]
+queryDay d plan = concat $ map querySlot' slots'
+  where slotsPerDay' = length $ slotsPerDay $ semesterConfig plan
+        slots' = [(d,x) | x <- [0..(slotsPerDay'-1)]]
+        querySlot' s = querySlot s plan
 
 examDaysPerLecturer :: Plan -> M.Map PersonID [DayIndex]
 examDaysPerLecturer = M.fromList

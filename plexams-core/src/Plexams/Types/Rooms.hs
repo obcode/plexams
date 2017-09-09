@@ -1,8 +1,13 @@
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Plexams.Types.Rooms
   ( Room(..)
   ) where
 
+import           Data.Aeson
 import           Data.Text             (unpack)
+import           GHC.Generics
 import           Plexams.Types.Common
 import           Plexams.Types.Persons
 
@@ -18,7 +23,10 @@ data Room = Room
     , handicapCompensation :: Bool          -- ^ @True@ Raum für NTA
     , seatsPlanned         :: Integer       -- ^ Anzahl der geplanten Studierenden
     }
-  deriving (Eq)
+  deriving (Eq,Generic)
+
+instance FromJSON Room
+instance ToJSON Room
 
 instance Show Room where
   show room = roomID room ++ ", "
