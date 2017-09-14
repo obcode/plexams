@@ -15,9 +15,8 @@
     delete window.module;
     // Fetch jQuery
     window.$ = window.jQuery = nodeRequire('./resources/jquery-3.2.1.min.js')
-    // The JS file that will do the heavy lifting
-    nodeRequire('./renderer.js')
   </script>
+  <script src="resources/jquery.tablesorter.min.js"></script>
   <script src="elexams.js"></script>
   <script src="renderer.js"></script>
 
@@ -39,7 +38,6 @@
           <div class="unscheduledHeader" draggable="false">Not planned by me</div>
           <div id="notPlannedByMe" class="outerUnscheduled" draggable="false">
           </div>
-        <!-- <div class="footer">Footer</div> -->
         </div>
       </div>
     </li>
