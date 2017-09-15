@@ -1,6 +1,3 @@
-// const host = 'http://127.0.0.1:8080';
-// const endpointSlots = '/slots';
-const endpointAddExam = '/addExam';
 const slotsPerDay = 6;
 
 function viewDetails(anCode) {
@@ -32,16 +29,54 @@ function viewDetails(anCode) {
                 PersonEmail: ${exam.lecturer.personEmail}</br>
                 Duration: ${exam.duration}</br>
                 ReExam: ${exam.reExam} </br>
-                ExamType: ${exam.examType}`;
+                ExamType: ${exam.examType} </br>
+                Overlaps: <div id="overlaps"></div>`;
     $('#description').html(output);
+    fetchOverlaps(anCode);
+  }).fail(function (jqXHR, textStatus, errorThrown) {
+    $('#error').append(`Error on viewDetails: `);
+    $('#error').append(jqXHR.responseText);
+    $('#error').append(`<br>`);
+    $('#error').css({
+      'border': "3px solid #e22d2d"
+    });
   });
-  // .fail(function () {});
 }
 
 function toggleSelect(thisObj) {
   thisObj.parents("table").find('div').removeClass("div_select");
   thisObj.parents("div").find('div').removeClass("div_select");
   thisObj.toggleClass("div_select");
+}
+
+function fetchOverlaps(anCode) {
+  var request = $.ajax({
+    type: 'POST',
+    url: host + endpointOverlaps,
+    data: JSON.stringify(anCode),
+    contentType: "application/json",
+    dataType: 'json'
+  });
+  request.done(function (data) {
+    var output = `
+    <ul id="overlaps">
+    `;
+    for(var i = 0; i < data.length; i++) {
+      let group = data[i];
+      output +=
+        `<li id="group"> ${group.olGroup.groupDegree}
+          <div>`;
+      let overlap = group.olOverlaps[anCode];
+      for(var name in overlap) {   
+        output += name + `: ` + overlap[name] + `</br>`;    
+      }
+      output += `
+          </div>
+          </li>`;
+    }
+    output += `</ul>`;
+    $('#overlaps').html(output);
+  });
 }
 
 function groupsToHTML(groups) {
@@ -70,8 +105,6 @@ function groupsToHTML(groups) {
 }
 
 function addExamToSlot(anCode, dayIdx, slotIdx) {
-  // if(confirm('Are you sure you want to move this exam?')) {
-  // Save it!
   var result = false;
   $.ajax({
     type: 'POST',
@@ -85,7 +118,7 @@ function addExamToSlot(anCode, dayIdx, slotIdx) {
       if(data.tag != "Ok") {
         alert(data.contents);
       } else {
-        fetchExamDays(100, 100);
+        fetchExamDays();
         result = true;
       }
     },

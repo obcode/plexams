@@ -9,7 +9,7 @@ description:    See README at <https://github.com/obcode/plexams#readme>
 category:       Plexams
 homepage:       https://github.com/obcode/plexams#readme
 bug-reports:    https://github.com/obcode/plexams/issues
-maintainer:     Oliver Braun <ob@obraun.net>
+maintainer:     Felician Pinkert <pinkert@hm.edu>
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

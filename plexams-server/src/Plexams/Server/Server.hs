@@ -10,6 +10,7 @@ module Plexams.Server.Server
 import           Control.Monad.Except
 import           Data.ByteString.Lazy.Char8
 import qualified Data.Map                   as M
+import           Data.Maybe
 import           Data.Time.Calendar
 import           Network.Wai
 import           Network.Wai.Handler.Warp
@@ -25,7 +26,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "slotsPerDay" :> Get '[JSON] [String]
       :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
       :<|> "unscheduledExams" :> Get '[JSON] (M.Map Ancode Exam)
-      -- :<|> "validate" :> Get '[JSON] String
+      :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -43,6 +44,7 @@ server = exams'
     :<|> slotsPerDay'
     :<|> addExam'
     :<|> unscheduledExams'
+    :<|> overlaps'
     -- :<|> validate'
 
       where
@@ -74,6 +76,7 @@ server = exams'
             Left errorMsg  -> (failingHandler $pack errorMsg)
             Right config'' -> return (slotsPerDay config'')
 
+        addExam' :: AddExamToSlot -> Handler CheckError
         addExam' exam = do
           plan'' <- liftIO appliedPlan
           case plan'' of
@@ -87,13 +90,30 @@ server = exams'
                   return check
                 _ -> return check
 
+        unscheduledExams' :: Handler (M.Map Ancode Exam)
         unscheduledExams' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
             Left errorMsg -> (failingHandler $pack errorMsg)
             Right plan''' ->   return (unscheduledExams plan''')
 
+        overlaps' :: Ancode -> Handler [Overlaps]
+        overlaps' anCode' = do
+          plan'' <- liftIO appliedPlan
+          case plan'' of
+            Left errorMsg -> (failingHandler $pack errorMsg)
+            Right plan''' -> do
+              overlaps'' <- return $ overlaps $ constraints plan'''
+              return $ filterOverlaps anCode' overlaps''
+
+
+
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr
   where myerr :: ServantErr
         myerr = err503 { errBody = s }
+
+filterOverlaps :: Ancode -> [Overlaps] -> [Overlaps]
+filterOverlaps anCode' overlaps' = Prelude.map overlap groups'
+  where groups' = Prelude.filter (\overlap' -> (isJust (M.lookup anCode' (olOverlaps  overlap')))) overlaps'
+        overlap group' = Overlaps{olGroup = olGroup group', olOverlaps = M.fromList (Prelude.filter (\overlap' -> (fst overlap') == anCode') (M.toList (olOverlaps group')))}

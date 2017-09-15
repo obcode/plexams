@@ -1,11 +1,14 @@
 td,
 table,
 th {
-  padding: 0;
-  border-spacing: 0;
   border-collapse: collapse;
   user-select: none;
   border: 2px solid black;
+}
+
+.examList{
+  user-select: text;
+  padding: 0.2em;
 }
 
 td.exams {
@@ -18,6 +21,7 @@ td.times {
 
 div#description {
   padding: 4px;
+  user-select: text;
   word-break: break-word;
   width: 15em;
 }
@@ -86,13 +90,10 @@ div.div_select {
 
 
 /*Div for error display*/
-
 div.fixed {
   position: fixed;
   bottom: 0;
   right: 0;
-  width: 300px;
-  border: 3px solid #e22d2d;
 }
 
 div.description {
@@ -104,7 +105,14 @@ div.description {
 
 ul#groups,
 li#groups {
-  padding-left: 15px;
+  padding-left: 1.4em;
+}
+
+ul#overlaps,
+li#overlaps {
+  padding-left: 1.4em;
+  overflow: auto;
+  max-height: 20em;
 }
 
 * {

@@ -7,6 +7,7 @@ import           Plexams.Types
 import           System.Directory
 import           System.Exit
 import           System.IO                    (hPutStrLn, stderr)
+import           System.IO.Error
 
 semesterConfig' :: IO (Either String SemesterConfig)
 semesterConfig' = importSemesterConfig configFile'
@@ -34,10 +35,13 @@ exportTestFile = "input/exportTest.yaml"
 
 importSemesterConfig :: FilePath -> IO (Either String SemesterConfig)
 importSemesterConfig configfile = do
-  maybeSemesterConfig <- importSemesterConfigFromYAMLFile configfile
-  case maybeSemesterConfig of
-    Just semesterConfig'' -> return (Right semesterConfig'')
-    Nothing               -> return (Left "SemesterConfig import failed.")
+  eitherSemesterConfig <- tryIOError $ importSemesterConfigFromYAMLFile configfile
+  case eitherSemesterConfig of
+    Left _ -> return (Left "SemesterConfig import failed. File does not exist")
+    Right maybeSemesterConfig -> do
+      case maybeSemesterConfig of
+        Just semesterConfig'' -> return (Right semesterConfig'')
+        Nothing               -> return (Left "SemesterConfig import failed.")
 
 importExams :: SemesterConfig -> IO (Either String [Exam])
 importExams semesterConfig'' = do

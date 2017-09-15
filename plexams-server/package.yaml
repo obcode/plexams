@@ -3,8 +3,8 @@ version: '0.9.0.0'
 synopsis: Server for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3
-github: obcode/plexams
-maintainer: Oliver Braun <ob@obraun.net>
+github: PumaD/plexams
+maintainer: Felician Pinkert <pinkert@hm.edu>
 category: Plexams
 
 ghc-options: -Wall

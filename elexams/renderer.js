@@ -4,43 +4,49 @@ const endpointExams = '/exams';
 const endpointExamDays = '/examDays';
 const endpointSlots = '/slots';
 const endpointSlotsPerDay = '/slotsPerDay';
+const endpointAddExam = '/addExam';
+const endpointOverlaps = '/overlaps';
 const endpointUnscheduledExams = '/unscheduledExams';
 
-// Retry configuration
-let maxNoOfAttempts = 50,
-  waitTimeBetweenAttempt = 250;
-
-let _fetchExams = function (waitTime, maxAttempts, currentAttemptNo) {
+let _fetchExams = function () {
   $.getJSON(host + endpointExams, function (exams) {
     // Construct the user list HTML output
     let output =
-      `<table style="border: 1px solid black;">
-      <tr>
-        <th>Prüfung</th>
-        <th>Prüfer</th>
-        <th>Anmeldecode</th>
-        <th>Wiederholungsklausur</th>
-     </tr>`;
+      `<table id="examList" class="examList" >
+      <thead> 
+      <tr class="examList">
+        <th class="examList">Prüfung</th>
+        <th class="examList">Prüfer</th>
+        <th class="examList">Anmeldecode</th>
+        <th class="examList">Dauer</th>
+        <th class="examList">Wiederholungsklausur</th>
+     </tr>
+     </thead>
+     <tbody> `;
     for(let i in exams) {
       let exam = exams[i];
-      output += `<tr>
-             <td>${exam.name}</td>
-             <td>${exam.lecturer.personShortName}</td>
-             <td>${exam.anCode}</td>
-             <td>${exam.reExam}</td>
+      output += `<tr class="examList">
+             <td class="examList">${exam.name}</td>
+             <td class="examList">${exam.lecturer.personShortName}</td>
+             <td class="examList">${exam.anCode}</td>
+             <td class="examList">${exam.duration}</td>
+             <td class="examList">${exam.reExam}</td>
              </tr>`;
     }
-    output += `</table>`;
+    output += `</tbody> 
+              </table>`;
     $('#plexams-api').html(output);
-  }).fail(function () {
-    $.ajax(host + endpointExams).fail(function (jqXHR, textStatus, errorThrown) {
-      alert(jqXHR.responseText);
-      $('#error').html(jqXHR.responseText);
-    })
+    $("#examList").tablesorter({sortList: [[0,0]]} ); 
+  }).fail(function (jqXHR, textStatus, errorThrown) {
+      // // endPointsAvail = false;
+      $('#error').append(`Error on endpoint \\exams: `);
+      $('#error').append(jqXHR.responseText);
+      $('#error').append(`<br>`);
+      $('#error').css({ 'border': "3px solid #e22d2d"});
   });
 };
 
-let _fetchUnscheduledExams = function (waitTime, maxAttempts, currentAttemptNo) {
+let _fetchUnscheduledExams = function () {
   $.getJSON(host + endpointUnscheduledExams, function (uExams) {
     // Construct the user list HTML output
     let outputPlannedByMe = ``
@@ -58,11 +64,11 @@ let _fetchUnscheduledExams = function (waitTime, maxAttempts, currentAttemptNo) 
     }
     $('#unscheduled').html(outputPlannedByMe);
     $('#notPlannedByMe').html(outputNotPlannedByMe);
-  }).fail(function () {
-    $.ajax(host + endpointUnscheduledExams).fail(function (jqXHR, textStatus, errorThrown) {
-      alert(jqXHR.responseText);
-      $('#error').html(jqXHR.responseText);
-    })
+  }).fail(function (jqXHR, textStatus, errorThrown) {
+      $('#error').append(`Error on endpoint \\unscheduledExams: `);
+      $('#error').append(jqXHR.responseText);
+      $('#error').append(`<br>`);
+      $('#error').css({ 'border': "3px solid #e22d2d"});
   });
 };
 
@@ -120,7 +126,7 @@ let _fetchExamDescription = function (inDay, inTime, slots) {
   return description;
 };
 
-let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
+let _fetchExamDays = function () {
   $.getJSON(host + endpointExamDays, function (examDays) {
       $.getJSON(host + endpointSlotsPerDay, function (slotsPerDay) {
         $.getJSON(host + endpointSlots, function (slots) {
@@ -175,29 +181,29 @@ let _fetchExamDays = function (waitTime, maxAttempts, currentAttemptNo) {
         });
       });
     })
-    .fail(function () {
-      $.ajax(host + endpointExamDays).fail(function (jqXHR, textStatus, errorThrown) {
-        // alert(jqXHR.responseText);
-        $('#error').append(jqXHR.responseText);
-      })
+    .fail(function (jqXHR, textStatus, errorThrown) {
+      $('#error').append(`Error on endpoint \\examDays: `);
+      $('#error').append(jqXHR.responseText);
+      $('#error').append(`<br>`);
+      $('#error').css({ 'border': "3px solid #e22d2d"});
     });
 };
 
 // Convenience function for _fetchExams
-let fetchExams = function (waitTimeBetweenAttempt, maxNoOfAttempts) {
-  _fetchExams(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
+let fetchExams = function () {
+  _fetchExams();
 };
 
-let fetchExamDays = function (waitTimeBetweenAttempt, maxNoOfAttempts) {
-  _fetchExamDays(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
+let fetchExamDays = function () {
+  _fetchExamDays();
 };
 
-let fetchUnscheduledExams = function (waitTimeBetweenAttempt, maxNoOfAttempts) {
-  _fetchUnscheduledExams(waitTimeBetweenAttempt, maxNoOfAttempts, 1);
+let fetchUnscheduledExams = function () {
+  _fetchUnscheduledExams();
 };
 // Start trying to fetch the exam list
-fetchExams(waitTimeBetweenAttempt, maxNoOfAttempts);
+fetchExams();
 
-fetchExamDays(waitTimeBetweenAttempt, maxNoOfAttempts);
+fetchExamDays();
 
-fetchUnscheduledExams(waitTimeBetweenAttempt, maxNoOfAttempts);
+fetchUnscheduledExams();
