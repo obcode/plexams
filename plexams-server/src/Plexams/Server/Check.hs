@@ -13,11 +13,10 @@ data CheckError = Ok
                 | NoOnSameDayError String
   deriving (Eq, Ord, Generic)
 
--- instance FromJSON CheckError
 instance ToJSON CheckError
 
-checkConstraints :: Constraints -> Plan -> AddExamToSlot -> CheckError
-checkConstraints constraints' plan exam =
+checkConstraints :: Plan -> AddExamToSlot -> CheckError
+checkConstraints plan exam =
   case fixedSlotCheck of
     Ok ->
       case onOneofTheseDayCheck of
@@ -32,6 +31,7 @@ checkConstraints constraints' plan exam =
     fixedSlotCheck = checkFixedSlot (fixedSlot constraints') exam
     onOneofTheseDayCheck = checkOnOneOfTheseDays (onOneOfTheseDays constraints') exam
     notOnSameDayCheck = checkNotOnSameDay (notOnSameDay constraints') plan exam
+    constraints' = constraints plan
 
 checkFixedSlot :: [(Integer, (Int, Int))] -> AddExamToSlot -> CheckError
 checkFixedSlot fixedSlots exam =

@@ -1,5 +1,3 @@
-const slotsPerDay = 6;
-
 function viewDetails(anCode) {
   $.getJSON(host + endpointExams, function (exams) {
     $(".inner").on("click", function () {
@@ -119,6 +117,7 @@ function addExamToSlot(anCode, dayIdx, slotIdx) {
         alert(data.contents);
       } else {
         fetchExamDays();
+        fetchUnscheduledExams();
         result = true;
       }
     },

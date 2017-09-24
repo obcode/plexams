@@ -10,7 +10,6 @@ const endpointUnscheduledExams = '/unscheduledExams';
 
 let _fetchExams = function () {
   $.getJSON(host + endpointExams, function (exams) {
-    // Construct the user list HTML output
     let output =
       `<table id="examList" class="examList" >
       <thead> 
@@ -38,7 +37,6 @@ let _fetchExams = function () {
     $('#plexams-api').html(output);
     $("#examList").tablesorter({sortList: [[0,0]]} ); 
   }).fail(function (jqXHR, textStatus, errorThrown) {
-      // // endPointsAvail = false;
       $('#error').append(`Error on endpoint \\exams: `);
       $('#error').append(jqXHR.responseText);
       $('#error').append(`<br>`);
@@ -48,7 +46,6 @@ let _fetchExams = function () {
 
 let _fetchUnscheduledExams = function () {
   $.getJSON(host + endpointUnscheduledExams, function (uExams) {
-    // Construct the user list HTML output
     let outputPlannedByMe = ``
     let outputNotPlannedByMe = ``
     for(var i in uExams) {
@@ -194,16 +191,21 @@ let fetchExams = function () {
   _fetchExams();
 };
 
+// Convenience function for _fetchExamDays
 let fetchExamDays = function () {
   _fetchExamDays();
 };
 
+// Convenience function for _fetchExamDays
 let fetchUnscheduledExams = function () {
   _fetchUnscheduledExams();
 };
-// Start trying to fetch the exam list
+
+// Start to fetch the exam list
 fetchExams();
 
+// Start to fetch the exam days
 fetchExamDays();
 
+// Start to fetch the unscheduled exams
 fetchUnscheduledExams();

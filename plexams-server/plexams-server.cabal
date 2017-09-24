@@ -7,8 +7,8 @@ version:        0.9.0.0
 synopsis:       Server for planning exams
 description:    See README at <https://github.com/obcode/plexams#readme>
 category:       Plexams
-homepage:       https://github.com/obcode/plexams#readme
-bug-reports:    https://github.com/obcode/plexams/issues
+homepage:       https://github.com/PumaD/plexams#readme
+bug-reports:    https://github.com/PumaD/plexams/issues
 maintainer:     Felician Pinkert <pinkert@hm.edu>
 license:        BSD3
 license-file:   LICENSE
@@ -17,7 +17,7 @@ cabal-version:  >= 1.10
 
 source-repository head
   type: git
-  location: https://github.com/obcode/plexams
+  location: https://github.com/PumaD/plexams
 
 library
   hs-source-dirs:

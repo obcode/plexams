@@ -61,7 +61,7 @@ div.innerUnscheduled {
   vertical-align: top;
 }
 div.innerUnscheduled:hover {
-  background-color: rgb(60, 145, 207);
+  background-color: rgb(133, 193, 236);
   cursor: pointer;
 }
 
@@ -72,7 +72,6 @@ div.outer {
 
 div.outerUnscheduled {
   display: inline-block;
-  /*border: 1px solid black;*/
   width: 900px;
   max-width: 1000px;
   min-width: 300px;
@@ -80,7 +79,7 @@ div.outerUnscheduled {
 }
 
 div.inner:hover {
-  background-color: rgb(60, 145, 207);
+  background-color: rgb(133, 193, 236);
   cursor: pointer;
 }
 

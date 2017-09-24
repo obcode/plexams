@@ -45,7 +45,6 @@ server = exams'
     :<|> addExam'
     :<|> unscheduledExams'
     :<|> overlaps'
-    -- :<|> validate'
 
       where
         exams' :: Handler [Exam]
@@ -82,8 +81,7 @@ server = exams'
           case plan'' of
             Left errorMsg   -> (failingHandler $pack errorMsg)
             Right plan''' ->   do
-              constraints' <- return $ constraints plan'''
-              check <- return $ checkConstraints constraints' plan''' exam
+              check <- return $ checkConstraints plan''' exam
               case check of
                 Ok -> do
                   liftIO $ updateManipFile planManipFile' exam
@@ -106,8 +104,6 @@ server = exams'
               overlaps'' <- return $ overlaps $ constraints plan'''
               return $ filterOverlaps anCode' overlaps''
 
-
-
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr
   where myerr :: ServantErr
@@ -115,5 +111,11 @@ failingHandler s = throwError myerr
 
 filterOverlaps :: Ancode -> [Overlaps] -> [Overlaps]
 filterOverlaps anCode' overlaps' = Prelude.map overlap groups'
-  where groups' = Prelude.filter (\overlap' -> (isJust (M.lookup anCode' (olOverlaps  overlap')))) overlaps'
-        overlap group' = Overlaps{olGroup = olGroup group', olOverlaps = M.fromList (Prelude.filter (\overlap' -> (fst overlap') == anCode') (M.toList (olOverlaps group')))}
+  where groups' = Prelude.filter
+          (\overlap' -> (isJust (M.lookup anCode' (olOverlaps  overlap')))) overlaps'
+        overlap group' = Overlaps
+          { olGroup = olGroup group'
+          , olOverlaps = olOverlaps' group'}
+        olOverlaps' group' =
+          M.fromList $ Prelude.filter
+            (\overlap' -> (fst overlap') == anCode') (M.toList (olOverlaps group'))

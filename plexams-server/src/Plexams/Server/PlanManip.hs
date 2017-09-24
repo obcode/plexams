@@ -34,13 +34,18 @@ initialPlan''' config exams' = do
 
 initialPlan'''' :: SemesterConfig -> [Exam] -> Persons -> IO (Either String Plan)
 initialPlan'''' config exams' persons' = do
-  students' <- liftIO (importStudents (studentsFile'))
-  handicaps' <- liftIO (importHandicaps (Just handicapsFile'))
-  return $ Right $ Plexams.PlanManip.makePlan exams' config persons' students' handicaps'
+  eitherStuds <- liftIO $ importStudents studentsFile'
+  case eitherStuds of
+    Left errorMsg -> return $ Left errorMsg
+    Right students' -> do
+      eitherHandicaps <- liftIO $ importHandicaps handicapsFile'
+      case eitherHandicaps of
+        Left errorMsg -> return $ Left errorMsg
+        Right handicaps' -> return $ Right $ Plexams.PlanManip.makePlan exams' config persons' students' handicaps'
 
 initPlanWCons :: IO (Either String Plan)
 initPlanWCons = do
-  constraints' <- importConstraints (Just overlapsFile)  (Just constraintsFile)
+  constraints' <- importConstraints overlapsFile constraintsFile
   case constraints' of
     Left errorMsg -> return $ Left errorMsg
     Right constraints'' -> do

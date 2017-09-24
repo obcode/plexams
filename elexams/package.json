@@ -1,5 +1,6 @@
 {
   "name": "elexams",
+  "author": "Felician Pinkert",
   "version": "0.1.0",
   "description": "A gui for plexams based on electron",
   "main": "main.js",
