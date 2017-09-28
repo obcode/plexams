@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.17.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -7,9 +7,9 @@ version:        0.9.0.0
 synopsis:       Server for planning exams
 description:    See README at <https://github.com/obcode/plexams#readme>
 category:       Plexams
-homepage:       https://github.com/obcode/plexams#readme
-bug-reports:    https://github.com/obcode/plexams/issues
-maintainer:     Oliver Braun <ob@obraun.net>
+homepage:       https://github.com/PumaD/plexams#readme
+bug-reports:    https://github.com/PumaD/plexams/issues
+maintainer:     Felician Pinkert <pinkert@hm.edu>
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -17,7 +17,7 @@ cabal-version:  >= 1.10
 
 source-repository head
   type: git
-  location: https://github.com/obcode/plexams
+  location: https://github.com/PumaD/plexams
 
 library
   hs-source-dirs:
@@ -30,8 +30,20 @@ library
     , text
     , wai
     , warp
+    , plexams-core
+    , plexams-cli
+    , optparse-applicative
+    , mtl
+    , directory
+    , time
+    , bytestring
+    , containers
+    , yaml
   exposed-modules:
-      Plexams.Server
+      Plexams.Server.Check
+      Plexams.Server.Import
+      Plexams.Server.PlanManip
+      Plexams.Server.Server
   default-language: Haskell2010
 
 executable plexams-server
@@ -46,5 +58,14 @@ executable plexams-server
     , text
     , wai
     , warp
+    , plexams-core
+    , plexams-cli
+    , optparse-applicative
+    , mtl
+    , directory
+    , time
+    , bytestring
+    , containers
+    , yaml
     , plexams-server
   default-language: Haskell2010

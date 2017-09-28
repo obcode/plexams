@@ -1,10 +1,14 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Plexams.Types.Constraints
   ( Constraints(..)
   , noConstraints
   , Overlaps(..)
   ) where
 
+import           Data.Aeson
 import qualified Data.Map             as M
+import           GHC.Generics
 import           Plexams.Types.Common
 import           Plexams.Types.Groups
 
@@ -31,4 +35,6 @@ data Overlaps = Overlaps
                                Integer -- noOfStudents
                          )
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance ToJSON Overlaps

@@ -1,6 +1,6 @@
 module Main where
 
-import           Plexams.Server
+import           Plexams.Server.Server
 
 main :: IO ()
 main = startApp
