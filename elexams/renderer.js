@@ -53,10 +53,10 @@ let _fetchUnscheduledExams = function () {
       var draggable = false;
       if(exam.plannedByMe == true) {
         outputPlannedByMe += `<div id="${exam.anCode}" class="innerUnscheduled" ondrop="return false;"
-                  draggable="true" ondragstart="dragExam(event)" onclick="viewDetails(${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
+                  draggable="true" ondragstart="dragExam(event)" onclick="viewDetails(event, ${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
       } else {
         outputNotPlannedByMe += `<div id="${exam.anCode}" class="innerUnNotPbyMe" ondrop="return false;"
-                  draggable="false" onclick="viewDetails(${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
+                  draggable="false" onclick="viewDetails(event, ${exam.anCode})">${exam.anCode}</br>${exam.name}</div>`;
       }
     }
     $('#unscheduled').html(outputPlannedByMe);
@@ -155,7 +155,7 @@ let _fetchExamDays = function () {
               for(let k in examData) {
                 output += `<div id="${anCodes[k]}" class="inner" ondrop="return false;"
                             draggable="true" ondragstart="dragExam(event)"
-                            onclick="viewDetails(${anCodes[k]})">${examData[k]}
+                            onclick="viewDetails(event, ${anCodes[k]})">${examData[k]}
                             </div>`;
               }
               output += `</div>
