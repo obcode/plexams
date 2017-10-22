@@ -6,7 +6,7 @@ th {
   border: 2px solid black;
 }
 
-.examList{
+.examList {
   user-select: text;
   padding: 0.2em;
 }
@@ -53,6 +53,15 @@ div.inner {
   display: block;
 }
 
+div.overlap {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+  background-color: rgb(237, 236, 107);
+}
+
 div.innerUnscheduled {
   padding: 2px;
   top: 0px;
@@ -60,6 +69,7 @@ div.innerUnscheduled {
   display: inline-block;
   vertical-align: top;
 }
+
 div.innerUnscheduled:hover {
   background-color: rgb(133, 193, 236);
   cursor: pointer;
@@ -89,6 +99,7 @@ div.div_select {
 
 
 /*Div for error display*/
+
 div.fixed {
   position: fixed;
   bottom: 0;
