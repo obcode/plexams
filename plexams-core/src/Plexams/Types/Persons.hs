@@ -1,4 +1,7 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+
 module Plexams.Types.Persons
   ( Person(..)
   , Persons
@@ -14,11 +17,13 @@ module Plexams.Types.Persons
 import           Control.Applicative  (empty)
 import           Data.Aeson           (FromJSON, Value (Object), parseJSON,
                                        (.:))
+import           Data.Aeson
 import qualified Data.Map             as M
 import           Data.Monoid          ((<>))
 import qualified Data.Set             as S
 import           Data.Text            (Text, unpack)
 import qualified Data.Yaml            as Y
+import           GHC.Generics
 import           Plexams.Types.Common
 import           TextShow             (TextShow, showb)
 
@@ -32,7 +37,7 @@ data Person = Person
     , personFK        :: Text
     , personIsLBA     :: Bool
     }
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic)
 
 instance TextShow Person where
   showb (Person iD shortName _ email _ _) =
@@ -49,10 +54,11 @@ instance FromJSON Person where
                         <*> v .: "is_lba"
     parseJSON _          = empty
 
+instance ToJSON Person
+
 type MtkNr = Integer
 type StudentName = Text
 type Students = M.Map Ancode (S.Set (MtkNr, StudentName))
-
 type StudentsExams = M.Map MtkNr (StudentName, S.Set Ancode)
 
 data Handicap = Handicap
@@ -63,7 +69,7 @@ data Handicap = Handicap
   , exams                :: [Ancode]
   , needsRoomAlone       :: Bool
   }
-  deriving (Eq)
+  deriving (Eq,Generic)
 
 instance Y.FromJSON Handicap where
   parseJSON (Y.Object v) = Handicap
@@ -74,6 +80,8 @@ instance Y.FromJSON Handicap where
                         <*> v Y..: "exams"
                         <*> v Y..:? "needsRoomAlone" Y..!= False
   parseJSON _            = empty
+
+instance ToJSON Handicap
 
 instance Show Handicap where
   show handicap = unpack (studentname handicap)
@@ -98,7 +106,7 @@ data Invigilator = Invigilator
   , invigilatorOvertimeLastSemester :: Float
   , invigilatorOralExams            :: Integer
   , invigilatorMaster               :: Integer
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Generic)
 
 instance FromJSON Invigilator where
     parseJSON (Object v ) = Invigilator [] [] [] [] Nothing 0 0
@@ -112,5 +120,7 @@ instance FromJSON Invigilator where
                          <*> v .: "oral_exams_contribution"
                          <*> v .: "master_contribution"
     parseJSON _          = empty
+
+instance ToJSON Invigilator
 
 type Invigilators = M.Map InvigilatorID Invigilator
