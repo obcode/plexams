@@ -79,3 +79,6 @@ typings/
 
 # dotenv environment variables file
 .env
+elexams/resources/plexams
+elexams/resources/plexams-helper
+elexams/resources/plexams-server
