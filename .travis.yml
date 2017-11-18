@@ -55,6 +55,6 @@ script:
 notifications:
   email:
     recipients:
-      - pinkert@hm.edu
+      - ob@cs.hm.edu
     on_success: never # default: change
     on_failure: always # default: always
