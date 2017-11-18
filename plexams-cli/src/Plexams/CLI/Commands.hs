@@ -3,6 +3,8 @@ module Plexams.CLI.Commands
   ( runCommand
   ) where
 
+import qualified Data.ByteString.Lazy            as BSL
+import qualified Data.ByteString.Lazy.Internal   as BSLI
 import           Data.List                       (intercalate)
 import qualified Data.Text                       as Text
 import qualified Data.Text.IO                    as Text
@@ -36,6 +38,10 @@ runCommand _                     = error "unsupported command"
 stdoutOrFile :: Config -> String -> IO ()
 stdoutOrFile config output =
     maybe (putStrLn output) (`writeFile` output) $ outfile config
+
+stdoutOrFileBS :: Config -> BSLI.ByteString -> IO ()
+stdoutOrFileBS config output =
+    maybe (BSL.putStrLn output) (`BSL.writeFile` output) $ outfile config
 
 markdown :: Config -> Plan -> IO ()
 markdown config = stdoutOrFile config . planToMD
@@ -85,6 +91,9 @@ export config plan =
           print valRes
     Export Handicaps ->
       stdoutOrFile config $ exportHandicaps plan
+    Export PlanForStudents ->
+      stdoutOrFileBS config $ planForStudents plan
+      -- TODO: Validate
     _ -> error "unsupported command"
 
 printConfig :: Config -> Plan -> IO ()

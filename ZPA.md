@@ -1,4 +1,4 @@
-# Schnittstelle zu ZPA
+# Schnittstelle zu ZPA und Fachschaft
 
 ## Import vom ZPA
 
@@ -134,3 +134,17 @@ Der Plan muss vom ZPA in folgenden Versionen eingelesen werden können:
 
 
 -   mit Räumen und Aufsichten
+
+## Export für die Fachschaft
+
+JSON-Array, bestehend aus Objekten der folgenden Form:
+
+```json
+{
+    "anCode": 111,
+    "name": "Compiler",
+    "lecturerName": "Braun, O.",
+    "date": "13.07.2017",
+    "time": "08:30"
+}
+```

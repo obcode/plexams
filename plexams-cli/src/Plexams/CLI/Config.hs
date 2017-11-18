@@ -192,7 +192,7 @@ statisticsOpts = Statistics
 
 exportOpts :: Parser Command
 exportOpts = Export
-  <$> (zpaExport <|> handicapsExport)
+  <$> (zpaExport <|> handicapsExport <|> planForStudentsExport)
 
 zpaExport :: Parser ExportWhat
 zpaExport = flag' ZPA
@@ -206,6 +206,12 @@ handicapsExport = flag' Handicaps
  <> short 'c'
  <> help "export exams with handicap compensation"
   )
+
+planForStudentsExport :: Parser ExportWhat
+planForStudentsExport = flag' PlanForStudents
+  ( long "planforstudents"
+ <> short 'p'
+ <> help "export for students")
 
 generateOpts :: Parser Command
 generateOpts = Generate

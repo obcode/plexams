@@ -48,4 +48,5 @@ data QueryWhat =
 
 data ExportWhat = ZPA
                 | Handicaps
+                | PlanForStudents
   deriving (Eq)

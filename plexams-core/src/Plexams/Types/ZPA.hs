@@ -3,11 +3,13 @@
 module Plexams.Types.ZPA
   ( ZPAExam(..)
   , ZPARoom(..)
+  , StudentsExam(..)
   ) where
 
 import           Control.Applicative (empty)
 import           Data.Aeson          (FromJSON, ToJSON, Value (Object), object,
                                       parseJSON, toJSON, (.:), (.=))
+import           Data.Text            (Text)
 import qualified Data.Vector         as V
 import           GHC.Generics
 
@@ -69,4 +71,31 @@ instance ToJSON ZPARoom where
            , "handicapCompensation" .= handicap
            , "duration"             .= duration'
            , "numberStudents"       .= numberStudents
+           ]
+
+data StudentsExam = StudentsExam
+    { studentsExamAnCode       :: Integer
+    , studentsExamName         :: String
+    , studentsExamLecturerName :: Text
+    , studentsExamDate         :: String
+    , studentsExamTime         :: String
+    }
+  deriving (Generic)
+
+instance FromJSON StudentsExam where
+    parseJSON (Object v ) = StudentsExam
+                         <$> v .: "anCode"
+                         <*> v .: "name"
+                         <*> v .: "lecturerName"
+                         <*> v .: "date"
+                         <*> v .: "time"
+    parseJSON _          = empty
+
+instance ToJSON StudentsExam where
+  toJSON (StudentsExam anCode' name lecturerName date time) =
+    object [ "anCode"         .= anCode'
+           , "name"           .= name
+           , "lecturerName"   .= lecturerName
+           , "date"           .= date
+           , "time"           .= time
            ]

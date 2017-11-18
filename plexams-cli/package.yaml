@@ -15,6 +15,7 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+    - bytestring
     - containers
     - directory
     - optparse-applicative

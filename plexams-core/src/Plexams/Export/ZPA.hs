@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Export.ZPA
   ( planToZPA
+  , planForStudents
   ) where
 
 import           Data.Aeson.Encode.Pretty
-import           Data.ByteString.Lazy.Char8 (unpack)
-import qualified Data.Map                   as M
-import           GHC.Exts                   (sortWith)
+import           Data.ByteString.Lazy.Char8    (unpack)
+import qualified Data.ByteString.Lazy.Internal as BS
+import qualified Data.Map                      as M
+import           GHC.Exts                      (sortWith)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -66,3 +68,37 @@ planToZPA = unpack . encodePretty' config . planToZPAExams
                                                 , "duration"
                                                 ]
                        }
+
+-------------------------------------------------------------------------------
+-- Export for Students
+-------------------------------------------------------------------------------
+
+examToStudentsExam :: Plan -> Exam -> StudentsExam
+examToStudentsExam plan exam = StudentsExam
+    { studentsExamAnCode = anCode exam
+    , studentsExamName = name exam
+    , studentsExamLecturerName = personShortName $ lecturer exam
+    , studentsExamDate = examDateAsString exam plan
+    , studentsExamTime = examSlotAsString exam plan
+    }
+
+planForStudentsExams :: Plan -> [StudentsExam]
+planForStudentsExams plan =
+    map (examToStudentsExam plan)
+    $ sortWith anCode
+    $ filter plannedByMe
+    $ concatMap (M.elems . examsInSlot)
+    $ M.elems
+    $ slots
+    $ setSlotsOnExams plan
+
+planForStudents :: Plan -> BS.ByteString
+planForStudents = encodePretty' config . planForStudentsExams
+  where
+    config = defConfig { confCompare = keyOrder [ "anCode"
+                                                , "name"
+                                                , "lecturerName"
+                                                , "date"
+                                                , "time"
+                                                ]
+                        }
