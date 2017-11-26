@@ -8,7 +8,11 @@ data Command
                  }
     | Dot { groupDependencies :: Bool
           }
-    | Validate
+    | Validate { validateSources      :: Bool
+               , validateSchedule     :: Bool
+               , validateRooms        :: Bool
+               , validateInvigilation :: Bool
+               }
     | Query { bywhat          :: QueryWhat
             , onlyUnscheduled :: Bool
             }

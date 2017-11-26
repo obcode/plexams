@@ -17,8 +17,8 @@ import           TextShow             (showt)
 
 validate :: Plan -> Writer [Text] ValidationResult
 validate plan = do
-  constraintsOk <- validateScheduleConstraints plan
   tell ["## Validating Schedule"]
+  constraintsOk <- validateScheduleConstraints plan
   goSlotsOk <- validateGOSlots plan
   sameNameSameSlot <- validateSameNameSameSlot plan
   sameSlotOverlaps <- validateOverlapsInSameSlot plan
@@ -193,6 +193,7 @@ validateScheduleConstraints plan = do
 -- not on same day
 ------------------
 validateNotOnSameDay :: Plan -> [[Ancode]] -> Writer [Text] ValidationResult
+validateNotOnSameDay _ [] = return EverythingOk
 validateNotOnSameDay plan listOfAncodes = do
   tell ["### Validate exams not on same day"]
   validationResult <$> mapM (validateNotOnSameDay' plan) listOfAncodes
@@ -220,6 +221,7 @@ validateNotOnSameDay' plan ancodes = do
 --------------------
 validateOneOfTheseDays :: Plan -> [(Ancode, [Int])]
                        -> Writer [Text] ValidationResult
+validateOneOfTheseDays _ [] = return EverythingOk
 validateOneOfTheseDays plan ancodesAndDays = do
   tell ["### Validate exams on one of these days"]
   validationResult <$> mapM (validateOneOfTheseDays' plan) ancodesAndDays
@@ -246,6 +248,7 @@ validateOneOfTheseDays' plan (ancode, days) = do
 -------------
 validateFixSlot :: Plan -> [(Ancode, (Int,Int))]
                 -> Writer [Text] ValidationResult
+validateFixSlot _ [] = return EverythingOk
 validateFixSlot plan ancodesAndSlots = do
   tell ["### Validate exams in fixed slot"]
   validationResult <$> mapM (validateFixSlot' plan) ancodesAndSlots

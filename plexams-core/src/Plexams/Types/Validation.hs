@@ -1,5 +1,6 @@
 module Plexams.Types.Validation
   ( ValidationResult(..)
+  , ValidateWhat(..)
   , validationResult
   ) where
 
@@ -15,3 +16,9 @@ instance Show ValidationResult where
 
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum
+
+data ValidateWhat = ValidateSources
+                  | ValidateSchedule
+                  | ValidateRooms
+                  | ValidateInvigilation
+  deriving (Eq, Show)

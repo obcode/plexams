@@ -26,7 +26,7 @@ runCommand :: Command -> (Config -> Plan -> IO ())
 runCommand Markdown              = markdown
 runCommand HTML {}               = html
 runCommand Statistics {}         = stats
-runCommand Validate              = validate
+runCommand Validate {}           = validate
 runCommand Query {}              = query
 runCommand Export {}             = export
 runCommand PrintConfig           = printConfig
@@ -61,8 +61,16 @@ stats config plan =
 validate :: Config -> Plan -> IO ()
 validate config = stdoutOrFile config . validate'
   where
+    validateWhat' = case optCommand config of
+      Validate sources schedule rooms' invigilations -> concat
+        [ [ValidateSources      | sources]
+        , [ValidateSchedule     | schedule]
+        , [ValidateRooms        | rooms']
+        , [ValidateInvigilation | invigilations]
+        ]
+      _ -> []
     validate' plan =
-      let (ok, msgs) = P.validate plan
+      let (ok, msgs) = P.validate validateWhat' plan
       in "\n# " ++ show ok ++ "\n\n" ++ intercalate "\n\n"
                                                     (map Text.unpack msgs)
 

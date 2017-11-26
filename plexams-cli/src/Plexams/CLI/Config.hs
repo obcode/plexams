@@ -15,7 +15,7 @@ config = Config
                                  (progDesc "the plan as an HTML table"))
          <> command "stats"     (info statisticsOpts
                                   (progDesc "statistics"))
-         <> command "validate"  (info (pure Validate)
+         <> command "validate"  (info (validateOpts)
                                   (progDesc "validation of current plan"))
          <> command "query"     (info  queryOpts
                                   (progDesc "query plan"))
@@ -188,6 +188,28 @@ statisticsOpts = Statistics
         ( long "initial"
        <> short 'i'
        <> help "statistics for initial plan"
+        )
+
+validateOpts :: Parser Command
+validateOpts = Validate
+    <$> switch
+        ( long "sources"
+       <> help "validation of sources"
+        )
+    <*> switch
+        ( long "schedule"
+       <> short 's'
+       <> help "validation of schedule"
+        )
+    <*> switch
+        ( long "rooms"
+       <> short 'r'
+       <> help "validation of rooms"
+        )
+    <*> switch
+        ( long "inviglations"
+       <> short 'i'
+       <> help "validation of invigilations"
         )
 
 exportOpts :: Parser Command
