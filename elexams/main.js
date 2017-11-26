@@ -32,7 +32,7 @@ function createWindow () {
 }
 
 function createBackendServer () {
-  backendServer = child_process.spawn('./resources/plexams-server')
+  // backendServer = child_process.spawn('./resources/plexams-server')
 }
 
 // This method will be called when Electron has finished
