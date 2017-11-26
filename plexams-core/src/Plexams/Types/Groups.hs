@@ -39,7 +39,7 @@ instance TextShow Group where
     <> maybe "" showb mS
     <> maybe "" (("("<>) . (<>")") . showb) mReg
 
-data Degree = IB | IC | IF | GO | IG | IN | IS
+data Degree = IB | IC | IF | GO | IG | IN | IS | ALL
   deriving (Show, Eq, Ord, Read, Enum, Generic)
 
 instance FromJSON Degree
@@ -56,6 +56,7 @@ instance TextShow Degree where
   showb IG = "IG"
   showb IN = "IN"
   showb IS = "IS"
+  showb ALL = "ALL"
 
 data Subgroup = A | B | C
   deriving (Show, Eq, Ord, Generic)

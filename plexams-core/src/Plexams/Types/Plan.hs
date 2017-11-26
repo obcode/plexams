@@ -12,16 +12,19 @@ module Plexams.Types.Plan
   , examSlotAsString
   , setSlotsOnExams
   , dateString
+  , studentsOverlaps
   ) where
 
 import           Control.Arrow                ((***))
 import           Data.List                    (partition, sortBy, (\\))
 import qualified Data.Map                     as M
 import           Data.Ord                     (Down (Down), comparing)
+import qualified Data.Set                     as S
 import           Data.Time.Calendar
 import           Plexams.Types.Common
 import           Plexams.Types.Constraints
 import           Plexams.Types.Exam
+import           Plexams.Types.Groups
 import           Plexams.Types.Persons
 import           Plexams.Types.SemesterConfig
 import           Plexams.Types.Slots
@@ -136,3 +139,18 @@ addSlotKeyToExam k slot' =
     slot' { examsInSlot = M.map (addSlotKey k) $ examsInSlot slot' }
   where
     addSlotKey k' exam = exam { slot = Just k' }
+
+studentsOverlaps :: Plan -> Overlaps
+studentsOverlaps plan =
+  let studentsExamsPairs = concatMap (mkPairs . S.elems . snd)
+                         $ M.elems $ studentsExams plan
+      mkPairs xs = [ (a, b) | a <- xs, b <- xs, a /= b ]
+      allOverlaps = foldr insertPair M.empty studentsExamsPairs
+      insertPair (ancode, ancode') = M.alter (insertAncode ancode ancode') ancode
+      insertAncode ancode ancode' Nothing = Just (M.singleton ancode' 1)
+      insertAncode ancode ancode' (Just ancodes) =
+        Just (M.alter (Just . maybe 1 (+1)) ancode' ancodes)
+      insertAncode' Nothing = Just 1
+      insertAncode' (Just x) = Just (x+1)
+
+  in Overlaps (Group ALL Nothing Nothing Nothing) allOverlaps
