@@ -45,7 +45,7 @@ app.on('ready', createBackendServer)
 
 // Close the server when the application is shut down
 app.on('will-quit', function() {
-  backendServer.kill()
+  // backendServer.kill()
 })
 
 // Quit when all windows are closed.

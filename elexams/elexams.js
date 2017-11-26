@@ -1,30 +1,30 @@
 function viewDetails(event, anCode) {
   var output = "";
-  if(event.currentTarget.className.includes("div_select")) {
+  if (event.currentTarget.className.includes("div_select")) {
     $('#description').html("");
-    $(".inner").on("click", function (event) {
+    $(".inner").on("click", function(event) {
       event.stopImmediatePropagation();
       toggleSelect($(this));
     });
-    $(".innerUn").on("click", function () {
+    $(".innerUn").on("click", function() {
       event.stopImmediatePropagation();
       toggleSelect($(this));
     });
 
     $('#description').html("");
   } else {
-    $(".inner").on("click", function (event) {
+    $(".inner").on("click", function(event) {
       event.stopImmediatePropagation();
       toggleSelect($(this));
     });
-    $(".innerUnscheduled").on("click", function (event) {
+    $(".innerUnscheduled").on("click", function(event) {
       event.stopImmediatePropagation();
       toggleSelect($(this));
     });
-    $.getJSON(host + endpointExams, function (exams) {
+    $.getJSON(host + endpointExams, function(exams) {
       var exam = null;
-      for(var i in exams) {
-        if(exams[i].anCode == anCode) {
+      for (var i in exams) {
+        if (exams[i].anCode == anCode) {
           exam = exams[i];
         }
       }
@@ -46,7 +46,7 @@ function viewDetails(event, anCode) {
                   Overlaps: <div id="overlaps"></div>`;
       $('#description').html(output);
       fetchOverlaps(anCode);
-    }).fail(function (jqXHR, textStatus, errorThrown) {
+    }).fail(function(jqXHR, textStatus, errorThrown) {
       $('#error').append(`Error on viewDetails: `);
       $('#error').append(jqXHR.responseText);
       $('#error').append(`<br>`);
@@ -58,7 +58,7 @@ function viewDetails(event, anCode) {
 }
 
 function toggleSelect(thisObj) {
-  if(thisObj[0].className.includes("div_select")) {
+  if (thisObj[0].className.includes("div_select")) {
     thisObj.parents("table").find('div').removeClass("div_select");
     thisObj.parents("div").find('div').removeClass("div_select");
     thisObj.parents("div").find('div').removeClass("overlap");
@@ -78,18 +78,18 @@ function fetchOverlaps(anCode) {
     contentType: "application/json",
     dataType: 'json'
   });
-  request.done(function (overlappingExams) {
+  request.done(function(overlappingExams) {
     selectOverlapExams(overlappingExams, anCode);
     var output = `
     <ul id="overlaps">
     `;
-    for(var i = 0; i < overlappingExams.length; i++) {
+    for (var i = 0; i < overlappingExams.length; i++) {
       let group = overlappingExams[i];
       output +=
         `<li id="group"> ${group.olGroup.groupDegree}
           <div>`;
       let overlap = group.olOverlaps[anCode];
-      for(var name in overlap) {   
+      for (var name in overlap) {   
         output += name + `: ` + overlap[name] + `</br>`;    
       }
       output += `
@@ -102,11 +102,11 @@ function fetchOverlaps(anCode) {
 }
 
 function selectOverlapExams(overlaps, anCode) {
-  for(var i = 0; i < overlaps.length; i++) {
+  for (var i = 0; i < overlaps.length; i++) {
     let group = overlaps[i];
     let overlap = group.olOverlaps[anCode];
-    for(var name in overlap) {   
-      $('#'.concat(name)).toggleClass("overlap");
+    for (var name in overlap) {   
+      $('#'.concat(name)).addClass("overlap");
     }
   }
 }
@@ -115,7 +115,7 @@ function groupsToHTML(groups) {
   output = `
   <ul id="groups">
   `;
-  for(var i in groups) {
+  for (var i in groups) {
     let group = groups[i];
     groupDegree = group.groupDegree != null ? group.groupDegree + ` ` : ``;
     groupSemester = group.groupSemester != null ? group.groupSemester + ` ` : ``;
@@ -146,8 +146,8 @@ function addExamToSlot(anCode, dayIdx, slotIdx) {
       planManipDay: dayIdx,
       planManipSlot: slotIdx
     }),
-    success: function (data) {
-      if(data.tag != "Ok") {
+    success: function(data) {
+      if (data.tag != "Ok") {
         alert(data.contents);
       } else {
         fetchExamDays();
@@ -166,11 +166,11 @@ function dropExam(ev) {
   var day = parseInt(ev.currentTarget.getAttribute("data-day"));
   var slot = parseInt(ev.currentTarget.getAttribute("data-slot"));
   let dropped = addExamToSlot(data, day, slot)
-  if(dropped) {
+  if (dropped) {
     ev.currentTarget.appendChild(document.getElementById(data));
-    if(ev.currentTarget.className == "outer") {
+    if (ev.currentTarget.className == "outer") {
       document.getElementById(data).className = "inner";
-    } else if(ev.currentTarget.className == "outerUnscheduled") {
+    } else if (ev.currentTarget.className == "outerUnscheduled") {
       document.getElementById(data).className = "innerUnscheduled";
     }
   }
@@ -181,7 +181,7 @@ function dragExam(ev) {
 }
 
 function allowDropExam(ev) {
-  if((ev.currentTarget.className == "outer") || (ev.currentTarget.className == "outerUnscheduled")) {
+  if ((ev.currentTarget.className == "outer") || (ev.currentTarget.className == "outerUnscheduled")) {
     ev.preventDefault();
   }
 }
