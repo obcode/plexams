@@ -25,7 +25,9 @@ runCommand config@(Config PrepareRegistrations g iPath _) = do
 -- FIXME: für UTF-16 aus Excel
 runCommand config@(Config PrepareOverlaps g iPath _) = do
     contents <- getContents' iPath
-    let (header : overlapsLines) = map (split ';') $ lines contents
+    let (header' : overlapsLines) = map (split ';') $ lines contents
+        header = let h = dropWhile (/='A') $ head header'
+                 in h : tail header'
         overlapsTupels =
           filter ((>3) . length)
           $ map (filter (not . null . snd) . zip header) overlapsLines
@@ -46,7 +48,7 @@ runCommand config@(Config PrepareOverlaps g iPath _) = do
                    ++ "          noOfStudents: " ++ noOfStuds ++ "\n"
 runCommand config@(Config PrepareStudents g iPath _) = do
     contents <- getContents' iPath
-    let (header : studentLines) = map (split '\t') $ lines contents
+    let (header : studentLines) = map (split ';') $ lines contents
         studentTupels =
           filter ((>2) . length)
           $ map (filter (not . null . snd) . zip header) studentLines
@@ -64,8 +66,10 @@ runCommand config@(Config PrepareStudents g iPath _) = do
 getContents' :: FilePath -> IO String
 getContents' iPath = do
   h <- openFile iPath ReadMode
-  hSetEncoding h utf16le
-  filter (/='\r') <$> hGetContents h
+  hSetEncoding h utf8
+  map replaceRwithN <$> hGetContents h
+    where replaceRwithN '\r' = '\n'
+          replaceRwithN c = c
 
 split :: Char -> String -> [String]
 split _ [] = []
