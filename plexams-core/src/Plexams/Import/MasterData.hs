@@ -14,6 +14,7 @@ import           Data.Aeson           (FromJSON, Value (Object), decode,
 import qualified Data.ByteString      as BSI
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.Map             as M
+import           Data.Maybe           (fromMaybe, maybe)
 import           Data.Text            (pack)
 import qualified Data.Yaml            as Y
 import           Plexams.Types
@@ -86,18 +87,24 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
 -- {{{ Constraints from YAML file
 
 data ImportConstraints =
-  ImportConstraints [[Ancode]] [[Int]] [[Int]] [Integer] [[Int]] [[Integer]]
-                    [ImpossibleInvigilation] (Maybe [RoomOnlyForSlots])
+  ImportConstraints (Maybe [[Ancode]])
+                    (Maybe [[Int]])
+                    (Maybe [[Int]])
+                    (Maybe [Integer])
+                    (Maybe [[Int]])
+                    (Maybe [[Integer]])
+                    (Maybe [ImpossibleInvigilation])
+                    (Maybe [RoomOnlyForSlots])
 
 instance Y.FromJSON ImportConstraints where
   parseJSON (Y.Object v) = ImportConstraints
-                        <$> v Y..: "notOnSameDay"
-                        <*> v Y..: "onOneOfTheseDays"
-                        <*> v Y..: "fixedSlot"
-                        <*> v Y..: "noInvigilations"
-                        <*> v Y..: "noInvigilationDays"
-                        <*> v Y..: "invigilatesExam"
-                        <*> v Y..: "impossibleInvigilationSlots"
+                        <$> v Y..:? "notOnSameDay"
+                        <*> v Y..:? "onOneOfTheseDays"
+                        <*> v Y..:? "fixedSlot"
+                        <*> v Y..:? "noInvigilations"
+                        <*> v Y..:? "noInvigilationDays"
+                        <*> v Y..:? "invigilatesExam"
+                        <*> v Y..:? "impossibleInvigilationSlots"
                         <*> v Y..:? "roomOnlyForSlots"
   parseJSON _            = empty
 
@@ -134,17 +141,21 @@ importConstraintsToConstraints
   ) =
   Constraints
     { overlaps = []
-    , notOnSameDay = iCNotOnSameDay
-    , onOneOfTheseDays = map (\(x:xs) -> (toInteger x, xs)) iCOnOneOfTheseDays
-    , fixedSlot =  map (\[a,d,s] -> (toInteger a, (d,s))) iCFixedSlot
-    , noInvigilations = icNoInvigilations
-    , noInvigilationDays = concatMap (\xs -> if null xs
-                                             then []
-                                             else [( toInteger (head xs)
-                                                   , tail xs)])
+    , notOnSameDay = fromMaybe [] iCNotOnSameDay
+    , onOneOfTheseDays = maybe []
+                         (map (\(x:xs) -> (toInteger x, xs))) iCOnOneOfTheseDays
+    , fixedSlot = maybe []
+                  (map (\[a,d,s] -> (toInteger a, (d,s)))) iCFixedSlot
+    , noInvigilations = fromMaybe [] icNoInvigilations
+    , noInvigilationDays = maybe []
+                           (concatMap (\xs -> if null xs
+                                              then []
+                                              else [( toInteger (head xs)
+                                                    , tail xs)]))
                                      icNoInvigilationDays
-    , invigilatesExam = map (\[a,p] -> (a,p)) iCInvigilatesExam
-    , impossibleInvigilationSlots = map iIToSlots iCImpossibleInvigilationSlots
+    , invigilatesExam = maybe [] (map (\[a,p] -> (a,p))) iCInvigilatesExam
+    , impossibleInvigilationSlots = maybe [] (map iIToSlots)
+                                    iCImpossibleInvigilationSlots
     , roomSlots = maybe M.empty (M.fromList . map roomOnlyForSlotsToTuple)
                         iCRoomOnlyForSlots
     }
