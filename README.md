@@ -15,6 +15,8 @@ A Haskell tool for planning exams with a gui build on top of
 
 # Quickstart
 
+## Install
+
 In the top directory do
 
     $ stack install
@@ -23,7 +25,13 @@ Then, change to the `elexams` directory and do
 
     $ npm install
 
-Start the app with
+## Run
+
+Start the server in the directory containing all config files
+
+    $ plexams-server
+
+Start the elexams-app in the `elexams`-directory
 
     $ npm start
 
