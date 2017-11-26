@@ -51,38 +51,38 @@ server = exams'
         exams' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg -> (failingHandler $pack errorMsg)
-            Right plan''' ->   return (allExams plan''')
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' -> return $ allExams plan'''
 
         examDays' :: Handler [Day]
         examDays' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
             Left errorMsg  -> failingHandler $pack errorMsg
-            Right config'' -> return (examDays config'')
+            Right config'' -> return $ examDays config''
 
         slots' :: Handler Slots
         slots' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg -> (failingHandler $pack errorMsg)
-            Right plan''' ->   return (slots plan''')
+            Left errorMsg -> failingHandler $pack errorMsg
+            Right plan''' -> return $ slots plan'''
 
         slotsPerDay' :: Handler [String]
         slotsPerDay' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
-            Left errorMsg  -> (failingHandler $pack errorMsg)
-            Right config'' -> return (slotsPerDay config'')
+            Left errorMsg  -> failingHandler $ pack errorMsg
+            Right config'' -> return $ slotsPerDay config''
 
         addExam' :: AddExamToSlot -> Handler CheckError
         addExam' exam = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg   -> (failingHandler $pack errorMsg)
-            Right plan''' ->   do
-              check <- return $ checkConstraints plan''' exam
-              case check of
+            Left errorMsg   -> failingHandler $ pack errorMsg
+            Right plan''' ->
+              let check = checkConstraints plan''' exam
+              in case check of
                 Ok -> do
                   liftIO $ updateManipFile planManipFile' exam
                   return check
@@ -92,17 +92,18 @@ server = exams'
         unscheduledExams' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg -> (failingHandler $pack errorMsg)
-            Right plan''' ->   return (unscheduledExams plan''')
+            Left errorMsg -> failingHandler $pack errorMsg
+            Right plan''' -> return $ unscheduledExams plan'''
 
         overlaps' :: Ancode -> Handler [Overlaps]
         overlaps' anCode' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg -> (failingHandler $pack errorMsg)
-            Right plan''' -> do
-              overlaps'' <- return $ overlaps $ constraints plan'''
-              return $ filterOverlaps anCode' overlaps''
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' ->
+              let overlaps'' = (studentsOverlaps plan''' :)
+                                   $ overlaps $ constraints plan'''
+              in return $ filterOverlaps anCode' overlaps''
 
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr
@@ -112,10 +113,10 @@ failingHandler s = throwError myerr
 filterOverlaps :: Ancode -> [Overlaps] -> [Overlaps]
 filterOverlaps anCode' overlaps' = Prelude.map overlap groups'
   where groups' = Prelude.filter
-          (\overlap' -> (isJust (M.lookup anCode' (olOverlaps  overlap')))) overlaps'
+          (isJust . M.lookup anCode' . olOverlaps) overlaps'
         overlap group' = Overlaps
           { olGroup = olGroup group'
           , olOverlaps = olOverlaps' group'}
         olOverlaps' group' =
           M.fromList $ Prelude.filter
-            (\overlap' -> (fst overlap') == anCode') (M.toList (olOverlaps group'))
+            (\overlap' -> fst overlap' == anCode') (M.toList (olOverlaps group'))
