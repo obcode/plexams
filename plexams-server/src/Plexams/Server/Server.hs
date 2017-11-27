@@ -18,6 +18,7 @@ import           Plexams.Server.Check
 import           Plexams.Server.Import
 import           Plexams.Server.PlanManip
 import           Plexams.Types
+import           Plexams.Validation
 import           Servant
 
 type API = "exams" :> Get '[JSON] [Exam]
@@ -27,6 +28,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
       :<|> "unscheduledExams" :> Get '[JSON] (M.Map Ancode Exam)
       :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
+      :<|> "validation" :> Get '[JSON] Validation
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -45,6 +47,7 @@ server = exams'
     :<|> addExam'
     :<|> unscheduledExams'
     :<|> overlaps'
+    :<|> validation'
 
       where
         exams' :: Handler [Exam]
@@ -58,15 +61,23 @@ server = exams'
         examDays' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
-            Left errorMsg  -> failingHandler $pack errorMsg
+            Left errorMsg  -> failingHandler $ pack errorMsg
             Right config'' -> return $ examDays config''
 
         slots' :: Handler Slots
         slots' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg -> failingHandler $pack errorMsg
+            Left errorMsg -> failingHandler $ pack errorMsg
             Right plan''' -> return $ slots plan'''
+
+        validation' :: Handler Validation
+        validation' = do
+          plan'' <- liftIO appliedPlan
+          case plan'' of
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' -> return $ uncurry Validation
+                                    $ validate [ValidateSchedule] plan'''
 
         slotsPerDay' :: Handler [String]
         slotsPerDay' = do

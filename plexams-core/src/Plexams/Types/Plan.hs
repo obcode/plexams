@@ -146,11 +146,9 @@ studentsOverlaps plan =
                          $ M.elems $ studentsExams plan
       mkPairs xs = [ (a, b) | a <- xs, b <- xs, a /= b ]
       allOverlaps = foldr insertPair M.empty studentsExamsPairs
-      insertPair (ancode, ancode') = M.alter (insertAncode ancode ancode') ancode
-      insertAncode ancode ancode' Nothing = Just (M.singleton ancode' 1)
-      insertAncode ancode ancode' (Just ancodes) =
+      insertPair (ancode, ancode') = M.alter (insertAncode ancode') ancode
+      insertAncode ancode' Nothing = Just (M.singleton ancode' 1)
+      insertAncode ancode' (Just ancodes) =
         Just (M.alter (Just . maybe 1 (+1)) ancode' ancodes)
-      insertAncode' Nothing = Just 1
-      insertAncode' (Just x) = Just (x+1)
 
   in Overlaps (Group ALL Nothing Nothing Nothing) allOverlaps
