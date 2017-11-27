@@ -90,7 +90,7 @@ let _fetchExamsData = function (inDay, inTime, slots) {
     let exams = slot[1]
     let day = timeSlot[0]
     let time = timeSlot[1]
-    if (day === inDay && time === inTime) {
+    if (day == inDay && time == inTime) {
       let examsInSlot = exams.examsInSlot
       var arr = []
       for (var j in Object.keys(examsInSlot)) {
@@ -116,7 +116,7 @@ let _getAncodesForSlot = function (inDay, inTime, slots) {
     let exams = slot[1]
     let day = timeSlot[0]
     let time = timeSlot[1]
-    if (day === inDay && time === inTime) {
+    if (day == inDay && time == inTime) {
       let examsInSlot = exams.examsInSlot
       var arr = []
 
