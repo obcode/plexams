@@ -67,13 +67,11 @@ runCommand config@(Config PrepareStudents g iPath _) = do
 runCommand config@(Config PrepareAncodes _ iPath _) = do
     contents <- getContents' iPath
     let examLines =
-          map ((\e -> -- if null $ e!!4 then "" else
-                     "  - ancode:  " ++ head e
-                ++ "\n    codenr:  " ++ e!!1
-                ++ "\n    titel:   " ++ e!!2
-                ++ "\n    stg:     " ++ e!!3
-                ++ "\n    pruefer: " ++ e!!6)
-            -- $ filter ((>=5) . length)
+          map ((\e -> "  - ancode:  " ++ head e
+                  ++ "\n    codenr:  " ++ e!!1
+                  ++ "\n    titel:   " ++ e!!2
+                  ++ "\n    stg:     " ++ e!!3
+                  ++ "\n    pruefer: " ++ e!!6)
               . split ';')
             $ tail
             $ lines contents
