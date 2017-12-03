@@ -38,11 +38,11 @@ importExams semesterConfig' = do
                         ++ " does not exist or is not parsable."
       exitWith $ ExitFailure 2
 
-importAndAddRegs :: Config -> [Exam] -> IO [Exam]
-importAndAddRegs config exams' =
+importAndAddRegs :: Config -> SemesterConfig -> [Exam] -> IO [Exam]
+importAndAddRegs config semesterConfig' exams' =
   case regsFile config of
     Just file -> do
-      maybeRegs <- importRegistrationsFromYAMLFile file
+      maybeRegs <- importRegistrationsFromYAMLFile semesterConfig' file
       case maybeRegs of
         Just regs' -> do
           hPutStrLn stderr ">>> Adding registrations"

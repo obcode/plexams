@@ -25,7 +25,6 @@ dependencies:
 library:
   source-dirs: src
   other-modules:
-    - Plexams.Export.Common
     - Plexams.Validation.Rooms
     - Plexams.Validation.ScheduledExams
     - Plexams.Validation.Sources

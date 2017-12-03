@@ -34,18 +34,23 @@ instance Y.FromJSON ImportRegistration where
                           <*> v Y..: "sum"
     parseJSON _            = empty
 
-iRegsToRegs :: ImportRegistrations -> Registrations
-iRegsToRegs (ImportRegistrations g rs) = Registrations
+iRegsToRegs :: SemesterConfig -> ImportRegistrations -> Registrations
+iRegsToRegs config (ImportRegistrations g rs) = Registrations
   { regsGroup = g
-  , regs = M.fromList $ map (\(ImportRegistration a s) -> (a, s)) rs
+  , regs = M.fromList
+           $ if g == "GO"
+             then filter ((`notElem` goOtherExams config) . fst) regList
+             else regList
+
   }
+  where regList = map (\(ImportRegistration a s) -> (a, s)) rs
 
-iRegsLToRegsL :: [ImportRegistrations] -> [Registrations]
-iRegsLToRegsL = map iRegsToRegs
+iRegsLToRegsL :: SemesterConfig -> [ImportRegistrations] -> [Registrations]
+iRegsLToRegsL config = map (iRegsToRegs config)
 
-importRegistrationsFromYAMLFile :: FilePath -> IO (Maybe [Registrations])
-importRegistrationsFromYAMLFile =
-    fmap (fmap iRegsLToRegsL . Y.decode) . BSI.readFile
+importRegistrationsFromYAMLFile :: SemesterConfig -> FilePath -> IO (Maybe [Registrations])
+importRegistrationsFromYAMLFile config =
+    fmap (fmap (iRegsLToRegsL config) . Y.decode) . BSI.readFile
 
 --------------------------------------------------------------------------------
 -- Overlaps from YAML file

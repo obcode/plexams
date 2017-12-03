@@ -33,6 +33,7 @@ data SemesterConfig = SemesterConfig
     , planManipFile   :: FilePath
     , availableRooms  :: [AvailableRoom]
     , fk10Exams       :: [[Integer]]
+    , goOtherExams    :: [Ancode]
     }
   deriving (Eq, Show, Generic)
 
@@ -48,6 +49,7 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "planManip"
                         <*> v Y..: "rooms"
                         <*> v Y..: "notPlannedByMe"
+                        <*> v Y..: "goOtherExams"
     parseJSON _          = empty
 
 instance ToJSON SemesterConfig where
@@ -55,7 +57,7 @@ instance ToJSON SemesterConfig where
 
 makeSemesterConfig :: Text -> String -> String -> String -> [String]
                    -> FilePath -> FilePath -> FilePath
-                   -> [AvailableRoom] -> [[Integer]]
+                   -> [AvailableRoom] -> [[Integer]] -> [Ancode]
                    -> SemesterConfig
 makeSemesterConfig s f l goDay0 =
         SemesterConfig s firstDay' lastDay' realExamDays goSlots'

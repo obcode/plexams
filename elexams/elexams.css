@@ -19,6 +19,11 @@ td.times {
   width: 20px;
 }
 
+.hardconstraints {
+  font-weight: bold;
+  color: red;
+}
+
 div#description {
   padding: 4px;
   user-select: text;
@@ -162,7 +167,7 @@ h3 {
   cursor: pointer;
   text-transform: uppercase;
   color: #000;
-  background: #4a83fd;
+  background: #fff;
 }
 
 .tabs .content {
@@ -182,7 +187,7 @@ h3 {
 .tabs>.tab>[id^='tab']:checked+label {
   top: 0;
   color: #000;
-  background: #fff;
+  background: #4a83fd;
 }
 
 .tabs>.tab>[id^='tab']:checked~[id^='tab-content'] {

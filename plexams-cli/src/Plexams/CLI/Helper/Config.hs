@@ -12,15 +12,19 @@ configP = Config
           ( command "registrations" (info (pure PrepareRegistrations)
                             (progDesc "prepare a registration file"))
          <> command "overlaps" (info (pure PrepareOverlaps)
-                            (progDesc "prepare a overlaps file"))
+                            (progDesc "prepare an overlaps file"))
          <> command "students" (info (pure PrepareStudents)
                             (progDesc "prepare a students file"))
+         <> command "exams" (info (pure PrepareAncodes)
+                            (progDesc "prepare an exams file"))
+         <> command "check" (info (pure CheckAncodes)
+                            (progDesc "check an exams file"))
           )
     <*> strOption
         ( long "group"
        <> short 'g'
        <> metavar "GROUP"
-       <> help "student group (one of IB, IC, IF, IG, IN, IS, GO)"
+       <> help "student group (one of IB, IC, IF, IG, IN, IS, GO, ALL)"
         )
     <*> strOption
         ( long "infile"

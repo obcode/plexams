@@ -14,6 +14,8 @@ import           Data.Maybe
 import           Data.Time.Calendar
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Plexams.Export.Common
+import           Plexams.PlanManip
 import           Plexams.Server.Check
 import           Plexams.Server.Import
 import           Plexams.Server.PlanManip
@@ -26,7 +28,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "slots" :> Get '[JSON] Slots
       :<|> "slotsPerDay" :> Get '[JSON] [String]
       :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
-      :<|> "unscheduledExams" :> Get '[JSON] (M.Map Ancode Exam)
+      :<|> "unscheduledExams" :> Get '[JSON] [Exam]
       :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
       :<|> "validation" :> Get '[JSON] Validation
 
@@ -53,9 +55,12 @@ server = exams'
         exams' :: Handler [Exam]
         exams' = do
           plan'' <- liftIO appliedPlan
+          regs' <- liftIO importRegistrations
           case plan'' of
             Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' -> return $ allExams plan'''
+            Right plan''' -> return
+                $ addRegistrationsListToExams (allExams plan''')
+                $ fromMaybe [] regs'
 
         examDays' :: Handler [Day]
         examDays' = do
@@ -99,12 +104,12 @@ server = exams'
                   return check
                 _ -> return check
 
-        unscheduledExams' :: Handler (M.Map Ancode Exam)
+        unscheduledExams' :: Handler [Exam]
         unscheduledExams' = do
           plan'' <- liftIO appliedPlan
           case plan'' of
             Left errorMsg -> failingHandler $pack errorMsg
-            Right plan''' -> return $ unscheduledExams plan'''
+            Right plan''' -> return $ unscheduledExamsSortedByRegistrations plan'''
 
         overlaps' :: Ancode -> Handler [Overlaps]
         overlaps' anCode' = do

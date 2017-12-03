@@ -42,7 +42,7 @@ importStudents studentsFile = do
   eitherStuds <- tryIOError $ importStudentsFromYAMLFile studentsFile
   case eitherStuds of
     Left _ -> return (Left (studentsFile ++ " import failed. File does not exist"))
-    Right maybeStuds -> do
+    Right maybeStuds ->
       case maybeStuds of
         Just _ -> return $ Right maybeStuds
         Nothing -> return $ Left $ studentsFile
@@ -84,7 +84,15 @@ importFile filepath importFun= do
   eitherContent <- tryIOError $ importFun filepath
   case eitherContent of
     Left _ -> return $ Left $ filepath ++ " import failed. File does not exist"
-    Right maybeContent -> do
+    Right maybeContent ->
       case maybeContent of
         Just content -> return $ Right content
         Nothing      -> return $ Left $ filepath ++ " import failed."
+
+registrationsFile :: FilePath
+registrationsFile = "input/registrations.yaml"
+
+importRegistrations :: IO (Maybe [Registrations])
+importRegistrations = do
+  Right semesterConfig'' <- semesterConfig'
+  importRegistrationsFromYAMLFile semesterConfig'' registrationsFile

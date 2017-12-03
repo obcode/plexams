@@ -9,6 +9,20 @@ const endpointOverlaps = '/overlaps'
 const endpointUnscheduledExams = '/unscheduledExams'
 const endpointValidation = '/validation'
 
+let _fetchValidation = () => {
+  $.getJSON(host + endpointValidation, (validation) => {
+    let output = `<h1>${validation.result}</h1><ul>`
+    for (let i in validation.brokenConstraints) {
+      let constraint = validation.brokenConstraints[i]
+      if (constraint.tag === 'HardConstraintBroken') {
+        output += `<li><span class="hardconstraints"> ${constraint.contents}</span></li>`
+      }
+    }
+    output += `</ul>`
+    $('#validation').html(output)
+  })
+}
+
 let _fetchExams = function () {
   $.getJSON(host + endpointExams, function (exams) {
     let output =
@@ -225,3 +239,5 @@ fetchExamDays()
 
 // Start to fetch the unscheduled exams
 fetchUnscheduledExams()
+
+_fetchValidation()

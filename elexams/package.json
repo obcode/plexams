@@ -1,5 +1,6 @@
 {
   "name": "elexams",
+  "productName": "elexams",
   "author": "Felician Pinkert",
   "version": "0.1.0",
   "description": "A gui for plexams based on electron",
@@ -8,5 +9,8 @@
     "start": "electron ."
   },
   "license": "BSD-3-Clause",
-  "repository": "https://github.com/obcode/plexams"
+  "repository": "https://github.com/obcode/plexams",
+  "devDependencies": {
+    "electron": "^1.7.9"
+  }
 }

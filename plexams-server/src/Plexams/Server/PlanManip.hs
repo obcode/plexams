@@ -52,9 +52,8 @@ initPlanWCons = do
       plan' <- liftIO initialPlan'
       case plan' of
         Left errorMsg -> return $ Left errorMsg
-        Right plan'' -> do
+        Right plan'' ->
           return $ Right $ addConstraints constraints'' plan''
-
 
 appliedPlan :: IO (Either String Plan)
 appliedPlan = do
@@ -65,17 +64,15 @@ appliedPlan = do
       semesterConfig'' <- liftIO semesterConfig'
       case semesterConfig'' of
         Left errorMsg -> return $ Left errorMsg
-        Right config' -> do
-          appliedPlan' <- applyPlanManips' (planManipFile config') plan''
-          return appliedPlan'
+        Right config' ->
+          applyPlanManips' (planManipFile config') plan''
 
 applyPlanManips' :: FilePath -> Plan -> IO (Either String Plan)
 applyPlanManips' file plan = do
   maybeExamSlots <- importExamSlotsFromYAMLFile file
   case maybeExamSlots of
-    Just examSlots'' -> do
-      newPlan <- return $ applyAddExamToSlotListToPlan plan examSlots''
-      return $ Right newPlan
+    Just examSlots'' ->
+      return $ Right $ applyAddExamToSlotListToPlan plan examSlots''
     Nothing -> return $ Left errorMsg
       where
         errorMsg =   "no planmanip file found: "
@@ -85,8 +82,8 @@ applyPlanManips' file plan = do
 updateManipFile :: FilePath -> AddExamToSlot -> IO ()
 updateManipFile outfile exam = do
   test1 <- importExamSlotsFromYAMLFile  outfile
-  changed <- return $ changeSlot exam test1
-  list <- return $ examSlotsToLists changed
+  let changed = changeSlot exam test1
+      list = examSlotsToLists changed
   BSI.writeFile outfile $ Y.encode list
 
 examSlotsToList :: AddExamToSlot -> [Integer]
@@ -100,5 +97,5 @@ examSlotsToLists = fmap . map $ examSlotsToList
 changeSlot :: AddExamToSlot -> Maybe [AddExamToSlot] -> Maybe [AddExamToSlot]
 changeSlot exam exams' = fmap (++ [exam]) filtered
   where
-    filtered = (fmap filterExam exams')
-    filterExam exams'' = filter (\x -> (planManipAnCode x) /= (planManipAnCode exam)) exams''
+    filtered = fmap filterExam exams'
+    filterExam = filter (\x -> planManipAnCode x /= planManipAnCode exam)

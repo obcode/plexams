@@ -24,7 +24,7 @@ makePlan config = do
     semesterConfig' <- importSemesterConfig config
     exams'          <- importExams semesterConfig'
     persons'        <- importPersons semesterConfig'
-    examsWithRegs   <- importAndAddRegs config exams'
+    examsWithRegs   <- importAndAddRegs config semesterConfig' exams'
     maybeStudents   <- importStudents config
     constraints'    <- importConstraints config
     handicaps'      <- importHandicaps config
