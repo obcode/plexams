@@ -64,6 +64,23 @@ runCommand config@(Config PrepareStudents g iPath _) = do
                       "- mtknr: " ++ get "MTKNR" studentTupel ++ "\n"
                    ++ "  name: " ++ get "NAME" studentTupel ++ "\n"
                    ++ "  ancode: " ++ get "ANCODE" studentTupel ++ "\n"
+runCommand config@(Config PrepareStudentRegs g iPath _) = do
+    contents <- getContents' iPath
+    let (header : studentLines) = map (split ';') $ lines contents
+        studentTupels =
+          filter ((>2) . length)
+          $ map (filter (not . null . snd) . zip header) studentLines
+        students = map mkStudentsYaml studentTupels
+    stdoutOrFile config $ "- group: " ++ g ++ "\n  students:\n"
+                     ++ intercalate "\n" students
+                     ++ "\n"
+  where
+    get fieldname = snd . head . filter (isSuffixOf fieldname . fst)
+    mkStudentsYaml studentTupel =
+                      "  - mtknr: " ++ get "MTKNR" studentTupel ++ "\n"
+                   ++ "    name: " ++ get "NAME" studentTupel ++ "\n"
+                   ++ "    stg: " ++ get "STG" studentTupel ++ "\n"
+                   ++ "    ancode: " ++ get "ANCODE" studentTupel ++ "\n"
 runCommand config@(Config PrepareAncodes _ iPath _) = do
     contents <- getContents' iPath
     let examLines =

@@ -4,6 +4,7 @@ module Plexams.CLI.Import
   , importPersons
   , importAndAddRegs
   , importStudents
+  , importStudentRegs
   , importConstraints
   , importHandicaps
   , importInvigilators
@@ -72,6 +73,24 @@ importStudents config =
           exitWith $ ExitFailure 4
     Nothing -> do
       hPutStrLn stderr "no students file specified"
+      return Nothing
+
+importStudentRegs :: Config -> SemesterConfig -> IO (Maybe StudentsWithRegs)
+importStudentRegs config semesterConfig' =
+  case studentRegsFile config of
+    Just file -> do
+      maybeStuds <- importStudentsWithRegsFromYAMLFile semesterConfig' file
+      case maybeStuds of
+        Just _ -> do
+          hPutStrLn stderr ">>> importing students with regs"
+          return maybeStuds
+        Nothing -> do
+          hPutStrLn stderr $ "no students with regs found: "
+                            ++ file
+                            ++ " does not exist or is not parsable."
+          exitWith $ ExitFailure 5
+    Nothing -> do
+      hPutStrLn stderr "no students with regs file specified"
       return Nothing
 
 importConstraints :: Config -> IO Constraints

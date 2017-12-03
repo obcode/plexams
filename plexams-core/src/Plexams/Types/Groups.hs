@@ -7,14 +7,25 @@ module Plexams.Types.Groups
   , allDegrees
   , Registrations(..)
   , parseGroup
+  , RegisteredGroup(..)
   ) where
 
 import           Data.Aeson
 import           Data.Char    (digitToInt)
 import qualified Data.Map     as M
 import           Data.Monoid  ((<>))
+import           Data.Text    (Text)
 import           GHC.Generics
 import           TextShow     (TextShow, showb)
+
+data RegisteredGroup = RegisteredGroup
+  { registeredGroupDegree   :: Text
+  , registeredGroupStudents :: Integer
+  }
+  deriving (Eq, Generic)
+
+instance FromJSON RegisteredGroup
+instance ToJSON RegisteredGroup
 
 data Group = Group
     { groupDegree        :: Degree
@@ -49,13 +60,13 @@ allDegrees :: [Degree]
 allDegrees = [IB .. IS]
 
 instance TextShow Degree where
-  showb IB = "IB"
-  showb IC = "IC"
-  showb IF = "IF"
-  showb GO = "GO"
-  showb IG = "IG"
-  showb IN = "IN"
-  showb IS = "IS"
+  showb IB  = "IB"
+  showb IC  = "IC"
+  showb IF  = "IF"
+  showb GO  = "GO"
+  showb IG  = "IG"
+  showb IN  = "IN"
+  showb IS  = "IS"
   showb ALL = "ALL"
 
 data Subgroup = A | B | C

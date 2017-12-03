@@ -4,6 +4,7 @@ module Plexams.PlanManip
     , applyAddExamToSlotListToPlan
     , makePlan
     , addRegistrationsListToExams
+    , addStudentRegistrationsToExams
     , applyAddRoomToExamListToPlan
     , addConstraints
     , updateExamByAncodeWith
@@ -13,7 +14,7 @@ module Plexams.PlanManip
     ) where
 
 import           Control.Arrow      (second, (&&&))
-import           Data.List          (elemIndex, nub, partition, (\\))
+import           Data.List          (elemIndex, nub, partition, (\\), sort)
 import qualified Data.Map           as M
 import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set           as S
@@ -270,6 +271,41 @@ addRegistrationsToExam registrations' exam =
         examNotForGroup = notElem (regsGroup registrations')
                         $ map (show . groupDegree)
                         $ groups exam
+
+--------------------------------------------------------------------------------
+-- Add students registrations
+--------------------------------------------------------------------------------
+
+addStudentRegistrationsToExams :: StudentsWithRegs -> [Exam] -> [Exam]
+addStudentRegistrationsToExams studentsWithRegs exams' =
+  map (\e -> e { conflictingAncodes = filter (`elem` M.keys examsMap)
+                  $ sort $ nub $ conflictingAncodes e
+               , registeredGroups = sumRegisteredGroups $ registeredGroups e
+               })
+    $ M.elems $ foldr insertStudentReg examsMap $ M.elems studentsWithRegs
+  where
+    examsMap = M.fromList $ map (\e -> (anCode e, e)) exams'
+    sumRegisteredGroups regGroups =
+      map (\ (RegisteredGroup gName i : gs) ->
+              RegisteredGroup gName (i + sum (map registeredGroupStudents gs)))
+          $ groupWith registeredGroupDegree regGroups
+    insertStudentReg studentWithReg examsMap' =
+      foldr
+        (M.alter
+          $ fmap
+          $ \e -> e { registeredStudents = studentWithReg : registeredStudents e
+                    , registeredGroups =
+                        RegisteredGroup (studentGroup studentWithReg) 1
+                        : registeredGroups e
+                    , conflictingAncodes =
+                        studentAncodes studentWithReg ++ conflictingAncodes e
+                    })
+        examsMap'
+        $ studentAncodes studentWithReg
+
+--------------------------------------------------------------------------------
+-- Add constraints
+--------------------------------------------------------------------------------
 
 addConstraints :: Constraints -> Plan -> Plan
 addConstraints c p = p { constraints = c }

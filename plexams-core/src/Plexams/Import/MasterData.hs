@@ -81,6 +81,9 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
           , examType = ieExamType ie
           , studentsWithHandicaps = []
           , slot = Nothing
+          , registeredStudents = []
+          , registeredGroups = []
+          , conflictingAncodes = []
           }
 -- }}}
 

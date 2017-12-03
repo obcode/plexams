@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DeriveGeneric            #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE OverloadedStrings        #-}
 
 module Plexams.Types.Persons
   ( Person(..)
@@ -9,14 +9,14 @@ module Plexams.Types.Persons
   , MtkNr
   , StudentName
   , StudentsExams
+  , StudentsWithRegs
+  , StudentWithRegs(..)
   , Handicap(..)
   , Invigilator(..)
   , Invigilators
   ) where
 
 import           Control.Applicative  (empty)
-import           Data.Aeson           (FromJSON, Value (Object), parseJSON,
-                                       (.:))
 import           Data.Aeson
 import qualified Data.Map             as M
 import           Data.Monoid          ((<>))
@@ -60,6 +60,19 @@ type MtkNr = Integer
 type StudentName = Text
 type Students = M.Map Ancode (S.Set (MtkNr, StudentName))
 type StudentsExams = M.Map MtkNr (StudentName, S.Set Ancode)
+
+type StudentsWithRegs = M.Map MtkNr StudentWithRegs
+
+data StudentWithRegs = StudentWithRegs
+  { studentMtknr   :: Integer
+  , studentName    :: Text
+  , studentGroup   :: Text
+  , studentAncodes :: [Ancode]
+  }
+  deriving (Eq, Generic)
+
+instance FromJSON StudentWithRegs
+instance ToJSON StudentWithRegs
 
 data Handicap = Handicap
   { studentname          :: Text

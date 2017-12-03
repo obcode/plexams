@@ -9,6 +9,7 @@ data Command =
     PrepareRegistrations -- { pRGroup :: String }
   | PrepareOverlaps --  { pOGroup :: String }
   | PrepareStudents --
+  | PrepareStudentRegs
   | PrepareAncodes
   | CheckAncodes
 

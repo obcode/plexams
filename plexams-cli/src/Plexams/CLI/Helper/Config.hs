@@ -15,6 +15,8 @@ configP = Config
                             (progDesc "prepare an overlaps file"))
          <> command "students" (info (pure PrepareStudents)
                             (progDesc "prepare a students file"))
+         <> command "studentregs" (info (pure PrepareStudentRegs)
+                            (progDesc "prepare a students registrations file"))
          <> command "exams" (info (pure PrepareAncodes)
                             (progDesc "prepare an exams file"))
          <> command "check" (info (pure CheckAncodes)

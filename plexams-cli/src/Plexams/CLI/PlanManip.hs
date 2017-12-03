@@ -21,13 +21,14 @@ import           Text.Show.Pretty         (ppShow)
 
 makePlan :: Config -> IO Plan
 makePlan config = do
-    semesterConfig' <- importSemesterConfig config
-    exams'          <- importExams semesterConfig'
-    persons'        <- importPersons semesterConfig'
-    examsWithRegs   <- importAndAddRegs config semesterConfig' exams'
-    maybeStudents   <- importStudents config
-    constraints'    <- importConstraints config
-    handicaps'      <- importHandicaps config
+    semesterConfig'  <- importSemesterConfig config
+    exams'           <- importExams semesterConfig'
+    persons'         <- importPersons semesterConfig'
+    examsWithRegs    <- importAndAddRegs config semesterConfig' exams'
+    maybeStudents    <- importStudents config
+    maybeStudentRegs <- importStudentRegs config semesterConfig'
+    constraints'     <- importConstraints config
+    handicaps'       <- importHandicaps config
     let plan = setHandicapsOnScheduledExams
            $ addConstraints constraints'
            $ Plexams.PlanManip.makePlan examsWithRegs

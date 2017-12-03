@@ -24,6 +24,7 @@ import           Plexams.Validation
 import           Servant
 
 type API = "exams" :> Get '[JSON] [Exam]
+      :<|> "studentregs" :> Get '[JSON] [StudentWithRegs]
       :<|> "examDays" :> Get '[JSON] [Day]
       :<|> "slots" :> Get '[JSON] Slots
       :<|> "slotsPerDay" :> Get '[JSON] [String]
@@ -43,6 +44,7 @@ api = Proxy
 
 server :: Server API
 server = exams'
+    :<|> studentregs
     :<|> examDays'
     :<|> slots'
     :<|> slotsPerDay'
@@ -56,11 +58,19 @@ server = exams'
         exams' = do
           plan'' <- liftIO appliedPlan
           regs' <- liftIO importRegistrations
+          studentregs' <- liftIO importStudentRegistrations
           case plan'' of
             Left errorMsg -> failingHandler $ pack errorMsg
             Right plan''' -> return
+                $ addStudentRegistrationsToExams
+                    (fromMaybe M.empty studentregs')
                 $ addRegistrationsListToExams (allExams plan''')
                 $ fromMaybe [] regs'
+
+        studentregs :: Handler [StudentWithRegs]
+        studentregs = do
+          studentregs' <- liftIO importStudentRegistrations
+          return $ maybe [] M.elems studentregs'
 
         examDays' :: Handler [Day]
         examDays' = do

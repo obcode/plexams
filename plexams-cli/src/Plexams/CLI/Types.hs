@@ -32,6 +32,7 @@ data Config = Config
     , overlapsFile       :: Maybe FilePath
     , constraintsFile    :: Maybe FilePath
     , studentsFile       :: Maybe FilePath
+    , studentRegsFile    :: Maybe FilePath
     , handicapFile       :: Maybe FilePath
     , invigilatorFile    :: Maybe FilePath
     , addInvigilatorFile :: Maybe FilePath

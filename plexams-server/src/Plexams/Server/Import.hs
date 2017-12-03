@@ -5,6 +5,8 @@ import           Plexams.Import.Registrations
 import           Plexams.Types
 import           System.IO.Error
 
+-- TODO: refactor
+
 semesterConfig' :: IO (Either String SemesterConfig)
 semesterConfig' = importSemesterConfig configFile'
 
@@ -19,6 +21,9 @@ constraintsFile = "input/constraints.yaml"
 
 studentsFile' :: FilePath
 studentsFile' = "input/students.yaml"
+
+studentRegsFile :: FilePath
+studentRegsFile = "input/studentregs.yaml"
 
 handicapsFile' :: FilePath
 handicapsFile' = "input/handicaps.yaml"
@@ -96,3 +101,8 @@ importRegistrations :: IO (Maybe [Registrations])
 importRegistrations = do
   Right semesterConfig'' <- semesterConfig'
   importRegistrationsFromYAMLFile semesterConfig'' registrationsFile
+
+importStudentRegistrations :: IO (Maybe StudentsWithRegs)
+importStudentRegistrations = do
+  Right semesterConfig'' <- semesterConfig'
+  importStudentsWithRegsFromYAMLFile semesterConfig'' studentRegsFile

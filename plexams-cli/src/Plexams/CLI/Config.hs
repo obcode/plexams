@@ -67,6 +67,12 @@ config = Config
        <> help "import file containing registrations for each mtknr"
         ))
       <*> optional (strOption
+        ( long "studentregs"
+       -- <> short 's'
+       <> metavar "STUDENTREGSFILE"
+       <> help "import file containing registrations for each mtknr (new)"
+        ))
+      <*> optional (strOption
         ( long "handicaps"
        <> metavar "HANDICAPSFILE"
        <> help "import file containing handicap information"

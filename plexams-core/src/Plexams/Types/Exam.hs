@@ -33,6 +33,9 @@ data Exam = Exam
     , examType              :: ExamType  -- ^ Typ der Prüfung aus ZPA
     , studentsWithHandicaps :: [Handicap]
     , slot                  :: Maybe (Int, Int) -- ^ (Tag, Slot)
+    , registeredStudents    :: [StudentWithRegs]
+    , registeredGroups      :: [RegisteredGroup]
+    , conflictingAncodes    :: [Ancode]
     }
   deriving (Eq, Generic)
 
