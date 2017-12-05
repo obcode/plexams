@@ -5,11 +5,12 @@ module Plexams.Validation.ScheduledExams
 
 import           Control.Arrow        ((&&&))
 import           Control.Monad.Writer
-import           Data.List            (nub)
+import           Data.List            (nub, intersect)
 import qualified Data.Map             as M
 import           Data.Maybe           (isJust, mapMaybe)
 import qualified Data.Set             as S
 import           Data.Text            (append)
+import qualified Data.Text            as Text
 import           GHC.Exts             (groupWith)
 import           Plexams.Query
 import           Plexams.Types
@@ -21,6 +22,7 @@ validate plan = do
   constraintsOk <- validateScheduleConstraints plan
   goSlotsOk <- validateGOSlots plan
   sameNameSameSlot <- validateSameNameSameSlot plan
+  conflicts <- validateConflicts plan
   sameSlotOverlaps <- validateOverlapsInSameSlot plan
   adjacentSlotOverlaps <- validateOverlapsInAdjacentSlots plan
   sameDayOverlaps <- validateOverlapsSameDay plan
@@ -30,6 +32,7 @@ validate plan = do
             [ constraintsOk
             , goSlotsOk
             , sameNameSameSlot
+            , conflicts
             , sameSlotOverlaps
             , sameDayOverlaps
             , adjacentSlotOverlaps
@@ -79,6 +82,37 @@ validateSameNameSameSlot plan = do
           )
           examsGroupedByNameWithDifferentSlots
   return $ if ok then EverythingOk else HardConstraintsBroken
+
+--------------------------------------------------------------------------------
+-- validate conflicts (should replace validate overlaps)
+--------------------------------------------------------------------------------
+
+validateConflicts :: Plan -> Writer [ValidationRecord] ValidationResult
+validateConflicts plan = do
+    tell [Info "### Checking conflicts in same slot (hard)"]
+    sameSlotsOk <- forM (M.toList $ M.map (M.elems . examsInSlot) $ slots plan)
+      (validateConflicts' . (:[]))
+    return $ validationResult sameSlotsOk
+
+validateConflicts' :: [((DayIndex, SlotIndex), [Exam])]
+                  -> Writer [ValidationRecord] ValidationResult
+validateConflicts' [] = return EverythingOk
+validateConflicts' [((d,s), es)] = do
+  let conflicts = map anCode es `intersect` concatMap conflictingAncodes es
+  if null conflicts
+    then return EverythingOk
+    else do
+      tell [HardConstraintBroken $
+              "- Conflict in slot (" `append`
+              showt d `append` ", " `append` showt s `append` "): " `append`
+              Text.intercalate ", " (map showt conflicts)
+              ]
+      return HardConstraintsBroken
+validateConflicts' _ = undefined
+
+--------------------------------------------------------------------------------
+-- validate overlaps (should be replaced by validate conflicts)
+--------------------------------------------------------------------------------
 
 validateOverlapsInSameSlot :: Plan -> Writer [ValidationRecord] ValidationResult
 validateOverlapsInSameSlot plan = do
