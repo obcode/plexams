@@ -9,12 +9,12 @@ module Plexams.Server.Server
 
 import           Control.Monad.Except
 import           Data.ByteString.Lazy.Char8
+import           Data.List                  (partition, sortBy)
 import qualified Data.Map                   as M
 import           Data.Maybe
 import           Data.Time.Calendar
 import           Network.Wai
 import           Network.Wai.Handler.Warp
-import           Plexams.Export.Common
 import           Plexams.PlanManip
 import           Plexams.Server.Check
 import           Plexams.Server.Import
@@ -23,6 +23,7 @@ import           Plexams.Types
 import           Plexams.Validation
 import           Servant
 
+
 type API = "exams" :> Get '[JSON] [Exam]
       :<|> "studentregs" :> Get '[JSON] [StudentWithRegs]
       :<|> "examDays" :> Get '[JSON] [Day]
@@ -30,8 +31,10 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "slotsPerDay" :> Get '[JSON] [String]
       :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
       :<|> "unscheduledExams" :> Get '[JSON] [Exam]
+      :<|> "notPlannedByMeExams" :> Get '[JSON] [Exam]
       :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
       :<|> "validation" :> Get '[JSON] Validation
+      :<|> "examsBySameLecturer" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Exam]
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -50,8 +53,10 @@ server = exams'
     :<|> slotsPerDay'
     :<|> addExam'
     :<|> unscheduledExams'
+    :<|> notPlannedByMeExams'
     :<|> overlaps'
     :<|> validation'
+    :<|> examsBySameLecturer'
 
       where
         exams' :: Handler [Exam]
@@ -89,10 +94,15 @@ server = exams'
         validation' :: Handler Validation
         validation' = do
           plan'' <- liftIO appliedPlan
+          regs' <- liftIO importRegistrations
+          studentregs' <- liftIO importStudentRegistrations
           case plan'' of
             Left errorMsg -> failingHandler $ pack errorMsg
             Right plan''' -> return $ uncurry Validation
-                                    $ validate [ValidateSchedule] plan'''
+                                    $ validate [ValidateSchedule]
+                                    $ addStudentRegistrationsToPlan
+                                      (fromMaybe M.empty studentregs')
+                                      plan'''
 
         slotsPerDay' :: Handler [String]
         slotsPerDay' = do
@@ -117,9 +127,36 @@ server = exams'
         unscheduledExams' :: Handler [Exam]
         unscheduledExams' = do
           plan'' <- liftIO appliedPlan
+          regs' <- liftIO importRegistrations
+          studentregs' <- liftIO importStudentRegistrations
           case plan'' of
             Left errorMsg -> failingHandler $pack errorMsg
-            Right plan''' -> return $ unscheduledExamsSortedByRegistrations plan'''
+            -- Right plan''' -> return $ unscheduledExamsSortedByRegistrations plan'''
+            Right plan''' -> return
+                $ sortBy (\e1 e2 -> compare (registrations e2)
+                                            (registrations e1))
+                $ Prelude.filter isUnscheduled
+                $ addStudentRegistrationsToExams
+                    (fromMaybe M.empty studentregs')
+                $ addRegistrationsListToExams (allExams plan''')
+                $ fromMaybe [] regs'
+
+        notPlannedByMeExams' :: Handler [Exam]
+        notPlannedByMeExams' = do
+          plan'' <- liftIO appliedPlan
+          regs' <- liftIO importRegistrations
+          studentregs' <- liftIO importStudentRegistrations
+          case plan'' of
+            Left errorMsg -> failingHandler $pack errorMsg
+--            Right plan''' -> return $ notPlannedByMeExams plan'''
+            Right plan''' -> return
+                $ sortBy (\e1 e2 -> compare (registrations e2)
+                                            (registrations e1))
+                $ Prelude.filter (not . plannedByMe)
+                $ addStudentRegistrationsToExams
+                    (fromMaybe M.empty studentregs')
+                $ addRegistrationsListToExams (allExams plan''')
+                $ fromMaybe [] regs'
 
         overlaps' :: Ancode -> Handler [Overlaps]
         overlaps' anCode' = do
@@ -130,6 +167,20 @@ server = exams'
               let overlaps'' = (studentsOverlaps plan''' :)
                                    $ overlaps $ constraints plan'''
               in return $ filterOverlaps anCode' overlaps''
+
+        examsBySameLecturer' :: Ancode -> Handler [Exam]
+        examsBySameLecturer' anCode' = do
+          plan'' <- liftIO appliedPlan
+          case plan'' of
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' ->
+              let allExams' = allExams plan'''
+                  (thisExam, otherExams) =
+                                    partition ((==anCode') . anCode) allExams'
+                  lecturer' = personID $ lecturer $ Prelude.head $ thisExam
+                  otherExams' = Prelude.filter
+                                ((==lecturer') . personID . lecturer) otherExams
+              in return otherExams'
 
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr

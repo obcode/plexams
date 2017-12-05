@@ -17,8 +17,8 @@
     window.$ = window.jQuery = nodeRequire('./resources/jquery-3.2.1.min.js')
   </script>
   <script src="resources/jquery.tablesorter.min.js"></script>
-  <script src="elexams.js"></script>
   <script src="renderer.js"></script>
+  <script src="elexams.js"></script>
 
 </head>
 
@@ -45,8 +45,16 @@
 
     <li class="tab">
       <input type="radio" name="tabs" id="tab2" />
-      <label for="tab2">Prüfungsliste</label>
+      <label for="tab2">Validation</label>
       <div id="tab-content2" class="content">
+        <div id="validation-full"></div>
+      </div>
+    </li>
+
+    <li class="tab">
+      <input type="radio" name="tabs" id="tab3" />
+      <label for="tab3">Prüfungsliste</label>
+      <div id="tab-content3" class="content">
         <div id="plexams-api"></div>
       </div>
     </li>

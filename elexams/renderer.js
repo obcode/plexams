@@ -7,7 +7,9 @@ const endpointSlotsPerDay = '/slotsPerDay'
 const endpointAddExam = '/addExam'
 const endpointOverlaps = '/overlaps'
 const endpointUnscheduledExams = '/unscheduledExams'
+const endpointNotPlannedByMeExams = '/notPlannedByMeExams'
 const endpointValidation = '/validation'
+const endpointExamsBySameLecturer = '/examsBySameLecturer'
 
 let _fetchValidation = () => {
   $.getJSON(host + endpointValidation, (validation) => {
@@ -15,11 +17,24 @@ let _fetchValidation = () => {
     for (let i in validation.brokenConstraints) {
       let constraint = validation.brokenConstraints[i]
       if (constraint.tag === 'HardConstraintBroken') {
-        output += `<li><span class="hardconstraints"> ${constraint.contents}</span></li>`
+        output += `<li><span class="${constraint.tag}">
+                    ${constraint.contents}</span>
+                  </li>`
       }
     }
     output += `</ul>`
     $('#validation').html(output)
+
+    output = `<h1>${validation.result}</h1><ul>`
+    for (let i in validation.brokenConstraints) {
+      let constraint = validation.brokenConstraints[i]
+      output += `<li><span class="${constraint.tag}">
+                  ${constraint.contents}</span>
+                </li>`
+    }
+    output += `</ul>`
+    $('#validation-full').html(output)
+
   })
 }
 
@@ -68,24 +83,43 @@ let _fetchExams = function () {
 let _fetchUnscheduledExams = function () {
   $.getJSON(host + endpointUnscheduledExams, function (uExams) {
     let outputPlannedByMe = ``
+    for (var i in uExams) {
+      var exam = uExams[i]
+      var draggable = false
+      outputPlannedByMe +=
+        `<div id="${exam.anCode}" `
+      if (exam.plannedByMe) {
+        outputPlannedByMe += `class="innerUnscheduled" draggable="true"`
+      } else {
+        outputPlannedByMe += `class="innerUnscheduled notPlannedByMe" draggable="false"`
+      }
+      outputPlannedByMe += ` ondrop="return false;" ondragstart="dragExam(event)"
+          onclick="viewDetails(event, ${exam.anCode})"
+         >${exam.anCode}</br>${exam.name}</div>`
+    }
+    $('#unscheduled').html(outputPlannedByMe)
+  }).fail(function (jqXHR, textStatus, errorThrown) {
+    $('#error').append(`Error on endpoint \\unscheduledExams: `)
+    $('#error').append(jqXHR.responseText)
+    $('#error').append(`<br>`)
+    $('#error').css({
+      'border': '3px solid #e22d2d'
+    })
+  })
+}
+
+let _fetchNotPlannedByMeExams = function () {
+  $.getJSON(host + endpointNotPlannedByMeExams, function (uExams) {
     let outputNotPlannedByMe = ``
     for (var i in uExams) {
       var exam = uExams[i]
       var draggable = false
-      if (exam.plannedByMe) {
-        outputPlannedByMe +=
-        `<div id="${exam.anCode}" class="innerUnscheduled" ondrop="return false;"
-          draggable="true" ondragstart="dragExam(event)"
-          onclick="viewDetails(event, ${exam.anCode})"
-         >${exam.anCode}</br>${exam.name}</div>`
-      } else {
-        outputNotPlannedByMe +=
+
+      outputNotPlannedByMe +=
         `<div id="${exam.anCode}" class="innerUnNotPbyMe" ondrop="return false;"
           draggable="false" onclick="viewDetails(event, ${exam.anCode})"
           >${exam.anCode}</br>${exam.name}</div>`
-      }
     }
-    $('#unscheduled').html(outputPlannedByMe)
     $('#notPlannedByMe').html(outputNotPlannedByMe)
   }).fail(function (jqXHR, textStatus, errorThrown) {
     $('#error').append(`Error on endpoint \\unscheduledExams: `)
@@ -216,6 +250,17 @@ let _fetchExamDays = function () {
     })
 }
 
+function setNotPlannedByMe () {
+  $.getJSON(host + endpointNotPlannedByMeExams, function (exams) {
+    for (var i in exams) {
+      let ancode = exams[i].anCode
+      $('#'.concat(ancode)).addClass('notPlannedByMe')
+    }
+  })
+}
+
+setNotPlannedByMe()
+
 // Convenience function for _fetchExams
 let fetchExams = function () {
   _fetchExams()
@@ -239,5 +284,7 @@ fetchExamDays()
 
 // Start to fetch the unscheduled exams
 fetchUnscheduledExams()
+
+_fetchNotPlannedByMeExams()
 
 _fetchValidation()

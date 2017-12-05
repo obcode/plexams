@@ -12,7 +12,7 @@ module Plexams.Types.Exam
 
 import           Data.Aeson
 import           Data.List             (intercalate)
-import           Data.Maybe            (isJust, mapMaybe)
+import           Data.Maybe            (isJust)
 import           Data.Text             (unpack)
 import           GHC.Generics
 import           Plexams.Types.Common
@@ -52,7 +52,8 @@ withHandicaps :: Exam -> Bool
 withHandicaps = not . null . studentsWithHandicaps
 
 registrations :: Exam -> Integer
-registrations = sum . mapMaybe groupRegistrations . groups
+registrations = -- sum . mapMaybe groupRegistrations . groups
+                fromIntegral . length . registeredStudents
 
 notPlannedByMe :: [Ancode] -> Exam -> Exam
 notPlannedByMe ancodes exam =

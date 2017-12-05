@@ -41,7 +41,9 @@ validateGOSlots :: Plan -> Writer [ValidationRecord] ValidationResult
 validateGOSlots plan = do
   tell [Info "### Checking GO-Slots! (hard)"]
   let allowedSlots = goSlots $ semesterConfig plan
-      examsInOtherSlots = filter (elem GO . map groupDegree . groups)
+      examsInOtherSlots = filter (elem "GO"
+                                  . map registeredGroupDegree
+                                  . registeredGroups)
                         $ concatMap (M.elems . examsInSlot)
                         $ mapMaybe (`M.lookup` slots plan)
                         $ filter (not . (`elem` allowedSlots))

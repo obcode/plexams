@@ -6,7 +6,7 @@ module Plexams.Validation.Rooms
 import           Control.Monad.Writer
 import           Data.List            (nub)
 import qualified Data.Map             as M
-import           Data.Text            (Text, append)
+import           Data.Text            (append)
 import           Plexams.Types
 import           TextShow             (showt)
 

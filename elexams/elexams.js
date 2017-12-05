@@ -29,23 +29,34 @@ function viewDetails (event, anCode) {
         }
       }
       let groupsOutput = groupsToHTML(exam.groups)
+      let registeredGroupsOutput = registeredGroupsToHTML(exam.registeredGroups)
       output += ` <h2 >${exam.name}</h1></br>
                   AnCode: ${exam.anCode}</br>
                   Rooms: </br>
                   Groups: ${groupsOutput}
+                  Registered Groups: ${registeredGroupsOutput}
                   PlannedByMe: ${exam.plannedByMe}</br>
                   StudentsWithHandicaps: </br>
-                  Lecturer: ${exam.lecturer.personShortName}</br>
+                  Lecturer: <span class="lecturer">${exam.lecturer.personShortName}</span></br>
                   PersonFK: ${exam.lecturer.personFK}</br>
-                  PersonIsLBA: ${exam.lecturer.personIsLBA}</br>
+                  PersonIsLBA: <span class="lecturer">${exam.lecturer.personIsLBA}</span></br>
                   PersonID: ${exam.lecturer.personID}</br>
                   PersonEmail: ${exam.lecturer.personEmail}</br>
                   Duration: ${exam.duration}</br>
                   ReExam: ${exam.reExam} </br>
                   ExamType: ${exam.examType} </br>
-                  Overlaps: <div id='overlaps'></div>`
+                  Conflicting Ancodes:
+                  <ul id='conflictingAncodes'>`
+      for (let  i = 0; i < exam.conflictingAncodes.length; i++) {
+        let conflictingAncode = exam.conflictingAncodes[i]
+        output += `<li>${conflictingAncode}</li>`
+      }
+      output += `<ul>`
+      output += `<br>Overlaps: <div id='overlaps'></div>`
       $('#description').html(output)
       fetchOverlaps(anCode)
+      setConflicts(anCode, exam.conflictingAncodes)
+      fetchExamsBySameLecturer(anCode)
     }).fail(function (jqXHR, textStatus, errorThrown) {
       $('#error').append(`Error on viewDetails: `)
       $('#error').append(jqXHR.responseText)
@@ -62,10 +73,14 @@ function toggleSelect (thisObj) {
     thisObj.parents('table').find('div').removeClass('div_select')
     thisObj.parents('div').find('div').removeClass('div_select')
     thisObj.parents('div').find('div').removeClass('overlap')
+    thisObj.parents('div').find('div').removeClass('conflicts')
+    thisObj.parents('div').find('div').removeClass('examsBySameLecturer')
   } else {
     thisObj.parents('table').find('div').removeClass('div_select')
     thisObj.parents('div').find('div').removeClass('div_select')
     thisObj.parents('div').find('div').removeClass('overlap')
+    thisObj.parents('div').find('div').removeClass('conflicts')
+    thisObj.parents('div').find('div').removeClass('examsBySameLecturer')
     thisObj.addClass('div_select')
   }
 }
@@ -101,6 +116,22 @@ function fetchOverlaps (anCode) {
   })
 }
 
+function fetchExamsBySameLecturer (anCode) {
+  var request = $.ajax({
+    type: 'POST',
+    url: host + endpointExamsBySameLecturer,
+    data: JSON.stringify(anCode),
+    contentType: 'application/json',
+    dataType: 'json'
+  })
+  request.done(function (otherExams) {
+    for (let i in otherExams) {
+      let otherExam = otherExams[i]
+      $('#'.concat(otherExam.anCode)).addClass('examsBySameLecturer')
+    }
+  })
+}
+
 function selectOverlapExams (overlaps, anCode) {
   for (var i = 0; i < overlaps.length; i++) {
     let group = overlaps[i]
@@ -111,12 +142,31 @@ function selectOverlapExams (overlaps, anCode) {
   }
 }
 
+function setConflicts (anCode, conflictingAncodes) {
+  for (var i in conflictingAncodes) {
+    let conflictingAncode = conflictingAncodes[i]
+    $('#'.concat(conflictingAncode)).addClass('conflicts')
+  }
+}
+
+function registeredGroupsToHTML (groups) {
+  let output = `<ul id='registeredGroups'>`
+  for (var i in groups) {
+    let group = groups[i]
+    output += `<li id='group'>
+      ${group.registeredGroupDegree} (${group.registeredGroupStudents})
+      </li>`
+  }
+  output += `</ul>`
+  return output
+}
+
 function groupsToHTML (groups) {
   let output = `
   <ul id='groups'>
   `
   for (var i in groups) {
-    let group = groups[i];
+    let group = groups[i]
     let groupDegree = group.groupDegree != null ? group.groupDegree + ` ` : ``
     let groupSemester = group.groupSemester != null ? group.groupSemester + ` ` : ``
     let groupSubgroup = group.groupSubgroup != null ? group.groupSubgroup + ` ` : ``
@@ -173,6 +223,7 @@ function dropExam (ev) {
     } else if (ev.currentTarget.className === 'outerUnscheduled') {
       document.getElementById(data).className = 'innerUnscheduled'
     }
+    _fetchValidation()
   }
 }
 

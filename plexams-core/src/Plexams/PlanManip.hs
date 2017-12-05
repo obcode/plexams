@@ -5,6 +5,7 @@ module Plexams.PlanManip
     , makePlan
     , addRegistrationsListToExams
     , addStudentRegistrationsToExams
+    , addStudentRegistrationsToPlan
     , applyAddRoomToExamListToPlan
     , addConstraints
     , updateExamByAncodeWith
@@ -276,15 +277,39 @@ addRegistrationsToExam registrations' exam =
 -- Add students registrations
 --------------------------------------------------------------------------------
 
+addStudentRegistrationsToPlan :: StudentsWithRegs -> Plan -> Plan
+addStudentRegistrationsToPlan studentsWithRegs plan = plan
+  { slots = slots'
+  , unscheduledExams = unscheduledExams'
+  }
+  where
+    unscheduledExams' = addStudentRegistrationsToExamsMap studentsWithRegs
+                        $ unscheduledExams plan
+    slots' = M.map
+             (\s -> s { examsInSlot = addStudentRegistrationsToExamsMap
+                                      studentsWithRegs $ examsInSlot s
+                      }
+             ) $ slots plan
+
 addStudentRegistrationsToExams :: StudentsWithRegs -> [Exam] -> [Exam]
-addStudentRegistrationsToExams studentsWithRegs exams' =
-  map (\e -> e { conflictingAncodes = filter (`elem` M.keys examsMap)
-                  $ sort $ nub $ conflictingAncodes e
+addStudentRegistrationsToExams studentsWithRegs =
+  M.elems
+  . addStudentRegistrationsToExamsMap studentsWithRegs
+  . M.fromList
+  . map (\e -> (anCode e, e))
+
+addStudentRegistrationsToExamsMap :: StudentsWithRegs
+                                  -> M.Map Ancode Exam
+                                  -> M.Map Ancode Exam
+addStudentRegistrationsToExamsMap studentsWithRegs examsMap =
+  M.map (\e -> e { conflictingAncodes =
+                    filter (`elem` M.keys examsMap \\ [anCode e])
+                    $ sort $ nub $conflictingAncodes e
+
                , registeredGroups = sumRegisteredGroups $ registeredGroups e
                })
-    $ M.elems $ foldr insertStudentReg examsMap $ M.elems studentsWithRegs
+  $ foldr insertStudentReg examsMap $ M.elems studentsWithRegs
   where
-    examsMap = M.fromList $ map (\e -> (anCode e, e)) exams'
     sumRegisteredGroups regGroups =
       map (\ (RegisteredGroup gName i : gs) ->
               RegisteredGroup gName (i + sum (map registeredGroupStudents gs)))

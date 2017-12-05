@@ -6,7 +6,7 @@ module Plexams.Validation
 
 import           Control.Monad.Writer
 import           Data.List                         (nub)
-import           Data.Text                         (Text, append)
+import           Data.Text                         (append)
 import           Plexams.Query
 import           Plexams.Types
 import           Plexams.Validation.Exports
@@ -58,10 +58,10 @@ validateLecturersMax3ExamDays plan = do
   let lecturerWithMoreThan3ExamDays =
           filter ((>3) . length . nub . snd) $ lecturerExamDays plan
       ok = null lecturerWithMoreThan3ExamDays
-  tell [Info "# Checking amount of exam days for each lecturer (soft)"]
+  tell [Info "# Checking amount of exam days for each lecturer (hard)"]
   unless ok $
     mapM_ (\(l,d) ->
-              tell [Info $ "- More than 3 days of exams: "
+              tell [HardConstraintBroken $ "- More than 3 days of exams: "
                     `append` showt (personShortName l)
                     `append` ": "
                     `append` showt d])
