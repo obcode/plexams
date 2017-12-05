@@ -190,7 +190,7 @@ makePlan :: [Exam] -> SemesterConfig -> Persons -> Maybe Students
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 
 -- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams' semesterConfig' pers maybeStudents handicaps' =
+makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
   foldr addExamFromListToSlot
         Plan
           { semesterConfig = semesterConfig'
@@ -203,10 +203,11 @@ makePlan exams' semesterConfig' pers maybeStudents handicaps' =
           , handicaps = handicaps'
           , invigilators = M.empty
           , invigilatorsPerDay = M.empty
-          , initialPlan =  map (setPerson pers) exams'
+          , initialPlan = exams'
           }
         (fk10Exams semesterConfig')
-  where slots' = M.fromList
+  where exams' = map (setPerson pers) exams''
+        slots' = M.fromList
               $ zip [ (d,t) | d <- [0..length (examDays    semesterConfig') - 1]
                             , t <- [0..length (slotsPerDay semesterConfig') - 1]
                     ]
