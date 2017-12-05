@@ -319,7 +319,7 @@ addStudentRegistrationsToExamsMap studentsWithRegs examsMap =
       foldr
         (M.alter
           $ fmap
-          $ \e -> e { registeredStudents = studentWithReg : registeredStudents e
+          $ \e -> e { registeredStudents = studentWithReg' : registeredStudents e
                     , registeredGroups =
                         RegisteredGroup (studentGroup studentWithReg) 1
                         : registeredGroups e
@@ -328,6 +328,11 @@ addStudentRegistrationsToExamsMap studentsWithRegs examsMap =
                     })
         examsMap'
         $ studentAncodes studentWithReg
+      where
+        studentWithReg' = studentWithReg
+          { studentAncodes = filter (`elem` M.keys examsMap)
+                                    $ studentAncodes studentWithReg
+          }
 
 --------------------------------------------------------------------------------
 -- Add constraints
