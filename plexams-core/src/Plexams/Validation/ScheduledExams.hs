@@ -3,7 +3,7 @@ module Plexams.Validation.ScheduledExams
   ( validate
   ) where
 
-import           Control.Arrow        ((&&&))
+import           Control.Arrow        ((&&&), second)
 import           Control.Monad.Writer
 import           Data.List            (nub, intersect)
 import qualified Data.Map             as M
@@ -23,9 +23,9 @@ validate plan = do
   goSlotsOk <- validateGOSlots plan
   sameNameSameSlot <- validateSameNameSameSlot plan
   conflicts <- validateConflicts plan
-  sameSlotOverlaps <- validateOverlapsInSameSlot plan
-  adjacentSlotOverlaps <- validateOverlapsInAdjacentSlots plan
-  sameDayOverlaps <- validateOverlapsSameDay plan
+  -- sameSlotOverlaps <- validateOverlapsInSameSlot plan
+  -- adjacentSlotOverlaps <- validateOverlapsInAdjacentSlots plan
+  -- sameDayOverlaps <- validateOverlapsSameDay plan
   lecturerMaxOneExamPerSlot <- validateLecturerMaxOneExamPerSlot plan
   studentsMaxTwoExamsPerDay <- validateStudentsMaxTwoExamsPerDay plan
   return $ validationResult
@@ -33,9 +33,9 @@ validate plan = do
             , goSlotsOk
             , sameNameSameSlot
             , conflicts
-            , sameSlotOverlaps
-            , sameDayOverlaps
-            , adjacentSlotOverlaps
+            -- , sameSlotOverlaps
+            -- , sameDayOverlaps
+            -- , adjacentSlotOverlaps
             , lecturerMaxOneExamPerSlot
             , studentsMaxTwoExamsPerDay
             ]
@@ -91,128 +91,155 @@ validateConflicts :: Plan -> Writer [ValidationRecord] ValidationResult
 validateConflicts plan = do
     tell [Info "### Checking conflicts in same slot (hard)"]
     sameSlotsOk <- forM (M.toList $ M.map (M.elems . examsInSlot) $ slots plan)
-      (validateConflicts' . (:[]))
-    return $ validationResult sameSlotsOk
+      (validateConflicts' True . (:[]))
+    tell [Info "### Checking conflicts in adjacent slot (hard)"]
+    adjacentSlotsOk <- forM (map (map (second (M.elems . examsInSlot)))
+                              $ adjacentSlotPairs $ slots plan)
+                            $ validateConflicts' True
+    tell [Info "### Checking conflicts on same day (soft)"]
+    daySlotsOk <- forM (map (map (second (M.elems . examsInSlot)))
+                              $ slotsByDay $ slots plan)
+                            $ validateConflicts' False
+    return $ validationResult
+           $ concat [ sameSlotsOk, adjacentSlotsOk, daySlotsOk]
 
-validateConflicts' :: [((DayIndex, SlotIndex), [Exam])]
+validateConflicts' :: Bool -> [((DayIndex, SlotIndex), [Exam])]
                   -> Writer [ValidationRecord] ValidationResult
-validateConflicts' [] = return EverythingOk
-validateConflicts' [((d,s), es)] = do
+validateConflicts' _ [] = return EverythingOk
+
+validateConflicts' hard [((d,s), es)] = do
   let conflicts = map anCode es `intersect` concatMap conflictingAncodes es
   if null conflicts
     then return EverythingOk
     else do
-      tell [HardConstraintBroken $
+      tell [(if hard then HardConstraintBroken else SoftConstraintBroken) $
               "- Conflict in slot (" `append`
               showt d `append` ", " `append` showt s `append` "): " `append`
               Text.intercalate ", " (map showt conflicts)
               ]
-      return HardConstraintsBroken
-validateConflicts' _ = undefined
+      return $ if hard then HardConstraintsBroken else SoftConstraintsBroken
 
---------------------------------------------------------------------------------
--- validate overlaps (should be replaced by validate conflicts)
---------------------------------------------------------------------------------
+validateConflicts' hard slotsAndExams = do
+  let ancodes = concatMap (map anCode . snd) slotsAndExams
+      conflictingancodes = concatMap (map conflictingAncodes . snd) slotsAndExams
+      conflicts = ancodes `intersect` concat conflictingancodes
+      conflictingAncodesWithSlot = concatMap (\c -> map (second $ const c)
+                         $ filter (elem c . map anCode . snd) slotsAndExams)
+                         conflicts
+  if null conflicts
+    then return EverythingOk
+    else do
+      tell [Info $ showt $ map fst slotsAndExams]
+      tell [(if hard then HardConstraintBroken else SoftConstraintBroken) $
+              "- Conflict in slots: "   `append`
+              showt conflictingAncodesWithSlot
+           ]
+      return $ if hard then HardConstraintsBroken else SoftConstraintsBroken
 
-validateOverlapsInSameSlot :: Plan -> Writer [ValidationRecord] ValidationResult
-validateOverlapsInSameSlot plan = do
-  tell [Info "### Checking overlaps in same slot (hard)"]
-  validateOverlaps (overlaps $ constraints plan)
-                   (map (M.elems . examsInSlot) $ M.elems $ slots plan)
 
-validateOverlaps :: [Overlaps] -> [[Exam]]
-                 -> Writer [ValidationRecord] ValidationResult
-validateOverlaps [] _ = do
-  tell [Info "#### no overlaps found"]
-  return EverythingOk
-validateOverlaps overlaps' exams' =
-  validationResult <$> mapM (validateOverlapsForExams overlaps') exams'
-
-validateOverlapsForExams :: [Overlaps] -> [Exam]
-                         -> Writer [ValidationRecord] ValidationResult
-validateOverlapsForExams overlaps' exams' =
-  validationResult <$> mapM (`validateOverlapsForExams'` exams') overlaps'
-
-validateOverlapsForExams' :: Overlaps -> [Exam]
-                          -> Writer [ValidationRecord] ValidationResult
-validateOverlapsForExams' _ [] = return EverythingOk
-validateOverlapsForExams' overlaps' (exam:exams') = do
-  examOk <- validateOverlapsForExam overlaps' exam exams' True
-  tailOk <- validateOverlapsForExams' overlaps' exams'
-  return $ validationResult [examOk, tailOk]
-
-validateOverlapsInAdjacentSlots :: Plan -> Writer [ValidationRecord] ValidationResult
-validateOverlapsInAdjacentSlots plan = do
-  tell [Info "### Checking overlaps in adjacent slots (hard)"]
-  let maxDays  = (\x -> x-1) $ length $ examDays $ semesterConfig plan
-      maxSlots = (\x -> x-1) $ length $ slotsPerDay $ semesterConfig plan
-      daySlotPairs = [ (d,(i,j)) | d <- [0..maxDays]
-                                 , (i,j) <- zip [0..] [1..maxSlots] ]
-      examsList (d,i) =
-        M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
-      exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
-                  daySlotPairs
-  validateOverlapsTwoLists (overlaps $ constraints plan) exams' True
-
-validateOverlapsSameDay :: Plan -> Writer [ValidationRecord] ValidationResult
-validateOverlapsSameDay plan = do
-  tell [Info "### Checking overlaps on same day (soft)"]
-  let maxDays  = (\x -> x-1) $ length $ examDays $ semesterConfig plan
-      maxSlots = (\x -> x-1) $ length $ slotsPerDay $ semesterConfig plan
-      daySlotPairs = [ (d,(i,j)) | d <- [0..maxDays]
-                                 , i <- [0..maxSlots - 2]
-                                 , j <- [i+2..maxSlots]
-                     ]
-      examsList (d,i) =
-        M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
-      exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
-                  daySlotPairs
-  valRes <- validateOverlapsTwoLists (overlaps $ constraints plan) exams' False
-  return $ case valRes of
-    HardConstraintsBroken -> SoftConstraintsBroken
-    _                     -> valRes
-
-validateOverlapsTwoLists :: [Overlaps] -> [([Exam],[Exam])] -> Bool
-                 -> Writer [ValidationRecord] ValidationResult
-validateOverlapsTwoLists [] _ _ = do
-  tell [Info "#### no overlaps found"]
-  return EverythingOk
-validateOverlapsTwoLists overlaps' exams' hard =
-  validationResult <$> mapM (validateOverlapsTwoListsForExams overlaps' hard) exams'
-
-validateOverlapsTwoListsForExams :: [Overlaps] -> Bool -> ([Exam],[Exam])
-                                 -> Writer [ValidationRecord] ValidationResult
-validateOverlapsTwoListsForExams overlaps' hard (ex1, ex2) =
-  validationResult
-    <$> mapM (validateOverlapsTwoListsForExams' ex1 ex2 hard) overlaps'
-
-validateOverlapsTwoListsForExams' :: [Exam] -> [Exam] -> Bool -> Overlaps
-                                  -> Writer [ValidationRecord] ValidationResult
-validateOverlapsTwoListsForExams' [] _ _ _ = return EverythingOk
-validateOverlapsTwoListsForExams' (exam:exams') otherExams hard overlaps' = do
-  examOk <- validateOverlapsForExam overlaps' exam otherExams hard
-  tailOk <- validateOverlapsTwoListsForExams' exams' otherExams hard overlaps'
-  return $ validationResult [ examOk, tailOk ]
-
-validateOverlapsForExam :: Overlaps -> Exam -> [Exam] -> Bool
-                        -> Writer [ValidationRecord] ValidationResult
-validateOverlapsForExam _        _    []    _ = return EverythingOk
-validateOverlapsForExam overlaps' exam exams' hard = do
-  let overlapsForExam =
-        M.findWithDefault M.empty (anCode exam) $ olOverlaps overlaps'
-      overlappingExams =
-        filter (isJust . snd)
-        $ map ((\ancode -> (ancode , M.lookup ancode overlapsForExam)) . anCode)
-              exams'
-      ok = null overlappingExams
-  forM_ overlappingExams $ \(other, Just studs) ->
-    tell [ (if hard then HardConstraintBroken else SoftConstraintBroken)
-         $ "-   " `append` showt (olGroup overlaps')
-           `append` ": Exam " `append` showt (anCode exam)
-           `append` " overlaps with exam " `append` showt other
-           `append` " for " `append` showt studs `append` " Students"]
-  return $ if ok then EverythingOk
-          else if hard then HardConstraintsBroken else SoftConstraintsBroken
+-- --------------------------------------------------------------------------------
+-- -- validate overlaps (should be replaced by validate conflicts)
+-- --------------------------------------------------------------------------------
+--
+-- validateOverlapsInSameSlot :: Plan -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsInSameSlot plan = do
+--   tell [Info "### Checking overlaps in same slot (hard)"]
+--   validateOverlaps (overlaps $ constraints plan)
+--                    (map (M.elems . examsInSlot) $ M.elems $ slots plan)
+--
+-- validateOverlaps :: [Overlaps] -> [[Exam]]
+--                  -> Writer [ValidationRecord] ValidationResult
+-- validateOverlaps [] _ = do
+--   tell [Info "#### no overlaps found"]
+--   return EverythingOk
+-- validateOverlaps overlaps' exams' =
+--   validationResult <$> mapM (validateOverlapsForExams overlaps') exams'
+--
+-- validateOverlapsForExams :: [Overlaps] -> [Exam]
+--                          -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsForExams overlaps' exams' =
+--   validationResult <$> mapM (`validateOverlapsForExams'` exams') overlaps'
+--
+-- validateOverlapsForExams' :: Overlaps -> [Exam]
+--                           -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsForExams' _ [] = return EverythingOk
+-- validateOverlapsForExams' overlaps' (exam:exams') = do
+--   examOk <- validateOverlapsForExam overlaps' exam exams' True
+--   tailOk <- validateOverlapsForExams' overlaps' exams'
+--   return $ validationResult [examOk, tailOk]
+--
+-- validateOverlapsInAdjacentSlots :: Plan -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsInAdjacentSlots plan = do
+--   tell [Info "### Checking overlaps in adjacent slots (hard)"]
+--   let maxDays  = (\x -> x-1) $ length $ examDays $ semesterConfig plan
+--       maxSlots = (\x -> x-1) $ length $ slotsPerDay $ semesterConfig plan
+--       daySlotPairs = [ (d,(i,j)) | d <- [0..maxDays]
+--                                  , (i,j) <- zip [0..] [1..maxSlots] ]
+--       examsList (d,i) =
+--         M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
+--       exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
+--                   daySlotPairs
+--   validateOverlapsTwoLists (overlaps $ constraints plan) exams' True
+--
+-- validateOverlapsSameDay :: Plan -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsSameDay plan = do
+--   tell [Info "### Checking overlaps on same day (soft)"]
+--   let maxDays  = (\x -> x-1) $ length $ examDays $ semesterConfig plan
+--       maxSlots = (\x -> x-1) $ length $ slotsPerDay $ semesterConfig plan
+--       daySlotPairs = [ (d,(i,j)) | d <- [0..maxDays]
+--                                  , i <- [0..maxSlots - 2]
+--                                  , j <- [i+2..maxSlots]
+--                      ]
+--       examsList (d,i) =
+--         M.elems $ maybe M.empty examsInSlot $ M.lookup (d,i) $ slots plan
+--       exams' = map (\(d,(i,j)) ->  (examsList (d,i), examsList (d,j)))
+--                   daySlotPairs
+--   valRes <- validateOverlapsTwoLists (overlaps $ constraints plan) exams' False
+--   return $ case valRes of
+--     HardConstraintsBroken -> SoftConstraintsBroken
+--     _                     -> valRes
+--
+-- validateOverlapsTwoLists :: [Overlaps] -> [([Exam],[Exam])] -> Bool
+--                  -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsTwoLists [] _ _ = do
+--   tell [Info "#### no overlaps found"]
+--   return EverythingOk
+-- validateOverlapsTwoLists overlaps' exams' hard =
+--   validationResult <$> mapM (validateOverlapsTwoListsForExams overlaps' hard) exams'
+--
+-- validateOverlapsTwoListsForExams :: [Overlaps] -> Bool -> ([Exam],[Exam])
+--                                  -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsTwoListsForExams overlaps' hard (ex1, ex2) =
+--   validationResult
+--     <$> mapM (validateOverlapsTwoListsForExams' ex1 ex2 hard) overlaps'
+--
+-- validateOverlapsTwoListsForExams' :: [Exam] -> [Exam] -> Bool -> Overlaps
+--                                   -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsTwoListsForExams' [] _ _ _ = return EverythingOk
+-- validateOverlapsTwoListsForExams' (exam:exams') otherExams hard overlaps' = do
+--   examOk <- validateOverlapsForExam overlaps' exam otherExams hard
+--   tailOk <- validateOverlapsTwoListsForExams' exams' otherExams hard overlaps'
+--   return $ validationResult [ examOk, tailOk ]
+--
+-- validateOverlapsForExam :: Overlaps -> Exam -> [Exam] -> Bool
+--                         -> Writer [ValidationRecord] ValidationResult
+-- validateOverlapsForExam _        _    []    _ = return EverythingOk
+-- validateOverlapsForExam overlaps' exam exams' hard = do
+--   let overlapsForExam =
+--         M.findWithDefault M.empty (anCode exam) $ olOverlaps overlaps'
+--       overlappingExams =
+--         filter (isJust . snd)
+--         $ map ((\ancode -> (ancode , M.lookup ancode overlapsForExam)) . anCode)
+--               exams'
+--       ok = null overlappingExams
+--   forM_ overlappingExams $ \(other, Just studs) ->
+--     tell [ (if hard then HardConstraintBroken else SoftConstraintBroken)
+--          $ "-   " `append` showt (olGroup overlaps')
+--            `append` ": Exam " `append` showt (anCode exam)
+--            `append` " overlaps with exam " `append` showt other
+--            `append` " for " `append` showt studs `append` " Students"]
+--   return $ if ok then EverythingOk
+--           else if hard then HardConstraintsBroken else SoftConstraintsBroken
 
 --------------------------------------------------------------------------------
 -- validate constraints from constraints file
@@ -225,8 +252,8 @@ validateScheduleConstraints plan = do
   onOneOfTheseDaysOk <- validateOneOfTheseDays plan
                                             (onOneOfTheseDays constraints')
   _ <- validateFixSlot plan (fixedSlot constraints')
-  tell [HardConstraintBroken "TODO: invigilatesExam"]
-  tell [HardConstraintBroken "TODO: impossibleInvigilationSlots"]
+  -- tell [HardConstraintBroken "TODO: invigilatesExam"]
+  -- tell [HardConstraintBroken "TODO: impossibleInvigilationSlots"]
   return $ validationResult [notOnSameDayOk, onOneOfTheseDaysOk]
 
 ------------------

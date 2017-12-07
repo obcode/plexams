@@ -35,6 +35,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
       :<|> "validation" :> Get '[JSON] Validation
       :<|> "examsBySameLecturer" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Exam]
+      :<|> "goSlots" :> Get '[JSON] [(Int, Int)]
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -57,6 +58,7 @@ server = exams'
     :<|> overlaps'
     :<|> validation'
     :<|> examsBySameLecturer'
+    :<|> goSlots'
 
       where
         exams' :: Handler [Exam]
@@ -67,10 +69,10 @@ server = exams'
           case plan'' of
             Left errorMsg -> failingHandler $ pack errorMsg
             Right plan''' -> return
-                $ addStudentRegistrationsToExams
-                    (fromMaybe M.empty studentregs')
-                $ addRegistrationsListToExams (allExams plan''')
-                $ fromMaybe [] regs'
+                $ allExams
+                $ addStudentRegistrationsToPlan
+                  (fromMaybe M.empty studentregs')
+                  plan'''
 
         studentregs :: Handler [StudentWithRegs]
         studentregs = do
@@ -90,19 +92,6 @@ server = exams'
           case plan'' of
             Left errorMsg -> failingHandler $ pack errorMsg
             Right plan''' -> return $ slots plan'''
-
-        validation' :: Handler Validation
-        validation' = do
-          plan'' <- liftIO appliedPlan
-          regs' <- liftIO importRegistrations
-          studentregs' <- liftIO importStudentRegistrations
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' -> return $ uncurry Validation
-                                    $ validate [ValidateSchedule]
-                                    $ addStudentRegistrationsToPlan
-                                      (fromMaybe M.empty studentregs')
-                                      plan'''
 
         slotsPerDay' :: Handler [String]
         slotsPerDay' = do
@@ -136,10 +125,10 @@ server = exams'
                 $ sortBy (\e1 e2 -> compare (registrations e2)
                                             (registrations e1))
                 $ Prelude.filter isUnscheduled
-                $ addStudentRegistrationsToExams
-                    (fromMaybe M.empty studentregs')
-                $ addRegistrationsListToExams (allExams plan''')
-                $ fromMaybe [] regs'
+                $ allExams
+                $ addStudentRegistrationsToPlan
+                  (fromMaybe M.empty studentregs')
+                  plan'''
 
         notPlannedByMeExams' :: Handler [Exam]
         notPlannedByMeExams' = do
@@ -153,10 +142,10 @@ server = exams'
                 $ sortBy (\e1 e2 -> compare (registrations e2)
                                             (registrations e1))
                 $ Prelude.filter (not . plannedByMe)
-                $ addStudentRegistrationsToExams
-                    (fromMaybe M.empty studentregs')
-                $ addRegistrationsListToExams (allExams plan''')
-                $ fromMaybe [] regs'
+                $ allExams
+                $ addStudentRegistrationsToPlan
+                  (fromMaybe M.empty studentregs')
+                  plan'''
 
         overlaps' :: Ancode -> Handler [Overlaps]
         overlaps' anCode' = do
@@ -181,6 +170,28 @@ server = exams'
                   otherExams' = Prelude.filter
                                 ((==lecturer') . personID . lecturer) otherExams
               in return otherExams'
+
+        validation' :: Handler Validation
+        validation' = do
+          plan'' <- liftIO appliedPlan
+          regs' <- liftIO importRegistrations
+          studentregs' <- liftIO importStudentRegistrations
+          case plan'' of
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' -> return $ uncurry Validation
+                                    $ validate [ValidateSchedule]
+                                    $ addStudentRegistrationsToPlan
+                                      (fromMaybe M.empty studentregs')
+                                      plan'''
+
+        goSlots' :: Handler [(Int, Int)]
+        goSlots' = do
+          plan'' <- liftIO appliedPlan
+          case plan'' of
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' -> return $ goSlots $ semesterConfig
+                                      plan'''
+
 
 failingHandler :: MonadError ServantErr m => ByteString -> m a
 failingHandler s = throwError myerr

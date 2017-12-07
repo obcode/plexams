@@ -4,7 +4,6 @@ module Plexams.PlanManip
     , applyAddExamToSlotListToPlan
     , makePlan
     , addRegistrationsListToExams
-    , addStudentRegistrationsToExams
     , addStudentRegistrationsToPlan
     , applyAddRoomToExamListToPlan
     , addConstraints
@@ -284,27 +283,22 @@ addStudentRegistrationsToPlan studentsWithRegs plan = plan
   , unscheduledExams = unscheduledExams'
   }
   where
-    unscheduledExams' = addStudentRegistrationsToExamsMap studentsWithRegs
-                        $ unscheduledExams plan
+    unscheduledExams' = addStudentRegistrationsToExamsMap
+                          studentsWithRegs allAncodes $ unscheduledExams plan
     slots' = M.map
              (\s -> s { examsInSlot = addStudentRegistrationsToExamsMap
-                                      studentsWithRegs $ examsInSlot s
+                               studentsWithRegs allAncodes $ examsInSlot s
                       }
              ) $ slots plan
-
-addStudentRegistrationsToExams :: StudentsWithRegs -> [Exam] -> [Exam]
-addStudentRegistrationsToExams studentsWithRegs =
-  M.elems
-  . addStudentRegistrationsToExamsMap studentsWithRegs
-  . M.fromList
-  . map (\e -> (anCode e, e))
+    allAncodes = map anCode $ initialPlan plan
 
 addStudentRegistrationsToExamsMap :: StudentsWithRegs
+                                  -> [Ancode]
                                   -> M.Map Ancode Exam
                                   -> M.Map Ancode Exam
-addStudentRegistrationsToExamsMap studentsWithRegs examsMap =
+addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
   M.map (\e -> e { conflictingAncodes =
-                    filter (`elem` M.keys examsMap \\ [anCode e])
+                    filter (`elem` allAncodes \\ [anCode e])
                     $ sort $ nub $conflictingAncodes e
 
                , registeredGroups = sumRegisteredGroups $ registeredGroups e

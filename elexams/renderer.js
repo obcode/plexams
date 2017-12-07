@@ -10,6 +10,7 @@ const endpointUnscheduledExams = '/unscheduledExams'
 const endpointNotPlannedByMeExams = '/notPlannedByMeExams'
 const endpointValidation = '/validation'
 const endpointExamsBySameLecturer = '/examsBySameLecturer'
+const endpointGoSlots = '/goSlots'
 
 let _fetchValidation = () => {
   $.getJSON(host + endpointValidation, (validation) => {
@@ -212,7 +213,7 @@ let _fetchExamDays = function () {
               let examData = _fetchExamsData(j, i, slots)
               var anCodes = _getAncodesForSlot(j, i, slots);
               output += `<td class="exams">
-                        <div class="outer" data-day="${j}" data-slot="${i}"
+                        <div id="slot_${j}_${i}" class="outer" data-day="${j}" data-slot="${i}"
                         ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
               for (let k in examData) {
                 output += `<div id="${anCodes[k]}" class="inner" ondrop="return false;"
@@ -259,7 +260,15 @@ function setNotPlannedByMe () {
   })
 }
 
-setNotPlannedByMe()
+
+function toggleGoSlots () {
+  $.getJSON(host + endpointGoSlots, (goSlots) => {
+    for (let i in goSlots) {
+      let goSlot = goSlots[i]
+      $(['#slot_', goSlot[0], '_', goSlot[1]].join('')).addClass('goSlot')
+    }
+  })
+}
 
 // Convenience function for _fetchExams
 let fetchExams = function () {
@@ -286,5 +295,7 @@ fetchExamDays()
 fetchUnscheduledExams()
 
 _fetchNotPlannedByMeExams()
+
+setNotPlannedByMe()
 
 _fetchValidation()

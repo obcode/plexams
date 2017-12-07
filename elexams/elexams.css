@@ -75,6 +75,10 @@ div.inner {
   display: block;
 }
 
+div.goSlot {
+  background-color: rgb(255, 0, 255);
+}
+
 div.examsBySameLecturer {
   font-weight: bold;
   color: blue;
