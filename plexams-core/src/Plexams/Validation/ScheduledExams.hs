@@ -411,11 +411,11 @@ validateStudentsMaxTwoExamsPerDay plan = do
 
   return $ if null studentsWithMoreThanOneExamPerDay
            then EverythingOk
-           else if null oneHasThree
+           else SoftConstraintsBroken {- if null oneHasThree
                 then SoftConstraintsBroken
                 else let nosOfExams = map length
                            $ mapMaybe ((`M.lookup` studentsExams plan) . fst)
                                       oneHasThree
                      in if all (>13) nosOfExams
                         then SoftConstraintsBroken
-                        else HardConstraintsBroken
+                        else HardConstraintsBroken -}

@@ -33,7 +33,6 @@ function viewDetails (event, anCode) {
       output += ` <h2 >${exam.name}</h1></br>
                   AnCode: ${exam.anCode}</br>
                   Rooms: </br>
-                  Groups: ${groupsOutput}
                   Registered Groups: ${registeredGroupsOutput}
                   PlannedByMe: ${exam.plannedByMe}</br>
                   StudentsWithHandicaps: </br>
@@ -52,9 +51,7 @@ function viewDetails (event, anCode) {
         output += `<li>${conflictingAncode}</li>`
       }
       output += `<ul>`
-      output += `<br>Overlaps: <div id='overlaps'></div>`
       $('#description').html(output)
-      fetchOverlaps(anCode)
       setConflicts(anCode, exam.conflictingAncodes)
       fetchExamsBySameLecturer(anCode)
     }).fail(function (jqXHR, textStatus, errorThrown) {

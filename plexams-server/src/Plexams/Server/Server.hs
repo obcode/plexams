@@ -9,10 +9,11 @@ module Plexams.Server.Server
 
 import           Control.Monad.Except
 import           Data.ByteString.Lazy.Char8
-import           Data.List                  (partition, sortBy)
+import           Data.List                  (nub, partition, sortBy)
 import qualified Data.Map                   as M
 import           Data.Maybe
 import           Data.Time.Calendar
+import           GHC.Exts                   (sortWith)
 import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Plexams.PlanManip
@@ -36,6 +37,8 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "validation" :> Get '[JSON] Validation
       :<|> "examsBySameLecturer" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Exam]
       :<|> "goSlots" :> Get '[JSON] [(Int, Int)]
+      :<|> "lecturer" :> Get '[JSON] [Person]
+
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -59,6 +62,7 @@ server = exams'
     :<|> validation'
     :<|> examsBySameLecturer'
     :<|> goSlots'
+    :<|> lecturer'
 
       where
         exams' :: Handler [Exam]
@@ -191,6 +195,16 @@ server = exams'
             Left errorMsg -> failingHandler $ pack errorMsg
             Right plan''' -> return $ goSlots $ semesterConfig
                                       plan'''
+
+        lecturer' :: Handler [Person]
+        lecturer' = do
+          plan'' <- liftIO appliedPlan
+          case plan'' of
+            Left errorMsg -> failingHandler $ pack errorMsg
+            Right plan''' -> return $ sortWith personShortName
+                                    $ nub
+                                    $ Prelude.map lecturer
+                                    $ allExams plan'''
 
 
 failingHandler :: MonadError ServantErr m => ByteString -> m a

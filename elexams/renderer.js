@@ -11,6 +11,7 @@ const endpointNotPlannedByMeExams = '/notPlannedByMeExams'
 const endpointValidation = '/validation'
 const endpointExamsBySameLecturer = '/examsBySameLecturer'
 const endpointGoSlots = '/goSlots'
+const endpointLecturer = '/lecturer'
 
 let _fetchValidation = () => {
   $.getJSON(host + endpointValidation, (validation) => {
@@ -50,6 +51,8 @@ let _fetchExams = function () {
         <th class="examList">Anmeldecode</th>
         <th class="examList">Dauer</th>
         <th class="examList">Wiederholungsklausur</th>
+        <th class="examList">Tag</th>
+        <th class="examList">Gruppen</th>
      </tr>
      </thead>
      <tbody>`
@@ -61,7 +64,13 @@ let _fetchExams = function () {
              <td class="examList">${exam.anCode}</td>
              <td class="examList">${exam.duration}</td>
              <td class="examList">${exam.reExam}</td>
-             </tr>`
+             <td class="examList">${exam.slot ? exam.slot : '-'}</td>
+             <td class="examList">`
+      for (let g in exam.registeredGroups) {
+        let group = exam.registeredGroups[g]
+        output += `${group.registeredGroupDegree}(${group.registeredGroupStudents}), `
+      }
+      output += `</td> </tr>`
     }
     output += `</tbody>
               </table>`
@@ -234,6 +243,11 @@ let _fetchExamDays = function () {
                   <div id="description">
                   </div>
                 </td>
+                </td>
+                <td style="vertical-align:top; word-break: break-word; width:15em;">
+                  <div id="lecturer">
+                  </div>
+                </td>
               </tr>
             </table>
             </br>`
@@ -270,6 +284,26 @@ function toggleGoSlots () {
   })
 }
 
+function _fetchLecturer () {
+  $.getJSON(host + endpointLecturer, (lecturers) => {
+    let output = '<ul id="lecturerlist">'
+    for (let i in lecturers) {
+      const lecturer = lecturers[i]
+      output += `<li>
+          <span id="lecturer_${lecturer.personID}" class="lecturer"
+          onclick="viewExams(event, ${lecturer.personID})"> ${lecturer.personShortName} `
+      if (lecturer.personIsLBA) {
+        output += '(LBA)'
+      } else {
+        output += `(${lecturer.personFK})`
+      }
+      output += `</span></li>`
+    }
+    output += '</ul>'
+    $('#lecturer').html(output)
+  })
+}
+
 // Convenience function for _fetchExams
 let fetchExams = function () {
   _fetchExams()
@@ -297,5 +331,7 @@ fetchUnscheduledExams()
 _fetchNotPlannedByMeExams()
 
 setNotPlannedByMe()
+
+_fetchLecturer()
 
 _fetchValidation()

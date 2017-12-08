@@ -7,6 +7,8 @@ module Plexams.CLI.PlanManip
   ) where
 
 import           Control.Monad            (when)
+import qualified Data.Map                 as M
+import           Data.Maybe               (fromMaybe)
 import           Plexams.CLI.Import
 import           Plexams.CLI.Types
 import           Plexams.Import.PlanManip
@@ -31,6 +33,7 @@ makePlan config = do
     handicaps'       <- importHandicaps config
     let plan = setHandicapsOnScheduledExams
            $ addConstraints constraints'
+           $ addStudentRegistrationsToPlan (fromMaybe M.empty maybeStudentRegs)
            $ Plexams.PlanManip.makePlan examsWithRegs
                                         semesterConfig'
                                         persons'
