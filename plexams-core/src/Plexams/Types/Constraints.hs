@@ -15,6 +15,7 @@ import           Plexams.Types.Groups
 data Constraints = Constraints
   { overlaps                    :: [Overlaps]
   , notOnSameDay                :: [[Ancode]]
+  , inSameSlot                  :: [[Ancode]]
   , onOneOfTheseDays            :: [(Ancode, [Int])]
   , fixedSlot                   :: [(Ancode, (Int,Int))]
   , noInvigilations             :: [PersonID]
@@ -26,7 +27,7 @@ data Constraints = Constraints
   deriving (Show, Eq)
 
 noConstraints :: Constraints
-noConstraints = Constraints [] [] [] [] [] [] [] [] M.empty
+noConstraints = Constraints [] [] [] [] [] [] [] [] [] M.empty
 
 data Overlaps = Overlaps
   { olGroup :: Group

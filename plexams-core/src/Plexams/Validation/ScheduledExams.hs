@@ -249,12 +249,13 @@ validateScheduleConstraints plan = do
   tell [Info "## Validate schedule constraints from file"]
   let constraints' = constraints plan
   notOnSameDayOk <- validateNotOnSameDay plan (notOnSameDay constraints')
+  inSameSlotOk <- validateInSameSlot plan (inSameSlot constraints')
   onOneOfTheseDaysOk <- validateOneOfTheseDays plan
                                             (onOneOfTheseDays constraints')
   _ <- validateFixSlot plan (fixedSlot constraints')
   -- tell [HardConstraintBroken "TODO: invigilatesExam"]
   -- tell [HardConstraintBroken "TODO: impossibleInvigilationSlots"]
-  return $ validationResult [notOnSameDayOk, onOneOfTheseDaysOk]
+  return $ validationResult [notOnSameDayOk, inSameSlotOk, onOneOfTheseDaysOk]
 
 ------------------
 -- not on same day
@@ -342,6 +343,29 @@ validateFixSlot' plan (ancode, (d,s)) = do
                          `append` showt (d,s)]
       return $ if fixedSlotOk then EverythingOk else HardConstraintsBroken
 
+-------------
+-- in sams slot
+-------------
+validateInSameSlot :: Plan -> [[Ancode]]
+                   -> Writer [ValidationRecord] ValidationResult
+validateInSameSlot _ [] = return EverythingOk
+validateInSameSlot plan ancodes = do
+  tell [Info "### Validate exams that should be in same slot"]
+  validationResult <$> mapM (validateInSameSlot' plan) ancodes
+
+validateInSameSlot' :: Plan -> [Ancode]
+                    -> Writer [ValidationRecord] ValidationResult
+validateInSameSlot' plan ancodes = do
+  let exams' = concatMap (`queryByAnCode` plan) ancodes
+      allInSameSlot = (==1) $ length $ nub $ map slot exams'
+  if allInSameSlot
+    then return EverythingOk
+    else do
+      tell [ HardConstraintBroken
+             $ "- exams " `append` showt ancodes
+                          `append` " not in same slot "]
+      return HardConstraintsBroken
+
 -------------------------------------------------------
 -- each lecturer should have zero or one exams per slot
 -------------------------------------------------------
@@ -350,12 +374,14 @@ validateLecturerMaxOneExamPerSlot :: Plan
                                   -> Writer [ValidationRecord] ValidationResult
 validateLecturerMaxOneExamPerSlot plan = do
   tell [Info "### Validate numbers of exams per lecturer per slot (soft)"]
-  let listsOfLecturers = map (\(s,es) -> ( s
-                                         , map lecturer
-                                           $ M.elems
-                                           $ examsInSlot es
-                                         ))
-                           $ M.toList $ slots plan
+  let listsOfLecturers = map (\(s,es) ->
+         ( s
+         , map lecturer
+           $ filter ((`notElem` (concat $ inSameSlot $ constraints plan))
+                    . anCode)
+           $ M.elems
+           $ examsInSlot es
+         )) $ M.toList $ slots plan
       slotsWithDuplicates = filter (((/=) <$> nub <*> id) . snd) listsOfLecturers
   forM_ slotsWithDuplicates $ \(_, lecturers) ->
     tell [HardConstraintBroken
@@ -392,8 +418,8 @@ validateStudentsMaxTwoExamsPerDay plan = do
                      . mapMaybe (\a -> M.lookup a (students plan))
       mkTuples :: [[MtkNr]] -> (MtkNr, [Int])
       mkTuples mtknr' = (head $ head mtknr', map length mtknr')
-      oneHasThree = filter (\(_, examsPerDay) -> any (>2) examsPerDay)
-                            studentsWithMoreThanOneExamPerDay
+      -- oneHasThree = filter (\(_, examsPerDay) -> any (>2) examsPerDay)
+      --                       studentsWithMoreThanOneExamPerDay
       allAncodes = map anCode $ allExams plan
   forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr', noOfExams) -> do
     let exams' = maybe [] (filter (`elem` allAncodes) . S.toList . snd)

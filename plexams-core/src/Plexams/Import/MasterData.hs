@@ -91,6 +91,7 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
 
 data ImportConstraints =
   ImportConstraints (Maybe [[Ancode]])
+                    (Maybe [[Ancode]])
                     (Maybe [[Int]])
                     (Maybe [[Int]])
                     (Maybe [Integer])
@@ -102,6 +103,7 @@ data ImportConstraints =
 instance Y.FromJSON ImportConstraints where
   parseJSON (Y.Object v) = ImportConstraints
                         <$> v Y..:? "notOnSameDay"
+                        <*> v Y..:? "inSameSlot"
                         <*> v Y..:? "onOneOfTheseDays"
                         <*> v Y..:? "fixedSlot"
                         <*> v Y..:? "noInvigilations"
@@ -134,6 +136,7 @@ instance Y.FromJSON RoomOnlyForSlots where
 importConstraintsToConstraints :: ImportConstraints -> Constraints
 importConstraintsToConstraints
   (ImportConstraints iCNotOnSameDay
+                     iCInSameSlot
                      iCOnOneOfTheseDays
                      iCFixedSlot
                      icNoInvigilations
@@ -145,6 +148,7 @@ importConstraintsToConstraints
   Constraints
     { overlaps = []
     , notOnSameDay = fromMaybe [] iCNotOnSameDay
+    , inSameSlot = fromMaybe [] iCInSameSlot
     , onOneOfTheseDays = maybe []
                          (map (\(x:xs) -> (toInteger x, xs))) iCOnOneOfTheseDays
     , fixedSlot = maybe []
