@@ -21,36 +21,43 @@ function viewDetails (event, anCode) {
       event.stopImmediatePropagation()
       toggleSelect($(this))
     })
-    $.getJSON(host + endpointExams, function (exams) {
+    $.getJSON(endpoints.exams, function (exams) {
       var exam = null
       for (var i in exams) {
         if (exams[i].anCode === anCode) {
           exam = exams[i]
         }
       }
-      let groupsOutput = groupsToHTML(exam.groups)
-      let registeredGroupsOutput = registeredGroupsToHTML(exam.registeredGroups)
-      output += ` <h2 >${exam.name}</h1></br>
-                  AnCode: ${exam.anCode}</br>
-                  Rooms: </br>
-                  Registered Groups: ${registeredGroupsOutput}
-                  PlannedByMe: ${exam.plannedByMe}</br>
-                  StudentsWithHandicaps: </br>
-                  Lecturer: <span class="lecturer">${exam.lecturer.personShortName}</span></br>
-                  PersonFK: ${exam.lecturer.personFK}</br>
-                  PersonIsLBA: <span class="lecturer">${exam.lecturer.personIsLBA}</span></br>
-                  PersonID: ${exam.lecturer.personID}</br>
-                  PersonEmail: ${exam.lecturer.personEmail}</br>
-                  Duration: ${exam.duration}</br>
-                  ReExam: ${exam.reExam} </br>
-                  ExamType: ${exam.examType} </br>
-                  Conflicting Ancodes:
-                  <ul id='conflictingAncodes'>`
-      for (let  i = 0; i < exam.conflictingAncodes.length; i++) {
-        let conflictingAncode = exam.conflictingAncodes[i]
-        output += `<li>${conflictingAncode}</li>`
+      output += ` <h2 >${exam.anCode}. ${exam.name}</h1>
+                  ${exam.duration} Minuten`
+      if (exam.reExam) {
+        output += ', Wiederholungsprüfung'
+      } else {
+        output += ', Erstprüfung'
       }
-      output += `<ul>`
+      output += ` <br>
+                  <a href="mailto:${exam.lecturer.personEmail}"> ${exam.lecturer.personID}.
+                  <span class="lecturer">${exam.lecturer.personShortName}</span>`
+      if (exam.lecturer.personFK !== 'FK07' && exam.lecturer.personFK !== '') {
+        output += `, ${exam.lecturer.personFK}`
+      }
+      if (exam.lecturer.personIsLBA) {
+        output += ', LBA'
+      }
+      output += ` </a></br>`
+      output += groupsToHTML(exam.groups)
+      output += registeredGroupsToHTML(exam.registeredGroups)
+      output += `<ul class="rooms">`
+      for (let i in exam.rooms) {
+        const room = exam.rooms[i]
+        output += `<li class="room ${room.roomID}">${room.roomID}: `
+        output += `${room.seatsPlanned}/${room.maxSeats}`
+        if (room.reserveRoom) {
+          output += ' (Reserve)'
+        }
+        output += `</li>`
+      }
+      output += '</ul>'
       $('#description').html(output)
       setConflicts(anCode, exam.conflictingAncodes)
       fetchExamsBySameLecturer(anCode)
@@ -85,7 +92,7 @@ function toggleSelect (thisObj) {
 function fetchOverlaps (anCode) {
   var request = $.ajax({
     type: 'POST',
-    url: host + endpointOverlaps,
+    url: endpoints.overlaps,
     data: JSON.stringify(anCode),
     contentType: 'application/json',
     dataType: 'json'
@@ -116,7 +123,7 @@ function fetchOverlaps (anCode) {
 function fetchExamsBySameLecturer (anCode) {
   var request = $.ajax({
     type: 'POST',
-    url: host + endpointExamsBySameLecturer,
+    url: endpoints.examsBySameLecturer,
     data: JSON.stringify(anCode),
     contentType: 'application/json',
     dataType: 'json'
@@ -146,40 +153,39 @@ function setConflicts (anCode, conflictingAncodes) {
   }
 }
 
-function registeredGroupsToHTML (groups) {
-  let output = `<ul id='registeredGroups'>`
+function groupsToHTML (groups) {
+  let output = `<div class='groups'>Angeboten für:`
   for (var i in groups) {
     let group = groups[i]
-    output += `<li id='group'>
-      ${group.registeredGroupDegree} (${group.registeredGroupStudents})
-      </li>`
+    output += `<span class='group'>
+      ${group.groupDegree}`
+    if (group.groupSemester !== null) {
+      output += group.groupSemester
+    }
+    if (group.groupSubgroup !== null) {
+      output += group.groupSubgroup
+    }
+    output += '</span>'
+    if (i < groups.length - 1) {
+      output += ','
+    }
   }
-  output += `</ul>`
+  output += `</div>`
   return output
 }
 
-function groupsToHTML (groups) {
-  let output = `
-  <ul id='groups'>
-  `
+function registeredGroupsToHTML (groups) {
+  let output = `<div class='registeredGroups'>`
   for (var i in groups) {
     let group = groups[i]
-    let groupDegree = group.groupDegree != null ? group.groupDegree + ` ` : ``
-    let groupSemester = group.groupSemester != null ? group.groupSemester + ` ` : ``
-    let groupSubgroup = group.groupSubgroup != null ? group.groupSubgroup + ` ` : ``
-    let groupRegistrations = group.groupRegistrations != null ? group.groupRegistrations + ` ` : ``
-    output +=
-      `<li id='group'>
-        <div>` +
-      groupDegree +
-      groupSemester +
-      groupSubgroup +
-      groupRegistrations + `
-        </div>
-      </li>
-      `
+    output += `<span class='group'>
+      ${group.registeredGroupDegree} (${group.registeredGroupStudents})
+      </span>`
+    if (i < groups.length - 1) {
+      output += ','
+    }
   }
-  output += `</ul>`
+  output += `</div>`
   return output
 }
 
@@ -187,7 +193,7 @@ function addExamToSlot (anCode, dayIdx, slotIdx) {
   var result = false
   $.ajax({
     type: 'POST',
-    url: host + endpointAddExam,
+    url: endpoints.addExam,
     data: JSON.stringify({
       planManipAnCode: anCode,
       planManipDay: dayIdx,
@@ -229,7 +235,7 @@ function dragExam (ev) {
 }
 
 function allowDropExam (ev) {
-  if ((ev.currentTarget.className === 'outer') || (ev.currentTarget.className === 'outerUnscheduled')) {
+  if ((ev.currentTarget.classList.contains('outer')) || (ev.currentTarget.className === 'outerUnscheduled')) {
     ev.preventDefault()
   }
 }

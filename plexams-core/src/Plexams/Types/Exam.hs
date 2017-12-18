@@ -64,7 +64,7 @@ instance Show Exam where
                 ++ name exam
                 ++ ", " ++ unpack (personShortName (lecturer exam))
                 ++ (if reExam exam then ", W " else ", E ")
-                ++ show (groups exam)
+                ++ show (registeredGroups exam)
                 ++ (if registrations exam > 0
                     then "=" ++ show (registrations exam)
                     else "")

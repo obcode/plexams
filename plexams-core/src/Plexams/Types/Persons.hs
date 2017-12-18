@@ -90,7 +90,7 @@ instance Y.FromJSON Handicap where
                         <*> v Y..: "mtknr"
                         <*> v Y..: "compensation"
                         <*> v Y..: "deltaDurationPercent"
-                        <*> v Y..: "exams"
+                        <*> v Y..: "exams" Y..!= []
                         <*> v Y..:? "needsRoomAlone" Y..!= False
   parseJSON _            = empty
 

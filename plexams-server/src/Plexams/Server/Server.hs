@@ -8,11 +8,10 @@ module Plexams.Server.Server
   ) where
 
 import           Control.Monad.Except
-import           Data.ByteString.Lazy.Char8
+import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.List                  (nub, partition, sortBy)
 import qualified Data.Map                   as M
 import           Data.Maybe
-import           Data.Time.Calendar
 import           GHC.Exts                   (sortWith)
 import           Network.Wai
 import           Network.Wai.Handler.Warp
@@ -20,25 +19,28 @@ import           Plexams.PlanManip
 import           Plexams.Server.Check
 import           Plexams.Server.Import
 import           Plexams.Server.PlanManip
-import           Plexams.Types
+import           Plexams.Types hiding (importExams)
+import qualified Plexams.Types
 import           Plexams.Validation
 import           Servant
 
 
 type API = "exams" :> Get '[JSON] [Exam]
       :<|> "studentregs" :> Get '[JSON] [StudentWithRegs]
-      :<|> "examDays" :> Get '[JSON] [Day]
+      :<|> "examDays" :> Get '[JSON] [String]
       :<|> "slots" :> Get '[JSON] Slots
+      :<|> "slot" :> ReqBody '[JSON] (String, String) :> Post '[JSON] [Exam]
       :<|> "slotsPerDay" :> Get '[JSON] [String]
+      :<|> "slotsForDay" :> ReqBody '[JSON] Int :> Post '[JSON] Slots
       :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
       :<|> "unscheduledExams" :> Get '[JSON] [Exam]
-      :<|> "notPlannedByMeExams" :> Get '[JSON] [Exam]
+      :<|> "notPlannedByMeExams" :> Get '[JSON] [Ancode]
       :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
-      :<|> "validation" :> Get '[JSON] Validation
+      :<|> "validation" :> ReqBody '[JSON] [ValidateWhat] :> Post '[JSON] Validation
       :<|> "examsBySameLecturer" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Exam]
       :<|> "goSlots" :> Get '[JSON] [(Int, Int)]
       :<|> "lecturer" :> Get '[JSON] [Person]
-
+      :<|> "validateWhat" :> Get '[JSON] [ValidateWhat]
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -54,7 +56,9 @@ server = exams'
     :<|> studentregs
     :<|> examDays'
     :<|> slots'
+    :<|> slot'
     :<|> slotsPerDay'
+    :<|> slotsForDay'
     :<|> addExam'
     :<|> unscheduledExams'
     :<|> notPlannedByMeExams'
@@ -63,52 +67,75 @@ server = exams'
     :<|> examsBySameLecturer'
     :<|> goSlots'
     :<|> lecturer'
+    :<|> validateWhat'
 
       where
-        exams' :: Handler [Exam]
-        exams' = do
-          plan'' <- liftIO appliedPlan
-          regs' <- liftIO importRegistrations
-          studentregs' <- liftIO importStudentRegistrations
+
+        getPlan :: IO Plan
+        getPlan = do
+          plan'' <- appliedPlan
+          studentregs' <- importStudentRegistrations
+          -- TODO: importInvigilators
           case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
+            Left errorMsg -> error errorMsg
             Right plan''' -> return
-                $ allExams
-                $ addStudentRegistrationsToPlan
-                  (fromMaybe M.empty studentregs')
-                  plan'''
+              $ addStudentRegistrationsToPlan
+                (fromMaybe M.empty studentregs')
+                plan'''
+
+        getSemesterConfig :: IO SemesterConfig
+        getSemesterConfig = do
+          semesterConfig'' <- semesterConfig'
+          case semesterConfig'' of
+            Left errorMsg  -> error errorMsg
+            Right config'' -> return config''
+
+        validateWhat' :: Handler [ValidateWhat]
+        validateWhat' = return validateWhat
+
+        exams' :: Handler [Exam]
+        exams' = fmap allExams (liftIO getPlan)
 
         studentregs :: Handler [StudentWithRegs]
         studentregs = do
           studentregs' <- liftIO importStudentRegistrations
           return $ maybe [] M.elems studentregs'
 
-        examDays' :: Handler [Day]
+        examDays' :: Handler [String]
         examDays' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
-            Left errorMsg  -> failingHandler $ pack errorMsg
-            Right config'' -> return $ examDays config''
+            Left errorMsg  -> failingHandler $ BSL.pack errorMsg
+            Right config'' -> return $ examDaysAsStrings config''
 
         slots' :: Handler Slots
-        slots' = do
-          plan'' <- liftIO appliedPlan
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' -> return $ slots plan'''
+        slots' = fmap slots (liftIO getPlan)
+
+        slot' :: (String, String) -> Handler [Exam]
+        slot' (ds, ss) = do
+          let s = (read ds, read ss) -- TODO: Catch errors
+          plan'' <- liftIO getPlan
+          return $ maybe [] (M.elems . examsInSlot)
+                                    $ M.lookup s
+                                    $ slots plan''
 
         slotsPerDay' :: Handler [String]
         slotsPerDay' = do
           semesterConfig'' <- liftIO semesterConfig'
           case semesterConfig'' of
-            Left errorMsg  -> failingHandler $ pack errorMsg
+            Left errorMsg  -> failingHandler $ BSL.pack errorMsg
             Right config'' -> return $ slotsPerDay config''
+
+        slotsForDay' :: Int -> Handler Slots
+        slotsForDay' dayIndex =
+          fmap (M.filterWithKey (\k _ -> fst k == dayIndex) . slots)
+               (liftIO getPlan)
 
         addExam' :: AddExamToSlot -> Handler CheckError
         addExam' exam = do
           plan'' <- liftIO appliedPlan
           case plan'' of
-            Left errorMsg   -> failingHandler $ pack errorMsg
+            Left errorMsg   -> failingHandler $ BSL.pack errorMsg
             Right plan''' ->
               let check = checkConstraints plan''' exam
               in case check of
@@ -118,107 +145,64 @@ server = exams'
                 _ -> return check
 
         unscheduledExams' :: Handler [Exam]
-        unscheduledExams' = do
-          plan'' <- liftIO appliedPlan
-          regs' <- liftIO importRegistrations
-          studentregs' <- liftIO importStudentRegistrations
-          case plan'' of
-            Left errorMsg -> failingHandler $pack errorMsg
-            -- Right plan''' -> return $ unscheduledExamsSortedByRegistrations plan'''
-            Right plan''' -> return
-                $ sortBy (\e1 e2 -> compare (registrations e2)
-                                            (registrations e1))
-                $ Prelude.filter isUnscheduled
-                $ allExams
-                $ addStudentRegistrationsToPlan
-                  (fromMaybe M.empty studentregs')
-                  plan'''
+        unscheduledExams' =
+          fmap (sortBy (\e1 e2 -> compare (registrations e2)
+                                          (registrations e1))
+                . filter isUnscheduled
+                . allExams)
+               (liftIO getPlan)
 
-        notPlannedByMeExams' :: Handler [Exam]
-        notPlannedByMeExams' = do
-          plan'' <- liftIO appliedPlan
-          regs' <- liftIO importRegistrations
-          studentregs' <- liftIO importStudentRegistrations
-          case plan'' of
-            Left errorMsg -> failingHandler $pack errorMsg
---            Right plan''' -> return $ notPlannedByMeExams plan'''
-            Right plan''' -> return
-                $ sortBy (\e1 e2 -> compare (registrations e2)
-                                            (registrations e1))
-                $ Prelude.filter (not . plannedByMe)
-                $ allExams
-                $ addStudentRegistrationsToPlan
-                  (fromMaybe M.empty studentregs')
-                  plan'''
+        notPlannedByMeExams' :: Handler [Ancode]
+        notPlannedByMeExams' =
+          fmap (map head . Plexams.Types.importExams)
+               (liftIO getSemesterConfig)
 
         overlaps' :: Ancode -> Handler [Overlaps]
-        overlaps' anCode' = do
-          plan'' <- liftIO appliedPlan
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' ->
-              let overlaps'' = (studentsOverlaps plan''' :)
-                                   $ overlaps $ constraints plan'''
-              in return $ filterOverlaps anCode' overlaps''
+        overlaps' anCode' =
+          fmap (\plan'' -> filterOverlaps anCode'
+                           $ (studentsOverlaps plan'' :)
+                           $ overlaps
+                           $ constraints plan''
+               ) (liftIO getPlan)
 
         examsBySameLecturer' :: Ancode -> Handler [Exam]
         examsBySameLecturer' anCode' = do
-          plan'' <- liftIO appliedPlan
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' ->
-              let allExams' = allExams plan'''
-                  (thisExam, otherExams) =
-                                    partition ((==anCode') . anCode) allExams'
-                  lecturer' = personID $ lecturer $ Prelude.head $ thisExam
-                  otherExams' = Prelude.filter
-                                ((==lecturer') . personID . lecturer) otherExams
-              in return otherExams'
+          plan'' <- liftIO getPlan
+          let allExams' = allExams plan''
+              (thisExam, otherExams) =
+                                partition ((==anCode') . anCode) allExams'
+              lecturer'' = personID $ lecturer $ head thisExam
+              otherExams' = filter
+                            ((==lecturer'') . personID . lecturer) otherExams
+          return otherExams'
 
-        validation' :: Handler Validation
-        validation' = do
-          plan'' <- liftIO appliedPlan
-          regs' <- liftIO importRegistrations
-          studentregs' <- liftIO importStudentRegistrations
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' -> return $ uncurry Validation
-                                    $ validate [ValidateSchedule]
-                                    $ addStudentRegistrationsToPlan
-                                      (fromMaybe M.empty studentregs')
-                                      plan'''
+        validation' :: [ValidateWhat] -> Handler Validation
+        validation' validateWhat'' =
+          fmap (uncurry Validation . validate validateWhat'')
+               (liftIO getPlan)
 
         goSlots' :: Handler [(Int, Int)]
-        goSlots' = do
-          plan'' <- liftIO appliedPlan
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' -> return $ goSlots $ semesterConfig
-                                      plan'''
+        goSlots' = fmap goSlots (liftIO getSemesterConfig)
 
         lecturer' :: Handler [Person]
-        lecturer' = do
-          plan'' <- liftIO appliedPlan
-          case plan'' of
-            Left errorMsg -> failingHandler $ pack errorMsg
-            Right plan''' -> return $ sortWith personShortName
-                                    $ nub
-                                    $ Prelude.map lecturer
-                                    $ allExams plan'''
+        lecturer' = fmap (sortWith personShortName
+                          . nub
+                          . map lecturer
+                          . allExams) (liftIO getPlan)
 
 
-failingHandler :: MonadError ServantErr m => ByteString -> m a
+failingHandler :: MonadError ServantErr m => BSL.ByteString -> m a
 failingHandler s = throwError myerr
   where myerr :: ServantErr
         myerr = err503 { errBody = s }
 
 filterOverlaps :: Ancode -> [Overlaps] -> [Overlaps]
-filterOverlaps anCode' overlaps' = Prelude.map overlap groups'
-  where groups' = Prelude.filter
+filterOverlaps anCode' overlaps' = map overlap groups'
+  where groups' = filter
           (isJust . M.lookup anCode' . olOverlaps) overlaps'
         overlap group' = Overlaps
           { olGroup = olGroup group'
           , olOverlaps = olOverlaps' group'}
         olOverlaps' group' =
-          M.fromList $ Prelude.filter
+          M.fromList $ filter
             (\overlap' -> fst overlap' == anCode') (M.toList (olOverlaps group'))

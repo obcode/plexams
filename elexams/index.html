@@ -18,47 +18,38 @@
   </script>
   <script src="resources/jquery.tablesorter.min.js"></script>
   <script src="renderer.js"></script>
-  <script src="elexams.js"></script>
+  <script src="plan.js"></script>
+  <script src="invigilation.js"></script>
 
 </head>
 
 <body>
-  <ul class="tabs">
-    <li class="tab">
-      <input type="radio" name="tabs" checked="checked" id="tab1" />
-      <label for="tab1">Plan</label>
-      <div id="tab-content1" class="content">
-        <button onclick="toggleGoSlots()">GO Slots</button>
-        <div id="validation">... still validating</div>
-        <div id="plan"></div>
-        <div class="containerUnscheduled">
-          <div class="unscheduledHeader" draggable="false">Not yet scheduled</div>
-          <div id="unscheduled" class="outerUnscheduled" draggable="false">
-          </div>
-        </div>
-        <div class="containerUnscheduled">
-          <div class="unscheduledHeader" draggable="false">Not planned by me</div>
-          <div id="notPlannedByMe" class="outerUnscheduled" draggable="false">
-          </div>
-        </div>
+  <div class="tab">
+    <button id="search-button" onclick="inPageSearch.openSearchWindow()">Suchen</button>
+    <button class="tablinks" onclick="openTab(event, 'Prüfungsplanung')">Prüfungsplanung</button>
+    <button class="tablinks" onclick="openTab(event, 'Aufsichtenplanung')">Aufsichtenplanung</button>
+    <button class="tablinks" onclick="openTab(event, 'Validation')">Validation</button>
+    <button class="tablinks" onclick="openTab(event, 'Prüfungsliste')">Prüfungsliste</button>
+  </div>
+  <div id="Prüfungsplanung" class="tabcontent">
+    <button onclick="toggleGoSlots()">GO Slots</button>
+    <div id="plan"></div>
+    <div class="containerUnscheduled">
+      <div class="unscheduledHeader" draggable="false">Not yet scheduled</div>
+      <div id="unscheduled" class="outerUnscheduled" draggable="false">
       </div>
-    </li>
+    </div>
+  </div>
+  <div id="Aufsichtenplanung" class="tabcontent">
+    <div id="invigilations"></div>
+  </div>
+  <div id="Validation" class="tabcontent">
+    <div id="validation-full"></div>
+  </div>
+  <div id="Prüfungsliste" class="tabcontent">
+    <div id="plexams-api"></div>
+  </div>
 
-    <li class="tab">
-      <input type="radio" name="tabs" id="tab2" />
-      <label for="tab2">Validation</label>
-      <div id="tab-content2" class="content">
-        <div id="validation-full"></div>
-      </div>
-    </li>
-
-    <li class="tab">
-      <input type="radio" name="tabs" id="tab3" />
-      <label for="tab3">Prüfungsliste</label>
-      <div id="tab-content3" class="content">
-        <div id="plexams-api"></div>
-      </div>
-    </li>
   </ul>
   <!-- <div id="status"></div> -->
   <div class="fixed" id="error"></div>

@@ -6,6 +6,7 @@ module Plexams.Types.Validation
   , ValidationRecord(..)
   , Validation(..)
   , ValidateWhat(..)
+  , validateWhat
   , validationMessage
   , validationResult
   ) where
@@ -59,4 +60,10 @@ data ValidateWhat = ValidateSources
                   | ValidateSchedule
                   | ValidateRooms
                   | ValidateInvigilation
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Enum)
+
+validateWhat :: [ValidateWhat]
+validateWhat = [ValidateSources .. ValidateInvigilation]
+
+instance FromJSON ValidateWhat
+instance ToJSON ValidateWhat

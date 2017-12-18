@@ -15,7 +15,7 @@ import           Plexams.Import.PlanManip
 import           Plexams.Invigilation
 import           Plexams.PlanManip        hiding (makePlan)
 import qualified Plexams.PlanManip
-import           Plexams.Types
+import           Plexams.Types            hiding (importExams)
 import           System.Directory         (doesFileExist)
 import           System.Exit
 import           System.IO                (hPutStrLn, stderr)

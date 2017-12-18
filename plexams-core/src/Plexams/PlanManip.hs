@@ -204,7 +204,7 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
           , invigilatorsPerDay = M.empty
           , initialPlan = exams'
           }
-        (fk10Exams semesterConfig')
+        (importExams semesterConfig')
   where exams' = map (setPerson pers) exams''
         slots' = M.fromList
               $ zip [ (d,t) | d <- [0..length (examDays    semesterConfig') - 1]
@@ -216,7 +216,7 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
             , reserveInvigilator = Nothing
             }
         (examsPlannedNotByMe', unscheduledExams') =
-                    partition ((`elem` (map head $ fk10Exams semesterConfig'))
+                    partition ((`elem` (map head $ importExams semesterConfig'))
                               . anCode) exams'
         unscheduledExams'' = M.fromList $ map (\e -> (anCode e, e))
                                               $ unscheduledExams'

@@ -1,20 +1,71 @@
 // Backend and endpoint details
 const host = 'http://127.0.0.1:8080'
-const endpointExams = '/exams'
-const endpointExamDays = '/examDays'
-const endpointSlots = '/slots'
-const endpointSlotsPerDay = '/slotsPerDay'
-const endpointAddExam = '/addExam'
-const endpointOverlaps = '/overlaps'
-const endpointUnscheduledExams = '/unscheduledExams'
-const endpointNotPlannedByMeExams = '/notPlannedByMeExams'
-const endpointValidation = '/validation'
-const endpointExamsBySameLecturer = '/examsBySameLecturer'
-const endpointGoSlots = '/goSlots'
-const endpointLecturer = '/lecturer'
+const endpoints =
+  { exams: host + '/exams',
+    examDays: host + '/examDays',
+    slots: host + '/slots',
+    slot: host + '/slot',
+    slotsPerDay: host + '/slotsPerDay',
+    addExam: host + '/addExam',
+    overlaps: host + '/overlaps',
+    unscheduledExams: host + '/unscheduledExams',
+    notPlannedByMeExams: host + '/notPlannedByMeExams',
+    validation: host + '/validation',
+    validateWhat: host + '/validateWhat',
+    examsBySameLecturer: host + '/examsBySameLecturer',
+    goSlots: host + '/goSlots',
+    lecturer: host + '/lecturer'
+  }
+
+
+const openTab = (evt, tabname) => {
+
+  // Get all elements with class="tabcontent" and hide them
+  const tabcontent = document.getElementsByClassName('tabcontent')
+  for (let i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = 'none'
+  }
+
+  // Get all elements with class="tablinks" and remove the class "active"
+  const tablinks = document.getElementsByClassName('tablinks');
+  for (let i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(' active', '')
+  }
+
+  // Show the current tab, and add an "active" class to the button that opened the tab
+  document.getElementById(tabname).style.display = 'block'
+  evt.currentTarget.className += ' active'
+  if (tabname === 'Prüfungsplanung') {
+    $('#plan').html('<h1>Generating...</h1>')
+    fetchExamDays()
+    fetchUnscheduledExams()
+    // _fetchValidateWhat()
+  } else if (tabname === 'Aufsichtenplanung') {
+    fetchInvigilations()
+  } else if (tabname === 'Validation') {
+    $('#validation-full').html('<h1>Validating...</h1>')
+    fetchValidation()
+  } else if (tabname === 'Prüfungsliste') {
+    fetchExams()
+  }
+}
+
+
+let _fetchValidateWhat = () => {
+  $.getJSON(endpoints.validateWhat, (validateWhat) => {
+    let output = 'Validation: <form>'
+    for (let i in validateWhat) {
+      output += `<input type="checkbox" name="${validateWhat[i]}"
+                                        value="${validateWhat[i]}">
+                 ${validateWhat[i]} | `
+    }
+    output += '</form>'
+    $('#validateWhat').html(output)
+  })
+}
 
 let _fetchValidation = () => {
-  $.getJSON(host + endpointValidation, (validation) => {
+  $.getJSON(endpoints.validation, (validation) => {
     let output = `<h1>${validation.result}</h1><ul>`
     for (let i in validation.brokenConstraints) {
       let constraint = validation.brokenConstraints[i]
@@ -40,8 +91,29 @@ let _fetchValidation = () => {
   })
 }
 
+let fetchValidation = () => {
+  var request = $.ajax({
+    type: 'POST',
+    url: endpoints.validation,
+    data: JSON.stringify(["ValidateSchedule"]),
+    contentType: 'application/json',
+    dataType: 'json'
+  })
+  request.done(function (validation) {
+    output = `<h1>${validation.result}</h1><ul>`
+    for (let i in validation.brokenConstraints) {
+      let constraint = validation.brokenConstraints[i]
+      output += `<li><span class="${constraint.tag}">
+                  ${constraint.contents}</span>
+                </li>`
+    }
+    output += `</ul>`
+    $('#validation-full').html(output)
+  })
+}
+
 let _fetchExams = function () {
-  $.getJSON(host + endpointExams, function (exams) {
+  $.getJSON(endpoints.exams, function (exams) {
     let output =
       `<table id="examList" class="examList" >
       <thead>
@@ -91,7 +163,7 @@ let _fetchExams = function () {
 }
 
 let _fetchUnscheduledExams = function () {
-  $.getJSON(host + endpointUnscheduledExams, function (uExams) {
+  $.getJSON(endpoints.unscheduledExams, function (uExams) {
     let outputPlannedByMe = ``
     for (var i in uExams) {
       var exam = uExams[i]
@@ -119,7 +191,7 @@ let _fetchUnscheduledExams = function () {
 }
 
 let _fetchNotPlannedByMeExams = function () {
-  $.getJSON(host + endpointNotPlannedByMeExams, function (uExams) {
+  $.getJSON(endpoints.notPlannedByMeExams, function (uExams) {
     let outputNotPlannedByMe = ``
     for (var i in uExams) {
       var exam = uExams[i]
@@ -141,15 +213,29 @@ let _fetchNotPlannedByMeExams = function () {
   })
 }
 
+let _fetchReserve = function (inDay, inTime, slots) {
+  for (let i in slots) {
+    const slot = slots[i]
+    const timeSlot = slot[0]
+    const slotValue = slot[1]
+    const day = timeSlot[0]
+    const time = timeSlot[1]
+    if (day == inDay && time == inTime) {
+      return slotValue.reserveInvigilator
+    }
+  }
+}
+
+
 let _fetchExamsData = function (inDay, inTime, slots) {
   for (var i in slots) {
     let slot = slots[i]
     let timeSlot = slot[0]
-    let exams = slot[1]
+    let slotValue = slot[1]
     let day = timeSlot[0]
     let time = timeSlot[1]
     if (day == inDay && time == inTime) {
-      let examsInSlot = exams.examsInSlot
+      let examsInSlot = slotValue.examsInSlot
       var arr = []
       for (var j in Object.keys(examsInSlot)) {
         let anCode = Object.keys(examsInSlot)[j]
@@ -158,10 +244,21 @@ let _fetchExamsData = function (inDay, inTime, slots) {
           anCode = ''
         }
         let name = ''
+        let reExam = ''
         if (exam != null) {
           name = exam.name
+          if (exam.reExam) {
+            reExam = '(W)'
+          }
         }
-        arr.push(anCode + `</br>` + name)
+//        arr.push(anCode + reExam + `</br>` + name + `</br>`)
+        arr.push(exam)
+        //   {
+        //   anCode: exam.anCode,
+        //   reExam: exam.reExam,
+        //   name: exam.name,
+        //   lecturer: exam.lecturer.personShortName
+        // })
       }
       return arr
     }
@@ -196,9 +293,9 @@ let _fetchExamDescription = function (inDay, inTime, slots) {
 }
 
 let _fetchExamDays = function () {
-  $.getJSON(host + endpointExamDays, function (examDays) {
-      $.getJSON(host + endpointSlotsPerDay, function (slotsPerDay) {
-        $.getJSON(host + endpointSlots, function (slots) {
+  $.getJSON(endpoints.examDays, function (examDays) {
+      $.getJSON(endpoints.slotsPerDay, function (slotsPerDay) {
+        $.getJSON(endpoints.slots, function (slots) {
           // Construct the plan output
           let output =
             `<table>
@@ -225,10 +322,28 @@ let _fetchExamDays = function () {
                         <div id="slot_${j}_${i}" class="outer" data-day="${j}" data-slot="${i}"
                         ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
               for (let k in examData) {
-                output += `<div id="${anCodes[k]}" class="inner" ondrop="return false;"
-                            draggable="true" ondragstart="dragExam(event)"
-                            onclick="viewDetails(event, ${anCodes[k]})">${examData[k]}
-                            </div>`
+                const exam = examData[k]
+                output += `<div id="${exam.anCode}" class="inner `
+                if (exam.reExam) {
+                  output += 'reExam'
+                }
+                output += `" ondrop="return false;"
+                           draggable="true" ondragstart="dragExam(event)"
+                           onclick="viewDetails(event, ${exam.anCode})"
+                           title="${exam.anCode}"
+                           onmouseover="">
+                           ${exam.anCode}. `
+                for (let g in exam.registeredGroups) {
+                  const group = exam.registeredGroups[g]
+                  output += `${group.registeredGroupDegree}(${group.registeredGroupStudents}),`
+                }
+                output += `<br>
+                           <span class="examName">${exam.name}</span><br>
+                           ${exam.lecturer.personShortName}<br>`
+                for (let r in exam.rooms) {
+                  output += `${exam.rooms[r].roomID}, `
+                }
+                output += `</div>`
               }
               output += `</div>
                         </td>`
@@ -244,14 +359,12 @@ let _fetchExamDays = function () {
                   </div>
                 </td>
                 </td>
-                <td style="vertical-align:top; word-break: break-word; width:15em;">
-                  <div id="lecturer">
-                  </div>
-                </td>
               </tr>
             </table>
             </br>`
           $('#plan').html(output)
+          toggleGoSlots()
+          setNotPlannedByMe()
         })
       })
   })
@@ -266,9 +379,9 @@ let _fetchExamDays = function () {
 }
 
 function setNotPlannedByMe () {
-  $.getJSON(host + endpointNotPlannedByMeExams, function (exams) {
-    for (var i in exams) {
-      let ancode = exams[i].anCode
+  $.getJSON(endpoints.notPlannedByMeExams, function (ancodes) {
+    for (var i in ancodes) {
+      let ancode = ancodes[i]
       $('#'.concat(ancode)).addClass('notPlannedByMe')
     }
   })
@@ -276,7 +389,7 @@ function setNotPlannedByMe () {
 
 
 function toggleGoSlots () {
-  $.getJSON(host + endpointGoSlots, (goSlots) => {
+  $.getJSON(endpoints.goSlots, (goSlots) => {
     for (let i in goSlots) {
       let goSlot = goSlots[i]
       $(['#slot_', goSlot[0], '_', goSlot[1]].join('')).addClass('goSlot')
@@ -285,7 +398,7 @@ function toggleGoSlots () {
 }
 
 function _fetchLecturer () {
-  $.getJSON(host + endpointLecturer, (lecturers) => {
+  $.getJSON(endpoints.lecturer, (lecturers) => {
     let output = '<ul id="lecturerlist">'
     for (let i in lecturers) {
       const lecturer = lecturers[i]
@@ -319,19 +432,21 @@ let fetchUnscheduledExams = function () {
   _fetchUnscheduledExams()
 }
 
-// Start to fetch the exam list
-fetchExams()
+// // Start to fetch the exam list
+// fetchExams()
+//
+// // Start to fetch the exam days
+// fetchExamDays()
+//
+// // Start to fetch the unscheduled exams
+// fetchUnscheduledExams()
+//
+// // _fetchNotPlannedByMeExams()
+//
+// _fetchValidateWhat()
+//
+// setNotPlannedByMe()
 
-// Start to fetch the exam days
-fetchExamDays()
+// _fetchLecturer()
 
-// Start to fetch the unscheduled exams
-fetchUnscheduledExams()
-
-_fetchNotPlannedByMeExams()
-
-setNotPlannedByMe()
-
-_fetchLecturer()
-
-_fetchValidation()
+// _fetchValidation()

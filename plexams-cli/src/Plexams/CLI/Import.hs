@@ -14,7 +14,7 @@ import           Plexams.CLI.Types
 import           Plexams.Import.MasterData
 import           Plexams.Import.Registrations
 import           Plexams.PlanManip
-import           Plexams.Types
+import           Plexams.Types                hiding (importExams)
 import           System.Exit
 import           System.IO                    (hPutStrLn, stderr)
 

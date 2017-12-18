@@ -14,7 +14,7 @@ import           Data.Aeson
 import           Data.Char    (digitToInt)
 import qualified Data.Map     as M
 import           Data.Monoid  ((<>))
-import           Data.Text    (Text)
+import           Data.Text    (Text, unpack)
 import           GHC.Generics
 import           TextShow     (TextShow, showb)
 
@@ -23,6 +23,10 @@ data RegisteredGroup = RegisteredGroup
   , registeredGroupStudents :: Integer
   }
   deriving (Eq, Generic)
+
+instance Show RegisteredGroup where
+  show (RegisteredGroup degree students) =
+    unpack degree ++ "(" ++ show students ++ ")"
 
 instance FromJSON RegisteredGroup
 instance ToJSON RegisteredGroup

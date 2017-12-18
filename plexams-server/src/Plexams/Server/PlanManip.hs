@@ -6,10 +6,11 @@ module Plexams.Server.PlanManip
 import           Control.Monad.Except
 import qualified Data.ByteString          as BSI
 import qualified Data.Yaml                as Y
-import           Plexams.Import.PlanManip (importExamSlotsFromYAMLFile)
+import           Plexams.Import.PlanManip (importAddRoomToExamFromYAMLFile,
+                                           importExamSlotsFromYAMLFile)
 import           Plexams.PlanManip
 import           Plexams.Server.Import
-import           Plexams.Types
+import           Plexams.Types            hiding (importExams)
 
 initialPlan' :: IO (Either String Plan)
 initialPlan' = do
@@ -69,13 +70,18 @@ appliedPlan = do
 
 applyPlanManips' :: FilePath -> Plan -> IO (Either String Plan)
 applyPlanManips' file plan = do
-  maybeExamSlots <- importExamSlotsFromYAMLFile file
-  case maybeExamSlots of
-    Just examSlots'' ->
-      return $ Right $ applyAddExamToSlotListToPlan plan examSlots''
-    Nothing -> return $ Left errorMsg
-      where
-        errorMsg =   "no planmanip file found: "
+    maybeExamSlots <- importExamSlotsFromYAMLFile file
+    maybeRooms <- importAddRoomToExamFromYAMLFile "input/rooms.yaml" -- TODO: remove hardcoded file, should be in semesterconfig
+    case maybeExamSlots of
+      Just examSlots'' -> case maybeRooms of
+        Just roomsToExam ->
+          return $ Right
+                 $ (`applyAddRoomToExamListToPlan` roomsToExam)
+                 $ applyAddExamToSlotListToPlan plan examSlots''
+        Nothing -> return $ Left $ "no rooms file found: "
+                ++ file
+                ++ " does not exist or is not parsable."
+      Nothing -> return $ Left $ "no planmanip file found: "
                 ++ file
                 ++ " does not exist or is not parsable."
 
