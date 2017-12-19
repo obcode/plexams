@@ -8,31 +8,31 @@ module Plexams.Server.Server
   ) where
 
 import           Control.Monad.Except
-import qualified Data.ByteString.Lazy.Char8 as BSL
-import           Data.List                  (nub, partition, sortBy)
-import qualified Data.Map                   as M
+import qualified Data.ByteString.Lazy.Char8  as BSL
+import           Data.List                   (nub, partition, sortBy)
+import qualified Data.Map                    as M
 import           Data.Maybe
-import           GHC.Exts                   (sortWith)
+import           GHC.Exts                    (sortWith)
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Control.Concurrent.STM.TVar
+import           Control.Monad.Reader
+import           Control.Monad.STM
+import           Plexams.Import
 import           Plexams.PlanManip
-import           Plexams.Server.Check
-import           Plexams.Server.Import
 import           Plexams.Server.PlanManip
-import           Plexams.Types hiding (importExams)
-import qualified Plexams.Types
+import           Plexams.Types
 import           Plexams.Validation
 import           Servant
 
-
 type API = "exams" :> Get '[JSON] [Exam]
-      :<|> "studentregs" :> Get '[JSON] [StudentWithRegs]
+--      :<|> "studentregs" :> Get '[JSON] [StudentWithRegs]
       :<|> "examDays" :> Get '[JSON] [String]
       :<|> "slots" :> Get '[JSON] Slots
-      :<|> "slot" :> ReqBody '[JSON] (String, String) :> Post '[JSON] [Exam]
+      :<|> "slot" :> ReqBody '[JSON] (Int, Int) :> Post '[JSON] [Exam]
       :<|> "slotsPerDay" :> Get '[JSON] [String]
       :<|> "slotsForDay" :> ReqBody '[JSON] Int :> Post '[JSON] Slots
-      :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] CheckError
+      :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] ()
       :<|> "unscheduledExams" :> Get '[JSON] [Exam]
       :<|> "notPlannedByMeExams" :> Get '[JSON] [Ancode]
       :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
@@ -42,18 +42,41 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "lecturer" :> Get '[JSON] [Person]
       :<|> "validateWhat" :> Get '[JSON] [ValidateWhat]
 
-startApp :: IO ()
-startApp = run 8080 app
+newtype State = State { plan :: TVar Plan }
+type StateHandler = ReaderT State Handler
 
-app :: Application
-app = serve api server
+stateHandlerToHandler :: State -> StateHandler :~> Handler
+stateHandlerToHandler state = NT stateHandlerToHandler'
+  where
+  stateHandlerToHandler' :: StateHandler a -> Handler a
+  stateHandlerToHandler' h = runReaderT h state
+
+startApp :: IO ()
+startApp = do
+  plan' <- getPlan
+  planTVar <- atomically $ newTVar plan'
+  let state = State planTVar
+  run 8080 (app state)
+
+getPlan :: IO Plan
+getPlan = do
+  (maybePlan, errorMessages) <- importPlan
+  mapM_ print errorMessages
+  case maybePlan of
+    Just plan' -> return plan'
+    Nothing -> return $ error "no plan"
+
+app :: State -> Application
+app = serve api . server
 
 api :: Proxy API
 api = Proxy
 
-server :: Server API
-server = exams'
-    :<|> studentregs
+server :: State -> Server API
+server state =
+  enter (stateHandlerToHandler state)
+    (  exams'
+--     :<|> studentregs
     :<|> examDays'
     :<|> slots'
     :<|> slot'
@@ -67,108 +90,102 @@ server = exams'
     :<|> examsBySameLecturer'
     :<|> goSlots'
     :<|> lecturer'
-    :<|> validateWhat'
+    :<|> validateWhat')
 
       where
 
-        getPlan :: IO Plan
-        getPlan = do
-          plan'' <- appliedPlan
-          studentregs' <- importStudentRegistrations
-          -- TODO: importInvigilators
-          case plan'' of
-            Left errorMsg -> error errorMsg
-            Right plan''' -> return
-              $ addStudentRegistrationsToPlan
-                (fromMaybe M.empty studentregs')
-                plan'''
+          -- plan'' <- appliedPlan
+          -- studentregs' <- importStudentRegistrations
+          -- -- TODO: importInvigilators
+          -- case plan'' of
+          --   Left errorMsg -> error errorMsg
+          --   Right plan''' -> return
+          --     $ addStudentRegistrationsToPlan
+          --       (fromMaybe M.empty studentregs')
+          --       plan'''
 
-        getSemesterConfig :: IO SemesterConfig
-        getSemesterConfig = do
-          semesterConfig'' <- semesterConfig'
-          case semesterConfig'' of
-            Left errorMsg  -> error errorMsg
-            Right config'' -> return config''
+        -- getSemesterConfig :: IO SemesterConfig
+        -- getSemesterConfig = do
+        --   semesterConfig'' <- semesterConfig'
+        --   case semesterConfig'' of
+        --     Left errorMsg  -> error errorMsg
+        --     Right config'' -> return config''
 
-        validateWhat' :: Handler [ValidateWhat]
+        validateWhat' :: StateHandler [ValidateWhat]
         validateWhat' = return validateWhat
 
-        exams' :: Handler [Exam]
-        exams' = fmap allExams (liftIO getPlan)
+        exams' :: StateHandler [Exam]
+        exams' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ allExams plan'
 
-        studentregs :: Handler [StudentWithRegs]
-        studentregs = do
-          studentregs' <- liftIO importStudentRegistrations
-          return $ maybe [] M.elems studentregs'
+        -- studentregs :: StateHandler [StudentWithRegs]
+        -- studentregs = do
+        --   State { plan = plan' } <- liftIO getPlan
+        --   -- studentregs' <- liftIO importStudentRegistrations
+        --   return $ studentregs plan'
 
-        examDays' :: Handler [String]
+        examDays' :: StateHandler [String]
         examDays' = do
-          semesterConfig'' <- liftIO semesterConfig'
-          case semesterConfig'' of
-            Left errorMsg  -> failingHandler $ BSL.pack errorMsg
-            Right config'' -> return $ examDaysAsStrings config''
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ examDaysAsStrings $ semesterConfig plan'
 
-        slots' :: Handler Slots
-        slots' = fmap slots (liftIO getPlan)
+        slots' :: StateHandler Slots
+        slots' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ slots plan'
 
-        slot' :: (String, String) -> Handler [Exam]
-        slot' (ds, ss) = do
-          let s = (read ds, read ss) -- TODO: Catch errors
-          plan'' <- liftIO getPlan
-          return $ maybe [] (M.elems . examsInSlot)
-                                    $ M.lookup s
-                                    $ slots plan''
+        slot' :: (Int, Int) -> StateHandler [Exam]
+        slot' s = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ maybe [] (M.elems . examsInSlot) $ M.lookup s $ slots plan'
 
-        slotsPerDay' :: Handler [String]
+        slotsPerDay' :: StateHandler [String]
         slotsPerDay' = do
-          semesterConfig'' <- liftIO semesterConfig'
-          case semesterConfig'' of
-            Left errorMsg  -> failingHandler $ BSL.pack errorMsg
-            Right config'' -> return $ slotsPerDay config''
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ slotsPerDay $ semesterConfig plan'
 
-        slotsForDay' :: Int -> Handler Slots
-        slotsForDay' dayIndex =
-          fmap (M.filterWithKey (\k _ -> fst k == dayIndex) . slots)
-               (liftIO getPlan)
+        slotsForDay' :: Int -> StateHandler Slots
+        slotsForDay' dayIndex = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ M.filterWithKey (\k _ -> fst k == dayIndex) $ slots plan'
 
-        addExam' :: AddExamToSlot -> Handler CheckError
-        addExam' exam = do
-          plan'' <- liftIO appliedPlan
-          case plan'' of
-            Left errorMsg   -> failingHandler $ BSL.pack errorMsg
-            Right plan''' ->
-              let check = checkConstraints plan''' exam
-              in case check of
-                Ok -> do
-                  liftIO $ updateManipFile planManipFile' exam
-                  return check
-                _ -> return check
-
-        unscheduledExams' :: Handler [Exam]
-        unscheduledExams' =
-          fmap (sortBy (\e1 e2 -> compare (registrations e2)
+        unscheduledExams' :: StateHandler [Exam]
+        unscheduledExams' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ sortBy (\e1 e2 -> compare (registrations e2)
                                           (registrations e1))
-                . filter isUnscheduled
-                . allExams)
-               (liftIO getPlan)
+                 $ filter isUnscheduled
+                 $ allExams plan'
 
-        notPlannedByMeExams' :: Handler [Ancode]
-        notPlannedByMeExams' =
-          fmap (map head . Plexams.Types.importExams)
-               (liftIO getSemesterConfig)
+        notPlannedByMeExams' :: StateHandler [Ancode]
+        notPlannedByMeExams' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ map head $ importedExams $ semesterConfig plan'
 
-        overlaps' :: Ancode -> Handler [Overlaps]
-        overlaps' anCode' =
-          fmap (\plan'' -> filterOverlaps anCode'
-                           $ (studentsOverlaps plan'' :)
-                           $ overlaps
-                           $ constraints plan''
-               ) (liftIO getPlan)
+        overlaps' :: Ancode -> StateHandler [Overlaps]
+        overlaps' anCode' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ (\plan'' -> filterOverlaps anCode'
+                             $ (studentsOverlaps plan'' :)
+                             $ overlaps
+                             $ constraints plan''
+                   ) plan'
 
-        examsBySameLecturer' :: Ancode -> Handler [Exam]
+        examsBySameLecturer' :: Ancode -> StateHandler [Exam]
         examsBySameLecturer' anCode' = do
-          plan'' <- liftIO getPlan
-          let allExams' = allExams plan''
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          let allExams' = allExams plan'
               (thisExam, otherExams) =
                                 partition ((==anCode') . anCode) allExams'
               lecturer'' = personID $ lecturer $ head thisExam
@@ -176,19 +193,45 @@ server = exams'
                             ((==lecturer'') . personID . lecturer) otherExams
           return otherExams'
 
-        validation' :: [ValidateWhat] -> Handler Validation
-        validation' validateWhat'' =
-          fmap (uncurry Validation . validate validateWhat'')
-               (liftIO getPlan)
+        validation' :: [ValidateWhat] -> StateHandler Validation
+        validation' validateWhat'' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ uncurry Validation $ validate validateWhat'' plan'
 
-        goSlots' :: Handler [(Int, Int)]
-        goSlots' = fmap goSlots (liftIO getSemesterConfig)
+        goSlots' :: StateHandler [(Int, Int)]
+        goSlots' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ goSlots $ semesterConfig plan'
 
-        lecturer' :: Handler [Person]
-        lecturer' = fmap (sortWith personShortName
-                          . nub
-                          . map lecturer
-                          . allExams) (liftIO getPlan)
+        lecturer' :: StateHandler [Person]
+        lecturer' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ sortWith personShortName
+                 $ nub
+                 $ map lecturer
+                 $ allExams plan'
+
+        addExam' :: AddExamToSlot -> StateHandler ()
+        addExam' addExamToSlot' = do
+          State { plan = planT } <- ask
+          plan''' <- liftIO $ atomically $ do
+            plan' <- readTVar planT
+            let plan'' = applyAddExamToSlotListToPlan plan' [addExamToSlot']
+            writeTVar planT plan''
+            return plan''
+          let planManipFile' = planManipFile $ files $ semesterConfig plan'''
+          case planManipFile' of
+              Just planManipFile'' -> do
+                liftIO $ updateManipFile planManipFile'' addExamToSlot'
+                return ()
+              Nothing -> do
+                liftIO $ putStrLn $ "error while trying to add "
+                                    ++ show addExamToSlot'
+                return ()
+
 
 
 failingHandler :: MonadError ServantErr m => BSL.ByteString -> m a

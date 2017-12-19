@@ -1,6 +1,5 @@
-import searchInPage from 'electron-in-page-search'
 // const electron = require('electron')
-import {electron, remote} from 'electron'
+const electron = require('electron')
 
 // Used to spawn processes
 // const childProcess = require('child_process')
@@ -9,10 +8,6 @@ const app = electron.app
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow
 const path = require('path')
-
-const inPageSearch = searchInPage(remote.getCurrentWebContents());
-
-
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -27,6 +22,7 @@ function createWindow () {
     height: 1000
   })
 
+  mainWindow.setTitle(require('./package.json').name);
   // and load the index.html of the app.
   mainWindow.loadURL(path.join('file://', __dirname, '/index.html'))
 
@@ -39,9 +35,6 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
-  })
-  document.getElementById('search-button').addEventListener('click', () => {
-    inPageSearch.openSearchWindow()
   })
 }
 

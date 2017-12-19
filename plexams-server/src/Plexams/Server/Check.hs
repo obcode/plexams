@@ -11,6 +11,7 @@ data CheckError = Ok
                 | FixedSlotError String
                 | OnOneOfTheseDaysError String
                 | NoOnSameDayError String
+                | FileNotFound String
   deriving (Eq, Ord, Generic)
 
 instance ToJSON CheckError

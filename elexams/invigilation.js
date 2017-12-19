@@ -54,39 +54,41 @@ const openInvigilation = (evt, dayIndex) => {
         for (let i in slotsPerDay) {
           let reserveInvigilator = _fetchReserve(dayIndex, i, slots)
           const examData = _fetchExamsData(dayIndex, i, slots)
-          output += `<tr>
-            <td><div id="invigilation-slot-${dayIndex}-${i}" class="invigilation`
-          if (reserveInvigilator === null) {
-            reserveInvigilator = 'Reserve fehlt'
-            output += ' needsInvigilator'
-          } else {
-            output += ' hasInvigilator'
-          }
-          output += `">
-                        ${slotsPerDay[i]}<br>
-                        ${reserveInvigilator}
-                      </div></td>`
-          for (let j in examData) {
-            const exam = examData[j]
-            for (let k in exam.rooms) {
-              const room = exam.rooms[k]
-              let invigilator
-              output += `<td><div class="invigilation`
-              if (room.invigilator === null) {
-                invigilator = 'Aufsicht fehlt'
-                output += ' needsInvigilator'
-              } else {
-                invigilator = room.invigilator
-                output += ' hasInvigilator'
-              }
-              output += `">
-                            ${exam.anCode}. ${exam.name}<br>
-                            Prüfer: ${exam.lecturer.personShortName}<br>
-                            ${room.roomID} ${invigilator}
-                          </div></td>`
+          if (examData.length > 0) {
+            output += `<tr>
+              <td><div id="invigilation-slot-${dayIndex}-${i}" class="invigilation`
+            if (reserveInvigilator === null) {
+              reserveInvigilator = 'Reserve fehlt'
+              output += ' needsInvigilator'
+            } else {
+              output += ' hasInvigilator'
             }
+            output += `">
+                          ${slotsPerDay[i]}<br>
+                          ${reserveInvigilator}
+                        </div></td>`
+            for (let j in examData) {
+              const exam = examData[j]
+              for (let k in exam.rooms) {
+                const room = exam.rooms[k]
+                let invigilator
+                output += `<td><div class="invigilation`
+                if (room.invigilator === null) {
+                  invigilator = 'Aufsicht fehlt'
+                  output += ' needsInvigilator'
+                } else {
+                  invigilator = room.invigilator
+                  output += ' hasInvigilator'
+                }
+                output += `">
+                              ${exam.anCode}. ${exam.name}<br>
+                              Prüfer: ${exam.lecturer.personShortName}<br>
+                              ${room.roomID} ${invigilator}
+                            </div></td>`
+              }
+            }
+            output += `</tr>`
           }
-          output += `</tr>`
         }
         output += '</table></td></tr></table>'
         $('#invigilations' + dayIndex).html(output)

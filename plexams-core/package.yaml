@@ -25,6 +25,10 @@ dependencies:
 library:
   source-dirs: src
   other-modules:
+    - Plexams.Import.MasterData
+    - Plexams.Import.Misc
+    - Plexams.Import.PlanManip
+    - Plexams.Import.Registrations
     - Plexams.Validation.Rooms
     - Plexams.Validation.ScheduledExams
     - Plexams.Validation.Sources

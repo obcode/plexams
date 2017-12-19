@@ -36,7 +36,7 @@ data Plan = Plan
                                               -- Ancode -> Exam
     , persons            :: Persons
     , constraints        :: Constraints
-    , students           :: Students
+    , students           :: Students -- TODO: remove field
     , studentsExams      :: StudentsExams
     , handicaps          :: [Handicap]
     , invigilators       :: Invigilators

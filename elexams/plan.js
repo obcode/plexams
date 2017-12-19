@@ -199,14 +199,10 @@ function addExamToSlot (anCode, dayIdx, slotIdx) {
       planManipDay: dayIdx,
       planManipSlot: slotIdx
     }),
-    success: function (data) {
-      if (data.tag !== 'Ok') {
-        alert(data.contents)
-      } else {
-        fetchExamDays()
-        fetchUnscheduledExams()
-        result = true
-      }
+    success: function () {
+      fetchExamDays()
+      fetchUnscheduledExams()
+      result = true
     },
     contentType: 'application/json',
     dataType: 'json'

@@ -17,15 +17,14 @@ dependencies:
   - wai
   - warp
   - plexams-core
-  - plexams-cli
   - optparse-applicative
   - mtl
   - directory
   - time
   - bytestring
   - containers
+  - stm
   - yaml
-
 
 library:
   source-dirs: src

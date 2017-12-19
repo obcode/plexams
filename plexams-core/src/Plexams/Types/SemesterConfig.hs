@@ -3,6 +3,8 @@
 module Plexams.Types.SemesterConfig
     ( -- * Config
       SemesterConfig(..)
+    , SemesterConfigFiles(..)
+    , examDaysAsStrings
     , AvailableRoom(..)
     , AvailableRooms
     ) where
@@ -16,26 +18,51 @@ import           Data.Maybe                  (fromMaybe)
 import           Data.Text                   (Text)
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate (toWeekDate)
-import           Data.Time.Format            (defaultTimeLocale, parseTimeM)
+import           Data.Time.Format            (defaultTimeLocale, formatTime,
+                                              parseTimeM)
 import qualified Data.Yaml                   as Y
 import           GHC.Generics
 import           Plexams.Types.Common
 
+data SemesterConfigFiles = SemesterConfigFiles
+  { initialPlanFile  :: Maybe FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
+  , personsFile      :: Maybe FilePath -- ^ Datei in der die Personen für das Semester vom ZPA stehen
+  , planManipFile    :: Maybe FilePath
+  , handicapsFile    :: Maybe FilePath
+  , studentsRegsFile :: Maybe FilePath
+  }
+  deriving (Eq, Show, Generic)
+
+instance Y.FromJSON SemesterConfigFiles where
+    parseJSON (Y.Object v) = SemesterConfigFiles
+                        <$> v Y..: "initialPlan"
+                        <*> v Y..: "persons"
+                        <*> v Y..: "planManip"
+                        <*> v Y..: "handicaps"
+                        <*> v Y..: "studentregs"
+
+    parseJSON _          = empty
+
+instance ToJSON SemesterConfigFiles where
+    toEncoding = genericToEncoding defaultOptions
+
 data SemesterConfig = SemesterConfig
-    { semester        :: Text     -- ^ Semester
-    , firstDay        :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
-    , lastDay         :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
-    , examDays        :: [Day]    -- ^ vom ersten bis letzten Tag OHNE Wochenende
-    , goSlots         :: [(Int, Int)]
-    , slotsPerDay     :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
-    , initialPlanFile :: FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
-    , personsFile     :: FilePath -- ^ Datei in der die Personen für das Semester vom ZPA stehen
-    , planManipFile   :: FilePath
-    , availableRooms  :: [AvailableRoom]
-    , fk10Exams       :: [[Integer]]
-    , goOtherExams    :: [Ancode]
+    { semester       :: Text     -- ^ Semester
+    , firstDay       :: Day      -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
+    , lastDay        :: Day      -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
+    , examDays       :: [Day]    -- ^ vom ersten bis letzten Tag OHNE Wochenende
+    , goSlots        :: [(Int, Int)]
+    , slotsPerDay    :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
+    , files          :: SemesterConfigFiles
+    , availableRooms :: [AvailableRoom]
+    , importedExams  :: [[Integer]]
+    , goOtherExams   :: [Ancode]
     }
   deriving (Eq, Show, Generic)
+
+examDaysAsStrings :: SemesterConfig -> [String]
+examDaysAsStrings = map (formatTime defaultTimeLocale "%a, %d.%m.%y")
+                  . examDays
 
 instance Y.FromJSON SemesterConfig where
     parseJSON (Y.Object v) = makeSemesterConfig
@@ -44,9 +71,7 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "lastDay"
                         <*> v Y..: "goDay0"
                         <*> v Y..: "slotsPerDay"
-                        <*> v Y..: "initialPlan"
-                        <*> v Y..: "persons"
-                        <*> v Y..: "planManip"
+                        <*> v Y..: "files"
                         <*> v Y..: "rooms"
                         <*> v Y..: "notPlannedByMe"
                         <*> v Y..: "goOtherExams"
@@ -56,7 +81,7 @@ instance ToJSON SemesterConfig where
     toEncoding = genericToEncoding defaultOptions
 
 makeSemesterConfig :: Text -> String -> String -> String -> [String]
-                   -> FilePath -> FilePath -> FilePath
+                   -> SemesterConfigFiles
                    -> [AvailableRoom] -> [[Integer]] -> [Ancode]
                    -> SemesterConfig
 makeSemesterConfig s f l goDay0 =
