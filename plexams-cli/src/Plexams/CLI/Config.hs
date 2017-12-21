@@ -15,7 +15,7 @@ config = Config
                                  (progDesc "the plan as an HTML table"))
          <> command "stats"     (info statisticsOpts
                                   (progDesc "statistics"))
-         <> command "validate"  (info (validateOpts)
+         <> command "validate"  (info validateOpts
                                   (progDesc "validation of current plan"))
          <> command "query"     (info  queryOpts
                                   (progDesc "query plan"))
@@ -31,76 +31,11 @@ config = Config
                           (progDesc "generate invigilations for the schedule"))
           )
       <*> optional (strOption
-        ( long "planManip"
-       <> short 'p'
-       <> metavar "PLANMANIPFILE"
-       <> help "import file containing exam2slot manipulations"
-        ))
-      <*> optional (strOption
-        ( long "rooms"
-       -- <> short 'p'
-       <> metavar "ROOMSFILE"
-       <> help "import file containing room2slot manipulations"
-        ))
-      <*> optional (strOption
-        ( long "registrations"
-       <> short 'r'
-       <> metavar "REGISTRATIONSFILE"
-       <> help "import file containing registrations"
-        ))
-      <*> optional (strOption
-        ( long "overlaps"
-       <> short 'l'
-       <> metavar "OVERLAPSFILE"
-       <> help "import file containing overlaps"
-        ))
-      <*> optional (strOption
-        ( long "constraints"
-       <> short 'c'
-       <> metavar "CONSTRAINTSFILE"
-       <> help "import file containing constraints"
-        ))
-      <*> optional (strOption
-        ( long "students"
-       <> short 's'
-       <> metavar "STUDENTSFILE"
-       <> help "import file containing registrations for each mtknr"
-        ))
-      <*> optional (strOption
-        ( long "studentregs"
-       -- <> short 's'
-       <> metavar "STUDENTREGSFILE"
-       <> help "import file containing registrations for each mtknr (new)"
-        ))
-      <*> optional (strOption
-        ( long "handicaps"
-       <> metavar "HANDICAPSFILE"
-       <> help "import file containing handicap information"
-        ))
-      <*> optional (strOption
-        ( long "invigilators"
-       <> metavar "INVIGILATORSFILE"
-       <> help "import file containing invigilator information"
-        ))
-      <*> optional (strOption
-        ( long "add-invigilations"
-       <> metavar "ADDINVIGILATIONSFILE"
-       <> help "import file containing invigilator mappings"
-        ))
-      <*> optional (strOption
         ( long "output"
        <> short 'o'
        <> metavar "OUTFILE"
        <> help "output to file instead of stdout"
         ))
-      <*> strOption
-        ( long "config"
-       <> short 'c'
-       <> showDefault
-       <> value "plexams.yaml"
-       <> metavar "CONFIGFILE"
-       <> help "file containing semesterconfig"
-        )
     <*> switch
         ( long "no-validation"
        <> help "turn of validation"

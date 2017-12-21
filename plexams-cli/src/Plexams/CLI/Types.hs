@@ -26,18 +26,7 @@ data Command
 
 data Config = Config
     { optCommand         :: Command
-    , planManipFile'     :: Maybe FilePath
-    , roomsFile          :: Maybe FilePath
-    , regsFile           :: Maybe FilePath
-    , overlapsFile       :: Maybe FilePath
-    , constraintsFile    :: Maybe FilePath
-    , studentsFile       :: Maybe FilePath
-    , studentRegsFile    :: Maybe FilePath
-    , handicapFile       :: Maybe FilePath
-    , invigilatorFile    :: Maybe FilePath
-    , addInvigilatorFile :: Maybe FilePath
     , outfile            :: Maybe FilePath
-    , configfile         :: FilePath
     , novalidation       :: Bool
     , verbose            :: Bool
     }
