@@ -119,6 +119,7 @@ data Invigilator = Invigilator
   , invigilatorOvertimeLastSemester :: Float
   , invigilatorOralExams            :: Integer
   , invigilatorMaster               :: Integer
+  , invigilatorLiveCoding           :: Integer
   } deriving (Show, Eq, Generic)
 
 instance FromJSON Invigilator where
@@ -132,6 +133,7 @@ instance FromJSON Invigilator where
                          <*> v .: "overtime_last_semester"
                          <*> v .: "oral_exams_contribution"
                          <*> v .: "master_contribution"
+                         <*> v .: "livecoding_contribution"
     parseJSON _          = empty
 
 instance ToJSON Invigilator

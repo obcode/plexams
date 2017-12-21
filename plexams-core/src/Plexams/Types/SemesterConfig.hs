@@ -25,11 +25,15 @@ import           GHC.Generics
 import           Plexams.Types.Common
 
 data SemesterConfigFiles = SemesterConfigFiles
-  { initialPlanFile  :: Maybe FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
-  , personsFile      :: Maybe FilePath -- ^ Datei in der die Personen für das Semester vom ZPA stehen
-  , planManipFile    :: Maybe FilePath
-  , handicapsFile    :: Maybe FilePath
-  , studentsRegsFile :: Maybe FilePath
+  { initialPlanFile   :: Maybe FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
+  , personsFile       :: Maybe FilePath -- ^ Datei in der die Personen für das Semester vom ZPA stehen
+  , planManipFile     :: Maybe FilePath
+  , handicapsFile     :: Maybe FilePath
+  , studentsRegsFile  :: Maybe FilePath
+  , roomsFile         :: Maybe FilePath
+  , constraintsFile   :: Maybe FilePath
+  , invigilatorsFile  :: Maybe FilePath
+  , invigilationsFile :: Maybe FilePath
   }
   deriving (Eq, Show, Generic)
 
@@ -40,6 +44,10 @@ instance Y.FromJSON SemesterConfigFiles where
                         <*> v Y..: "planManip"
                         <*> v Y..: "handicaps"
                         <*> v Y..: "studentregs"
+                        <*> v Y..: "rooms"
+                        <*> v Y..: "constraints"
+                        <*> v Y..: "invigilators"
+                        <*> v Y..: "invigilations"
 
     parseJSON _          = empty
 

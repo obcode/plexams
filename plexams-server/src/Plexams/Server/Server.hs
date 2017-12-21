@@ -7,17 +7,18 @@ module Plexams.Server.Server
   ( startApp
   ) where
 
+import           Control.Concurrent.STM.TVar
 import           Control.Monad.Except
+import           Control.Monad.Reader
+import           Control.Monad.STM
 import qualified Data.ByteString.Lazy.Char8  as BSL
 import           Data.List                   (nub, partition, sortBy)
 import qualified Data.Map                    as M
 import           Data.Maybe
+import           Data.Text                   (Text, unpack)
 import           GHC.Exts                    (sortWith)
 import           Network.Wai
 import           Network.Wai.Handler.Warp
-import           Control.Concurrent.STM.TVar
-import           Control.Monad.Reader
-import           Control.Monad.STM
 import           Plexams.Import
 import           Plexams.PlanManip
 import           Plexams.Server.PlanManip
@@ -41,6 +42,10 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "goSlots" :> Get '[JSON] [(Int, Int)]
       :<|> "lecturer" :> Get '[JSON] [Person]
       :<|> "validateWhat" :> Get '[JSON] [ValidateWhat]
+      :<|> "reloadPlan" :> Get '[JSON] (Bool,[Text])
+      :<|> "plan" :> Get '[JSON] Plan
+      :<|> "invigilators" :> Get '[JSON] [Invigilator]
+
 
 newtype State = State { plan :: TVar Plan }
 type StateHandler = ReaderT State Handler
@@ -61,10 +66,10 @@ startApp = do
 getPlan :: IO Plan
 getPlan = do
   (maybePlan, errorMessages) <- importPlan
-  mapM_ print errorMessages
+  mapM_ (putStrLn . unpack) errorMessages
   case maybePlan of
     Just plan' -> return plan'
-    Nothing -> return $ error "no plan"
+    Nothing    -> return $ error "no plan"
 
 app :: State -> Application
 app = serve api . server
@@ -75,7 +80,7 @@ api = Proxy
 server :: State -> Server API
 server state =
   enter (stateHandlerToHandler state)
-    (  exams'
+    $  exams'
 --     :<|> studentregs
     :<|> examDays'
     :<|> slots'
@@ -90,29 +95,20 @@ server state =
     :<|> examsBySameLecturer'
     :<|> goSlots'
     :<|> lecturer'
-    :<|> validateWhat')
+    :<|> validateWhat'
+    :<|> reloadPlan'
+    :<|> plan'
+    :<|> invigilators'
 
       where
 
-          -- plan'' <- appliedPlan
-          -- studentregs' <- importStudentRegistrations
-          -- -- TODO: importInvigilators
-          -- case plan'' of
-          --   Left errorMsg -> error errorMsg
-          --   Right plan''' -> return
-          --     $ addStudentRegistrationsToPlan
-          --       (fromMaybe M.empty studentregs')
-          --       plan'''
-
-        -- getSemesterConfig :: IO SemesterConfig
-        -- getSemesterConfig = do
-        --   semesterConfig'' <- semesterConfig'
-        --   case semesterConfig'' of
-        --     Left errorMsg  -> error errorMsg
-        --     Right config'' -> return config''
-
         validateWhat' :: StateHandler [ValidateWhat]
         validateWhat' = return validateWhat
+
+        plan' :: StateHandler Plan
+        plan' = do
+          State { plan = planT } <- ask
+          liftIO $ atomically $ readTVar planT
 
         exams' :: StateHandler [Exam]
         exams' = do
@@ -120,11 +116,11 @@ server state =
           plan' <- liftIO $ atomically $ readTVar planT
           return $ allExams plan'
 
-        -- studentregs :: StateHandler [StudentWithRegs]
-        -- studentregs = do
-        --   State { plan = plan' } <- liftIO getPlan
-        --   -- studentregs' <- liftIO importStudentRegistrations
-        --   return $ studentregs plan'
+        invigilators' :: StateHandler [Invigilator]
+        invigilators' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ M.elems $ invigilators plan'
 
         examDays' :: StateHandler [String]
         examDays' = do
@@ -232,7 +228,16 @@ server state =
                                     ++ show addExamToSlot'
                 return ()
 
-
+        reloadPlan' :: StateHandler (Bool, [Text])
+        reloadPlan' = do
+          State { plan = planT } <- ask
+          (maybePlan, errorMessages) <- liftIO importPlan
+          newPlanSet <- case maybePlan of
+            Nothing -> return False
+            Just newPlan -> liftIO $ atomically $ do
+              writeTVar planT newPlan
+              return True
+          return (newPlanSet, errorMessages)
 
 failingHandler :: MonadError ServantErr m => BSL.ByteString -> m a
 failingHandler s = throwError myerr

@@ -29,6 +29,7 @@
     <button class="tablinks" onclick="openTab(event, 'Aufsichtenplanung')">Aufsichtenplanung</button>
     <button class="tablinks" onclick="openTab(event, 'Validation')">Validation</button>
     <button class="tablinks" onclick="openTab(event, 'Prüfungsliste')">Prüfungsliste</button>
+    <button class="tablinks" onclick="openTab(event, 'ReloadPlan')">Plan neu laden</button>
   </div>
   <div id="Prüfungsplanung" class="tabcontent">
     <button onclick="toggleGoSlots()">GO Slots</button>
@@ -47,6 +48,9 @@
   </div>
   <div id="Prüfungsliste" class="tabcontent">
     <div id="plexams-api"></div>
+  </div>
+  <div id="ReloadPlan" class="tabcontent">
+    <div id="reloadedPlan"></div>
   </div>
 
   </ul>

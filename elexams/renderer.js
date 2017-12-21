@@ -14,7 +14,9 @@ const endpoints =
     validateWhat: host + '/validateWhat',
     examsBySameLecturer: host + '/examsBySameLecturer',
     goSlots: host + '/goSlots',
-    lecturer: host + '/lecturer'
+    lecturer: host + '/lecturer',
+    reloadPlan: host + '/reloadPlan',
+    invigilators: host + '/invigilators'
   }
 
 
@@ -47,9 +49,32 @@ const openTab = (evt, tabname) => {
     fetchValidation()
   } else if (tabname === 'Prüfungsliste') {
     fetchExams()
+  } else if (tabname === 'ReloadPlan') {
+    reloadPlan()
   }
 }
 
+const reloadPlan = () => {
+  $('#reloadedPlan').html('<h1>Loading...</h1>')
+  $.getJSON(endpoints.reloadPlan, (reloadResult) => {
+    let output = ''
+    if (reloadResult[0]) {
+      output += '<h1>Plan neu geladen</h1>'
+    } else {
+      output += '<h1><span class="error">Fehler beim Plan neu laden</span></h1>'
+    }
+    const errorMessages = reloadResult[1]
+    if (errorMessages.length > 0) {
+      output += '<ul>'
+      for (let i in errorMessages) {
+        const errorMessage = errorMessages[i]
+        output += `<li>${errorMessage}</li>`
+      }
+      output += '</ul>'
+    }
+    $('#reloadedPlan').html(output)
+  })
+}
 
 let _fetchValidateWhat = () => {
   $.getJSON(endpoints.validateWhat, (validateWhat) => {

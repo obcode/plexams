@@ -1,89 +1,14 @@
 module Plexams.Server.PlanManip
-  ( -- appliedPlan
-  updateManipFile
+  ( updateManipFile
   ) where
---
--- import           Control.Monad.Except
+
 import qualified Data.ByteString   as BSI
 import qualified Data.Yaml         as Y
-import           Plexams.Import    ( --importAddRoomToExamFromYAMLFile,
-                                    importExamSlotsFromYAMLFile)
--- import           Plexams.Server.Import
+import           Plexams.Import    (importExamSlotsFromYAMLFile)
 import           Plexams.Types
---
--- initialPlan' :: IO (Either String Plan)
--- initialPlan' = do
---   semesterConfig'' <- liftIO (importSemesterConfig configFile')
---   case semesterConfig'' of
---     Left errorMsg -> return $ Left errorMsg
---     Right config  -> initialPlan'' config
---
--- initialPlan'' :: SemesterConfig -> IO (Either String Plan)
--- initialPlan'' config = do
---   exams'' <- liftIO $ importExams config
---   case exams'' of
---     Left errorMsg -> return $ Left errorMsg
---     Right exams'  -> initialPlan''' config exams'
---
--- initialPlan''' :: SemesterConfig -> [Exam] -> IO (Either String Plan)
--- initialPlan''' config exams' = do
---   persons'' <- liftIO $ importPersons config
---   case persons'' of
---     Left errorMsg  -> return $ Left errorMsg
---     Right persons' -> initialPlan'''' config exams' persons'
---
--- initialPlan'''' :: SemesterConfig -> [Exam] -> Persons -> IO (Either String Plan)
--- initialPlan'''' config exams' persons' = do
---   eitherStuds <- liftIO $ importStudents studentsFile'
---   case eitherStuds of
---     Left errorMsg -> return $ Left errorMsg
---     Right students' -> do
---       eitherHandicaps <- liftIO $ importHandicaps handicapsFile'
---       case eitherHandicaps of
---         Left errorMsg -> return $ Left errorMsg
---         Right handicaps' -> return $ Right $ Plexams.PlanManip.makePlan exams' config persons' students' handicaps'
---
--- initPlanWCons :: IO (Either String Plan)
--- initPlanWCons = do
---   constraints' <- importConstraints overlapsFile constraintsFile
---   case constraints' of
---     Left errorMsg -> return $ Left errorMsg
---     Right constraints'' -> do
---       plan' <- liftIO initialPlan'
---       case plan' of
---         Left errorMsg -> return $ Left errorMsg
---         Right plan'' ->
---           return $ Right $ addConstraints constraints'' plan''
---
--- appliedPlan :: IO (Either String Plan)
--- appliedPlan = do
---   plan' <- liftIO initPlanWCons
---   case plan' of
---     Left errorMsg -> return $ Left errorMsg
---     Right plan'' -> do
---       semesterConfig'' <- liftIO semesterConfig'
---       case semesterConfig'' of
---         Left errorMsg -> return $ Left errorMsg
---         Right config' ->
---           applyPlanManips' (planManipFile config') plan''
---
--- applyPlanManips' :: FilePath -> Plan -> IO (Either String Plan)
--- applyPlanManips' file plan = do
---     maybeExamSlots <- importExamSlotsFromYAMLFile file
---     maybeRooms <- importAddRoomToExamFromYAMLFile "input/rooms.yaml" -- TODO: remove hardcoded file, should be in semesterconfig
---     case maybeExamSlots of
---       Just examSlots'' -> case maybeRooms of
---         Just roomsToExam ->
---           return $ Right
---                  $ (`applyAddRoomToExamListToPlan` roomsToExam)
---                  $ applyAddExamToSlotListToPlan plan examSlots''
---         Nothing -> return $ Left $ "no rooms file found: "
---                 ++ file
---                 ++ " does not exist or is not parsable."
---       Nothing -> return $ Left $ "no planmanip file found: "
---                 ++ file
---                 ++ " does not exist or is not parsable."
---
+
+-- TODO: move to core
+
 updateManipFile :: FilePath -> AddExamToSlot -> IO ()
 updateManipFile outfile exam = do
   test1 <- importExamSlotsFromYAMLFile outfile

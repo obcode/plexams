@@ -17,6 +17,11 @@ th {
   padding: 0.2em;
 }
 
+.invigilatorList {
+  user-select: text;
+  padding: 0.2em;
+}
+
 td.exams {
   height: 60px;
 }
@@ -192,6 +197,11 @@ li#registeredGroups {
 ul#groups,
 li#groups {
   padding-left: 1.4em;
+}
+
+ol.invigilatorList,
+li.invigilatorList {
+  padding-left: 2.4em;
 }
 
 ul#overlaps,

@@ -424,6 +424,7 @@ addInvigilators invigilatorList plan =
         , invigilatorOvertimeLastSemester = 0.0
         , invigilatorOralExams            = 0
         , invigilatorMaster               = 0
+        , invigilatorLiveCoding           = 0
         }
       addInfoOrCreate person' (Just invigilator') =
         Just $ invigilator' { invigilatorPerson = Just person' }

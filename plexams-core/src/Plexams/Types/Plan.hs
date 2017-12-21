@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Plexams.Types.Plan
   ( Plan(..)
   , scheduledExams
@@ -16,11 +17,14 @@ module Plexams.Types.Plan
   ) where
 
 import           Control.Arrow                ((***))
+import           Data.Aeson                   (ToJSON, defaultOptions,
+                                               genericToEncoding, toEncoding)
 import           Data.List                    (partition, sortBy, (\\))
 import qualified Data.Map                     as M
 import           Data.Ord                     (Down (Down), comparing)
 import qualified Data.Set                     as S
 import           Data.Time.Calendar
+import           GHC.Generics
 import           Plexams.Types.Common
 import           Plexams.Types.Constraints
 import           Plexams.Types.Exam
@@ -43,7 +47,10 @@ data Plan = Plan
     , invigilatorsPerDay :: M.Map DayIndex ([PersonID],[PersonID])
     , initialPlan        :: [Exam]
     }
-  deriving (Show, Eq)
+  deriving (Show, Eq,  Generic)
+
+instance ToJSON Plan where
+    toEncoding = genericToEncoding defaultOptions
 
 scheduledExams :: Plan -> [Exam]
 scheduledExams plan =

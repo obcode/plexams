@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-
 module Plexams.Types.Constraints
   ( Constraints(..)
   , noConstraints
@@ -24,7 +23,10 @@ data Constraints = Constraints
   , impossibleInvigilationSlots :: [(PersonID, [(Int, Int)])]
   , roomSlots                   :: M.Map RoomID [(DayIndex, SlotIndex)]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance ToJSON Constraints where
+    toEncoding = genericToEncoding defaultOptions
 
 noConstraints :: Constraints
 noConstraints = Constraints [] [] [] [] [] [] [] [] [] M.empty
