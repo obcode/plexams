@@ -1,7 +1,7 @@
 resolver: lts-10.0
 packages:
     - ./plexams-core
-#    - ./plexams-cli
+    - ./plexams-cli
     - ./plexams-generators
     - ./plexams-server
 # local-bin-path: ./elexams/resources

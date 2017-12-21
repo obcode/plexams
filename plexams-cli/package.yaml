@@ -29,11 +29,13 @@ library:
 executables:
   plexams:
     main: Plexams.hs
-    source-dirs: app
+    source-dirs: app/plexams
     dependencies:
       - plexams-cli
+      - plexams-core
+      - text
   plexams-helper:
     main: Plexams-Helper.hs
-    source-dirs: app
+    source-dirs: app/plexams-helper
     dependencies:
       - plexams-cli
