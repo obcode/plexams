@@ -31,11 +31,11 @@ data Exam = Exam
     , reExam                :: Bool    -- ^ @True@ bei einer Wiederholungsklausur
     , groups                :: [Group]  -- ^ Studierendengruppen die an der Prüfung teilnehmen
     , examType              :: ExamType  -- ^ Typ der Prüfung aus ZPA
-    , studentsWithHandicaps :: [Handicap]
     , slot                  :: Maybe (Int, Int) -- ^ (Tag, Slot)
     , registeredStudents    :: [StudentWithRegs]
     , registeredGroups      :: [RegisteredGroup]
     , conflictingAncodes    :: [Ancode]
+    , handicapStudents      :: [StudentWithRegs]
     }
   deriving (Eq, Generic)
 
@@ -49,11 +49,12 @@ isUnscheduled :: Exam -> Bool
 isUnscheduled = not . isScheduled
 
 withHandicaps :: Exam -> Bool
-withHandicaps = not . null . studentsWithHandicaps
+withHandicaps = not . null . handicapStudents
 
 registrations :: Exam -> Integer
 registrations = -- sum . mapMaybe groupRegistrations . groups
-                fromIntegral . length . registeredStudents
+                -- fromIntegral . length . registeredStudents
+                sum . map registeredGroupStudents . registeredGroups
 
 notPlannedByMe :: [Ancode] -> Exam -> Exam
 notPlannedByMe ancodes exam =
@@ -69,10 +70,10 @@ instance Show Exam where
                     then "=" ++ show (registrations exam)
                     else "")
                 ++ maybe "" ((", "++) . show) (slot exam)
-                ++ (if null $ studentsWithHandicaps exam then ""
+                ++ (if null $ handicapStudents exam then ""
                     else "\n        - "
                         ++ intercalate "\n        - "
-                            (map show (studentsWithHandicaps exam))
+                            (map (show . studentName) (handicapStudents exam))
                    )
                 ++ (if null $ rooms exam then ""
                    else "\n        - "
@@ -80,5 +81,5 @@ instance Show Exam where
                    )
 
 seatsMissing :: Exam -> Integer
-seatsMissing exam = registrations exam
-                  - sum (map seatsPlanned $ rooms exam)
+seatsMissing = toInteger . length . registeredStudents
+  -- registrations exam - sum (map seatsPlanned $ rooms exam)

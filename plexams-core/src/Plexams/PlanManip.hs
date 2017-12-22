@@ -8,7 +8,7 @@ module Plexams.PlanManip
     , applyAddRoomToExamListToPlan
     , addConstraints
     , updateExamByAncodeWith
-    , setHandicapsOnScheduledExams
+    -- , setHandicapsOnScheduledExams
     , addInvigilators
     , applyAddInvigilatorsToPlan
     ) where
@@ -105,8 +105,8 @@ applyAddRoomToExamListToPlan = foldr applyPlanManipToPlan
         applyPlanManipToPlan (AddRoomToExam a n s dd) = addRoomToExam a n s dd
 
 -- TODO: Reserve nach oben eingeplant?
-addRoomToExam :: Integer -> String -> Integer -> Maybe Integer -> Plan -> Plan
-addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
+addRoomToExam :: Integer -> String -> [Integer] -> Maybe Integer -> Plan -> Plan
+addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration plan =
   if ancode `M.member` unscheduledExams plan
   then plan -- a room cannot be added to an unscheduled exam
   else -- exam is scheduled (or unknown)
@@ -115,6 +115,7 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
              $ M.elems
              $ slots
              $ setSlotsOnExams plan
+        (studsInRoom, otherStuds) = partition ((`elem` studentsInRoom') . studentMtknr) $ registeredStudents exam
         availableRoom = head -- should never fail
                       $ filter ((==roomName) . availableRoomName)
                       $ availableRooms $ semesterConfig plan
@@ -124,9 +125,9 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
                 , deltaDuration = fromMaybe 0 maybeDeltaDuration
                 , invigilator = Nothing
                 , reserveRoom = not (availableRoomHandicap availableRoom) &&
-                    (seatsPlanned' < registrations exam `div` 5)
+                    (toInteger (length studsInRoom) < registrations exam `div` 5)
                 , handicapCompensation = availableRoomHandicap availableRoom
-                , seatsPlanned = seatsPlanned'
+                , studentsInRoom = studsInRoom
                 }
     -- step 3: add room to exam and put new exam into correct slot
     in plan
@@ -135,8 +136,8 @@ addRoomToExam ancode roomName seatsPlanned' maybeDeltaDuration plan =
                     slot'
                       { examsInSlot = M.alter (\(Just exam') -> Just
                                                 exam'
-                                                  { rooms = room
-                                                          : rooms exam'
+                                                  { rooms = room : rooms exam'
+                                                  , registeredStudents = otherStuds
                                                   }
                                               )
                                               ancode
@@ -197,9 +198,9 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
           , unscheduledExams = unscheduledExams''
           , persons = pers
           , constraints = noConstraints
-          , students = fromMaybe M.empty maybeStudents
-          , studentsExams = mkStudentsExams maybeStudents
-          , handicaps = handicaps'
+          , students = fromMaybe M.empty maybeStudents -- TODO: remove this one
+          , studentsExams = mkStudentsExams maybeStudents -- TODO: remove this one
+          , handicaps = handicaps' -- TODO: remove this one
           , invigilators = M.empty
           , invigilatorsPerDay = M.empty
           , initialPlan = exams'
@@ -319,6 +320,9 @@ addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
                         : registeredGroups e
                     , conflictingAncodes =
                         studentAncodes studentWithReg ++ conflictingAncodes e
+                    , handicapStudents = maybe (handicapStudents e)
+                        (const $ studentWithReg : handicapStudents e)
+                        (studentHandicap studentWithReg')
                     })
         examsMap'
         $ studentAncodes studentWithReg
@@ -360,20 +364,21 @@ updateUnscheduledExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
 updateUnscheduledExamByAncodeWith plan ancode f =
   plan { unscheduledExams = M.alter (fmap f) ancode $ unscheduledExams plan}
 
-setHandicapsOnScheduledExams :: Plan -> Plan
-setHandicapsOnScheduledExams plan =
-  let handicapsPerAncode =
-        map (\aH -> (fst $ head aH, map snd aH))
-        $ groupWith fst
-        $ concatMap (\h -> map (\a -> (a,h)) $ exams h)
-        $ handicaps plan
-  in foldr (\(a,hs) p ->
-            updateExamByAncodeWith p a (\e -> e {
-              studentsWithHandicaps = hs
-            })
-           )
-           plan
-           handicapsPerAncode
+-- -- TODO: remove
+-- setHandicapsOnScheduledExams :: Plan -> Plan
+-- setHandicapsOnScheduledExams plan =
+--   let handicapsPerAncode =
+--         map (\aH -> (fst $ head aH, map snd aH))
+--         $ groupWith fst
+--         $ concatMap (\h -> map (\a -> (a,h)) $ handicapExams h)
+--         $ handicaps plan
+--   in foldr (\(a,hs) p ->
+--             updateExamByAncodeWith p a (\e -> e {
+--               studentsWithHandicaps = hs
+--             })
+--            )
+--            plan
+--            handicapsPerAncode
 
 addInvigilators :: [Invigilator] -> Plan -> Plan
 addInvigilators invigilatorList plan =

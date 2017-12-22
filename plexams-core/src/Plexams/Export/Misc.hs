@@ -11,7 +11,7 @@ import           Data.Aeson.Encode.Pretty
 import           Data.ByteString.Lazy.Char8 (unpack)
 import           Data.List                  (intercalate)
 import           GHC.Exts                   (sortWith)
-import           Plexams.PlanManip          (setHandicapsOnScheduledExams)
+-- import           Plexams.PlanManip          (setHandicapsOnScheduledExams)
 import           Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ exportAddRoomToExam :: AddRoomToExam -> String
 exportAddRoomToExam (AddRoomToExam a r s d) =
        "- ancode: " ++ show a
   ++ "\n  room: " ++ r
-  ++ "\n  seatsPlanned: " ++ show s ++
+  ++ "\n  studentsInRoom: " ++ show s ++
   (case d of Nothing -> ""
              Just dd -> "\n  deltaDuration: " ++ show dd)
 
@@ -71,6 +71,6 @@ exportHandicaps plan =
   intercalate "\n"
   $ map show
   $ sortWith lecturer
-  $ filter (not . null . studentsWithHandicaps)
-  $ scheduledExams
-  $ setHandicapsOnScheduledExams plan
+  $ filter (not . null . handicapStudents)
+  $ scheduledExams plan
+  -- $ setHandicapsOnScheduledExams plan

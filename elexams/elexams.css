@@ -1,3 +1,7 @@
+body {
+  background-color: rgb(255, 224, 178);
+}
+
 td,
 table,
 th {
@@ -6,10 +10,20 @@ th {
   border: 2px solid black;
 }
 
+.NTA {
+  font-weight: bold;
+  background-color: rgb(156, 39, 176);
+}
+
+.Reserve {
+  font-weight: bold;
+  background-color: rgb(255, 193, 7);
+}
+
 .examName {
   font-weight: bold;
   font-size: 14pt;
-  color: rgb(153, 0, 204);
+  color: rgb(156, 39, 176);
 }
 
 .examList {
@@ -54,14 +68,15 @@ div#description {
   padding: 4px;
   user-select: text;
   word-break: break-word;
-  width: 15em;
+  width: 60em;
+  background-color: rgb(255, 152, 0);
 }
 
 .containerUnscheduled {
   padding: 0.3em;
   margin: 10px;
   border: 1px solid #fff;
-  background-color: #ffffff;
+  background-color: rgb(205, 220, 57);
   box-shadow: 0px 2px 7px #292929;
   border-radius: 10px;
 }
@@ -81,22 +96,27 @@ div.inner {
   top: 5px;
   overflow: hidden;
   border: 1px solid white;
-  background-color: rgb(255, 255, 60);
+  background-color: rgb(255, 193, 7);
   vertical-align: top;
   display: block;
 }
 
 div.reExam {
-  background-color: rgb(255, 255, 204);
+  background-color: rgb(255, 235, 59);
 }
 
-div.goSlot {
-  background-color: rgb(204, 255, 255);
+div.goSlot{
+  background-color: rgb(128, 222, 234);
+}
+
+span.GO {
+  background-color: rgb(0, 188, 212);
+  font-weight: bold;
 }
 
 div.examsBySameLecturer {
   font-weight: bold;
-  color: blue;
+  color: rgb(63, 81, 181);
   border: 2px solid blue;
 }
 
@@ -109,6 +129,15 @@ div.overlap {
   background-color: rgb(237, 236, 107);
 }
 
+div.notPlannedByMe {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+  background-color: rgb(158, 158, 158);
+}
+
 div.conflicts {
   padding: 2px;
   top: 0px;
@@ -116,16 +145,7 @@ div.conflicts {
   vertical-align: top;
   display: block;
   font-weight: bold;
-  background-color: rgb(200, 0, 0);
-}
-
-div.notPlannedByMe {
-  padding: 2px;
-  top: 0px;
-  overflow: hidden;
-  vertical-align: top;
-  display: block;
-  background-color: rgb(179, 179, 204);
+  background-color: rgb(233, 30, 99);
 }
 
 div.innerUnscheduled {
@@ -137,7 +157,7 @@ div.innerUnscheduled {
 }
 
 div.innerUnscheduled:hover {
-  background-color: rgb(133, 193, 236);
+  background-color: rgb(255, 152, 0);
   cursor: pointer;
 }
 
@@ -157,12 +177,12 @@ div.outerUnscheduled {
 }
 
 div.inner:hover {
-  background-color: rgb(133, 193, 236);
+  background-color: rgb(3, 169, 244);
   cursor: pointer;
 }
 
 div.div_select {
-  background-color: rgb(0, 200, 0) !important;
+  background-color: rgb(139, 195, 74) !important;
 }
 
 /*Div for error display*/
@@ -184,6 +204,15 @@ ul.rooms {
   padding-left: 1.4em;
 }
 
+div.invigilation:hover {
+  background-color: rgb(3, 169, 244);
+  cursor: pointer;
+}
+
+ul.handicapStudents {
+  padding-left: 1.4em;
+}
+
 ul#conflictingAncodes,
 li#conflictingAncodes {
   padding-left: 1.4em;
@@ -202,6 +231,21 @@ li#groups {
 ol.invigilatorList,
 li.invigilatorList {
   padding-left: 2.4em;
+}
+
+ul.Nachteilsausgleich,
+ol.Nachteilsausgleich {
+  padding-left: 1.4em;
+  background-color: rgb(255, 171, 145);
+}
+
+li.handicapStudents {
+    background-color: rgb(255, 238, 88);
+}
+
+ul.studentList,
+ol.studentList {
+  padding-left: 1.4em;
 }
 
 ul#overlaps,
@@ -232,15 +276,17 @@ h3 {
 
 /* Style the tab */
 .tab,
-.invigtab {
+.invigtab,
+.validationtab {
     overflow: hidden;
     border: 1px solid #ccc;
-    background-color: #f1f1f1;
+    background-color: rgb(128, 222, 234);
 }
 
 /* Style the buttons that are used to open the tab content */
 .tab button,
-.invigtab button {
+.invigtab button,
+.validationtab button {
     background-color: inherit;
     font-size: 16pt;
     float: left;
@@ -253,14 +299,16 @@ h3 {
 
 /* Change background color of buttons on hover */
 .tab button:hover,
-.invigtab button:hover {
-    background-color: #ddd;
+.invigtab button:hover,
+.validationtab button:hover {
+    background-color: rgb(255, 167, 38);
 }
 
 /* Create an active/current tablink class */
 .tab button.active,
-.invigtab button.active {
-    background-color: #ccc;
+.invigtab button.active,
+.validationtab button.active {
+    background-color: rgb(255, 87, 34);
 }
 
 /* Style the tab content */
@@ -284,25 +332,49 @@ h3 {
 }
 
 .needsInvigilator {
-  background-color: rgb(255, 102, 102)
+  background-color: rgb(244, 67, 54)
 }
 
 .hasInvigilator {
-  background-color: rgb(153, 255, 153)
+  background-color: rgb(205, 220, 57)
 }
 
-/* Search */
+/* Modal */
 
-.electron-in-page-search-window {
-  width: 300px;
-  height: 36px;
-  background-color: white;
+/* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
 
-.electron-in-page-search-window.search-inactive {
-  visibility: hidden;
+/* Modal Content/Box */
+.modal-content {
+    background-color: rgb(255, 152, 0);
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
 }
 
-.electron-in-page-search-window.search-active {
-  visibility: visible;
+/* The Close Button */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }

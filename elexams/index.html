@@ -20,19 +20,20 @@
   <script src="renderer.js"></script>
   <script src="plan.js"></script>
   <script src="invigilation.js"></script>
+  <script src="validation.js"></script>
 
 </head>
 
 <body>
   <div class="tab">
-    <button class="tablinks" onclick="openTab(event, 'Prüfungsplanung')">Prüfungsplanung</button>
+    <button class="tablinks active" onclick="openTab(event, 'Prüfungsplanung')">Prüfungsplanung</button>
     <button class="tablinks" onclick="openTab(event, 'Aufsichtenplanung')">Aufsichtenplanung</button>
+    <button class="tablinks" onclick="openTab(event, 'NTA')">NTA</button>
     <button class="tablinks" onclick="openTab(event, 'Validation')">Validation</button>
     <button class="tablinks" onclick="openTab(event, 'Prüfungsliste')">Prüfungsliste</button>
     <button class="tablinks" onclick="openTab(event, 'ReloadPlan')">Plan neu laden</button>
   </div>
-  <div id="Prüfungsplanung" class="tabcontent">
-    <button onclick="toggleGoSlots()">GO Slots</button>
+  <div id="Prüfungsplanung" class="tabcontent active" style="display: block;">
     <div id="plan"></div>
     <div class="containerUnscheduled">
       <div class="unscheduledHeader" draggable="false">Not yet scheduled</div>
@@ -40,16 +41,19 @@
       </div>
     </div>
   </div>
-  <div id="Aufsichtenplanung" class="tabcontent">
+  <div id="Aufsichtenplanung" class="tabcontent" style="display: none;">
     <div id="invigilations"></div>
   </div>
-  <div id="Validation" class="tabcontent">
-    <div id="validation-full"></div>
+  <div id="NTA" class="tabcontent" style="display: none;">
+    <div id="NTA"></div>
   </div>
-  <div id="Prüfungsliste" class="tabcontent">
+  <div id="Validation" class="tabcontent" style="display: none;">
+    <div id="validation"></div>
+  </div>
+  <div id="Prüfungsliste" class="tabcontent" style="display: none;">
     <div id="plexams-api"></div>
   </div>
-  <div id="ReloadPlan" class="tabcontent">
+  <div id="ReloadPlan" class="tabcontent" style="display: none;">
     <div id="reloadedPlan"></div>
   </div>
 

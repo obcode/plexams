@@ -6,6 +6,7 @@ const endpoints =
     slots: host + '/slots',
     slot: host + '/slot',
     slotsPerDay: host + '/slotsPerDay',
+    slotsForDay: host + '/slotsForDay',
     addExam: host + '/addExam',
     overlaps: host + '/overlaps',
     unscheduledExams: host + '/unscheduledExams',
@@ -16,7 +17,8 @@ const endpoints =
     goSlots: host + '/goSlots',
     lecturer: host + '/lecturer',
     reloadPlan: host + '/reloadPlan',
-    invigilators: host + '/invigilators'
+    invigilators: host + '/invigilators',
+    examsWithNTA: host + '/examsWithNTA'
   }
 
 
@@ -38,14 +40,17 @@ const openTab = (evt, tabname) => {
   document.getElementById(tabname).style.display = 'block'
   evt.currentTarget.className += ' active'
   if (tabname === 'Prüfungsplanung') {
-    $('#plan').html('<h1>Generating...</h1>')
+    // $('#plan').html('<h1>Generating...</h1>')
     fetchExamDays()
     fetchUnscheduledExams()
     // _fetchValidateWhat()
   } else if (tabname === 'Aufsichtenplanung') {
     fetchInvigilations()
+  } else if (tabname === 'NTA') {
+    // $('#validation-full').html('<h1>Validating...</h1>')
+    fetchNTA()
   } else if (tabname === 'Validation') {
-    $('#validation-full').html('<h1>Validating...</h1>')
+    // $('#validation-full').html('<h1>Validating...</h1>')
     fetchValidation()
   } else if (tabname === 'Prüfungsliste') {
     fetchExams()
@@ -76,66 +81,6 @@ const reloadPlan = () => {
   })
 }
 
-let _fetchValidateWhat = () => {
-  $.getJSON(endpoints.validateWhat, (validateWhat) => {
-    let output = 'Validation: <form>'
-    for (let i in validateWhat) {
-      output += `<input type="checkbox" name="${validateWhat[i]}"
-                                        value="${validateWhat[i]}">
-                 ${validateWhat[i]} | `
-    }
-    output += '</form>'
-    $('#validateWhat').html(output)
-  })
-}
-
-let _fetchValidation = () => {
-  $.getJSON(endpoints.validation, (validation) => {
-    let output = `<h1>${validation.result}</h1><ul>`
-    for (let i in validation.brokenConstraints) {
-      let constraint = validation.brokenConstraints[i]
-      if (constraint.tag === 'HardConstraintBroken') {
-        output += `<li><span class="${constraint.tag}">
-                    ${constraint.contents}</span>
-                  </li>`
-      }
-    }
-    output += `</ul>`
-    $('#validation').html(output)
-
-    output = `<h1>${validation.result}</h1><ul>`
-    for (let i in validation.brokenConstraints) {
-      let constraint = validation.brokenConstraints[i]
-      output += `<li><span class="${constraint.tag}">
-                  ${constraint.contents}</span>
-                </li>`
-    }
-    output += `</ul>`
-    $('#validation-full').html(output)
-
-  })
-}
-
-let fetchValidation = () => {
-  var request = $.ajax({
-    type: 'POST',
-    url: endpoints.validation,
-    data: JSON.stringify(["ValidateSchedule"]),
-    contentType: 'application/json',
-    dataType: 'json'
-  })
-  request.done(function (validation) {
-    output = `<h1>${validation.result}</h1><ul>`
-    for (let i in validation.brokenConstraints) {
-      let constraint = validation.brokenConstraints[i]
-      output += `<li><span class="${constraint.tag}">
-                  ${constraint.contents}</span>
-                </li>`
-    }
-    output += `</ul>`
-    $('#validation-full').html(output)
-  })
-}
 
 let _fetchExams = function () {
   $.getJSON(endpoints.exams, function (exams) {
@@ -360,13 +305,19 @@ let _fetchExamDays = function () {
                            ${exam.anCode}. `
                 for (let g in exam.registeredGroups) {
                   const group = exam.registeredGroups[g]
-                  output += `${group.registeredGroupDegree}(${group.registeredGroupStudents}),`
+                  output += `<span class="${group.registeredGroupDegree}">
+                      ${group.registeredGroupDegree}(${group.registeredGroupStudents})
+                      </span>,`
                 }
                 output += `<br>
                            <span class="examName">${exam.name}</span><br>
                            ${exam.lecturer.personShortName}<br>`
                 for (let r in exam.rooms) {
                   output += `${exam.rooms[r].roomID}, `
+                }
+                output += '<br>'
+                if (exam.handicapStudents.length > 0) {
+                  output += '<span class="NTA">NTA</span>'
                 }
                 output += `</div>`
               }
@@ -475,3 +426,6 @@ let fetchUnscheduledExams = function () {
 // _fetchLecturer()
 
 // _fetchValidation()
+
+fetchExamDays()
+fetchUnscheduledExams()

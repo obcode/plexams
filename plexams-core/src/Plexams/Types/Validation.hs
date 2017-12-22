@@ -63,7 +63,7 @@ data ValidateWhat = ValidateSources
   deriving (Eq, Show, Generic, Enum)
 
 validateWhat :: [ValidateWhat]
-validateWhat = [ValidateSources .. ValidateInvigilation]
+validateWhat = [ValidateSchedule .. ValidateInvigilation]
 
 instance FromJSON ValidateWhat
 instance ToJSON ValidateWhat

@@ -3,7 +3,6 @@ module Main where
 import           Data.Text             (unpack)
 import           Plexams.CLI.Commands
 import           Plexams.CLI.Config
--- import           Plexams.CLI.PlanManip
 import           Plexams.CLI.Types
 import           Plexams.Import        (importPlan)
 

@@ -3,6 +3,7 @@
 
 module Plexams.Types.Rooms
   ( Room(..)
+  , seatsPlanned
   ) where
 
 import           Data.Aeson
@@ -21,9 +22,12 @@ data Room = Room
     , reserveRoom          :: Bool          -- ^ @True@, Raum ist eingeplant, wird aber nicht im ZPA
                                             --   veröffentlicht
     , handicapCompensation :: Bool          -- ^ @True@ Raum für NTA
-    , seatsPlanned         :: Integer       -- ^ Anzahl der geplanten Studierenden
+    , studentsInRoom       :: [StudentWithRegs]
     }
   deriving (Eq,Generic)
+
+seatsPlanned :: Room -> Integer
+seatsPlanned = toInteger . length . studentsInRoom
 
 instance FromJSON Room
 instance ToJSON Room

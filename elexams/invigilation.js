@@ -43,10 +43,11 @@ const openInvigilation = (evt, dayIndex) => {
   } else {
     $.ajax({
       type: 'POST',
-      url: host + '/slotsForDay',
+      url: endpoints.slotsForDay,
       data: JSON.stringify(dayIndex),
       success: (slots) => {
         $.getJSON(endpoints.slotsPerDay, function (slotsPerDay) {
+          let modalOutput = ''
           let output =
             `<table>
               <tr>
@@ -88,23 +89,66 @@ const openInvigilation = (evt, dayIndex) => {
                     invigilator = room.invigilator
                     output += ' hasInvigilator'
                   }
-                  output += `">
+                  output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}')">
                                 ${exam.anCode}. ${exam.name}<br>
                                 Prüfer: ${exam.lecturer.personShortName}<br>
-                                ${room.roomID} ${invigilator}
-                              </div></td>`
+                                ${room.roomID} (${room.studentsInRoom.length}/${room.maxSeats}):
+                                ${invigilator.invigilatorName}<br>
+                                ${exam.duration + room.deltaDuration} Minuten`
+                  if (room.reserveRoom) {
+                    output += ` <span class="Reserve">(Reserve)</span>`
+                  }
+                  if (room.handicapCompensation) {
+                    output += ` <span class="NTA">(NTA)</span>`
+                  }
+                  output += `</div></td>`
+                  modalOutput += `<div id="modal-${exam.anCode}-${room.roomID}" class="modal">
+                                    <div class="modal-content">
+                                      <span id="modal-${exam.anCode}-${room.roomID}-close">&times;</span>
+                                      <h2>${room.roomID}: ${exam.anCode}. ${exam.name}, ${exam.lecturer.personShortName}`
+                  if (room.reserveRoom) {
+                    modalOutput += ` <span class="Reserve">(Reserve)</span>`
+                  }
+                  if (room.handicapCompensation) {
+                    modalOutput += ` <span class="NTA">(NTA)</span>`
+                  }
+                  modalOutput += `</h2><ol class="studentList">`
+                  for (let s in room.studentsInRoom) {
+                    const student = room.studentsInRoom[s]
+                    modalOutput += `<li> ${student.studentName}`
+                    if (student.studentHandicap !== null) {
+                      modalOutput += ` (${student.studentHandicap.handicapCompensationText})`
+                    }
+                    modalOutput += `</li>`
+                  }
+                  modalOutput += `</ol></div></div>`
                 }
               }
               output += `</tr>`
             }
           }
           output += '</table></td></tr></table>'
+          output += modalOutput
           $('#invigilations' + dayIndex).html(output)
         })
       },
       contentType: 'application/json',
       dataType: 'json'
     })
+  }
+}
+
+const openModal = (modalid) => {
+  const modal = document.getElementById(modalid)
+  const span = document.getElementById(modalid + '-close')
+  modal.style.display = 'block'
+  span.onclick = () => {
+    modal.style.display = 'none'
+  }
+  window.onclick = (event) => {
+    if (event.target === modal) {
+      modal.style.display = 'none'
+    }
   }
 }
 

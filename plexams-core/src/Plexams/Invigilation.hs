@@ -41,13 +41,14 @@ sumInvigilation plan =
                          else minutesForReserve)
         $ M.elems
         $ slots plan
-      sumMasterAndOralExams =
+      sumMasterOralExamsAndLivecoding =
         sum
-        $ map (\i -> invigilatorOralExams i + invigilatorMaster i)
+        $ map (\i -> invigilatorOralExams i
+                    + invigilatorMaster i
+                    + invigilatorLiveCoding i)
         $ M.elems
         $ invigilators plan
-  in (sumExams, sumReserve, sumMasterAndOralExams)
-
+  in (sumExams, sumReserve, sumMasterOralExamsAndLivecoding)
 
 addInvigilatorsPerDay :: Plan -> Plan
 addInvigilatorsPerDay plan =

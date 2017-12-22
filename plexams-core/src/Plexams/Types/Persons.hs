@@ -14,10 +14,12 @@ module Plexams.Types.Persons
   , Handicap(..)
   , Invigilator(..)
   , Invigilators
+  , addHandicaps
   ) where
 
 import           Control.Applicative  (empty)
 import           Data.Aeson
+import           Data.List            ((\\))
 import qualified Data.Map             as M
 import           Data.Monoid          ((<>))
 import qualified Data.Set             as S
@@ -64,10 +66,11 @@ type StudentsExams = M.Map MtkNr (StudentName, S.Set Ancode)
 type StudentsWithRegs = M.Map MtkNr StudentWithRegs
 
 data StudentWithRegs = StudentWithRegs
-  { studentMtknr   :: Integer
-  , studentName    :: Text
-  , studentGroup   :: Text
-  , studentAncodes :: [Ancode]
+  { studentMtknr    :: Integer
+  , studentName     :: Text
+  , studentGroup    :: Text
+  , studentAncodes  :: [Ancode]
+  , studentHandicap :: Maybe Handicap
   }
   deriving (Eq, Generic)
 
@@ -75,12 +78,12 @@ instance FromJSON StudentWithRegs
 instance ToJSON StudentWithRegs
 
 data Handicap = Handicap
-  { studentname          :: Text
-  , mtknr                :: Integer
-  , compensation         :: Text
-  , deltaDurationPercent :: Integer
-  , exams                :: [Ancode]
-  , needsRoomAlone       :: Bool
+  { handicapStudentname          :: Text
+  , handicapMtknr                :: Integer
+  , handicapCompensationText     :: Text
+  , handicapDeltaDurationPercent :: Integer
+  , handicapNotForExams          :: [Ancode]
+  , handicapNeedsRoomAlone       :: Bool
   }
   deriving (Eq,Generic)
 
@@ -90,15 +93,25 @@ instance Y.FromJSON Handicap where
                         <*> v Y..: "mtknr"
                         <*> v Y..: "compensation"
                         <*> v Y..: "deltaDurationPercent"
-                        <*> v Y..: "exams" Y..!= []
+                        <*> v Y..:? "notForExams" Y..!= []
                         <*> v Y..:? "needsRoomAlone" Y..!= False
   parseJSON _            = empty
 
 instance ToJSON Handicap
 
+addHandicaps :: StudentsWithRegs -> [Handicap] -> StudentsWithRegs
+addHandicaps = foldr addHandicap
+  where
+    addHandicap :: Handicap -> StudentsWithRegs -> StudentsWithRegs
+    addHandicap handicap = M.alter (maybe Nothing
+      (\s -> Just $ s { studentHandicap = Just handicap
+                      , studentAncodes = studentAncodes s
+                                          \\ handicapNotForExams handicap
+                      })) (handicapMtknr handicap)
+
 instance Show Handicap where
-  show handicap = unpack (studentname handicap)
-                  ++ " (" ++ unpack (compensation handicap) ++ ")"
+  show handicap = unpack (handicapStudentname handicap)
+                  ++ " (" ++ unpack (handicapCompensationText handicap) ++ ")"
 
 type InvigilatorID = Integer
 

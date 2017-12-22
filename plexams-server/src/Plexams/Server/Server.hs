@@ -45,6 +45,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "reloadPlan" :> Get '[JSON] (Bool,[Text])
       :<|> "plan" :> Get '[JSON] Plan
       :<|> "invigilators" :> Get '[JSON] [Invigilator]
+      :<|> "examsWithNTA" :> Get '[JSON] [Exam]
 
 
 newtype State = State { plan :: TVar Plan }
@@ -99,6 +100,7 @@ server state =
     :<|> reloadPlan'
     :<|> plan'
     :<|> invigilators'
+    :<|> examsWithNTA'
 
       where
 
@@ -115,6 +117,14 @@ server state =
           State { plan = planT } <- ask
           plan' <- liftIO $ atomically $ readTVar planT
           return $ allExams plan'
+
+        examsWithNTA' :: StateHandler [Exam]
+        examsWithNTA' = do
+          State { plan = planT } <- ask
+          plan' <- liftIO $ atomically $ readTVar planT
+          return $ sortWith (personShortName . lecturer)
+                 $ filter (not . null . handicapStudents)
+                 $ allExams plan'
 
         invigilators' :: StateHandler [Invigilator]
         invigilators' = do

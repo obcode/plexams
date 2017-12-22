@@ -22,33 +22,27 @@ validate validateWhat = runWriter . validate' validateWhat
 validate' :: [ValidateWhat] -> Plan -> Writer [ValidationRecord] ValidationResult
 validate' validateWhat plan = do
   tell [Info "# Validation"]
-  sourcesOk <- if ValidateSources `elem` validateWhat
-    then Plexams.Validation.Sources.validate plan
-    else do
-      tell [Info "no validation of sources requested"]
-      return EverythingOk
   scheduledExams' <- if ValidateSchedule `elem` validateWhat
     then do
       scheduledExams'' <- Plexams.Validation.ScheduledExams.validate plan
       max3days <- validateLecturersMax3ExamDays plan
       return $ validationResult [ scheduledExams'', max3days]
-    else do
-      tell [Info "no validation of schedule requested"]
+    else
+      -- tell [Info "no validation of schedule requested"]
       return EverythingOk
   roomsOk <- if ValidateRooms `elem` validateWhat
     then Plexams.Validation.Rooms.validate plan
-    else do
-      tell [Info "no validation of rooms requested"]
+    else
+      -- tell [Info "no validation of rooms requested"]
       return EverythingOk
   invigilationsOk <- if ValidateInvigilation `elem` validateWhat
     then Plexams.Validation.Invigilation.validate plan
-    else do
-      tell [Info "no validation of invigilation requested"]
+    else
+      -- tell [Info "no validation of invigilation requested"]
       return EverythingOk
   tell [Info "# no more validations implemented yet"]
   return $ validationResult
-            [ sourcesOk
-            , scheduledExams'
+            [ scheduledExams'
             , roomsOk
             , invigilationsOk
             ]

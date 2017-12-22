@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Plexams.Import.Registrations
-    ( importRegistrationsFromYAMLFile
-    , importOverlapsFromYAMLFile
-    , importStudentsFromYAMLFile
-    , importStudentsWithRegsFromYAMLFile
+    -- ( importRegistrationsFromYAMLFile
+    -- , importOverlapsFromYAMLFile
+    -- , importStudentsFromYAMLFile
+    -- ,
+    ( importStudentsWithRegsFromYAMLFile
     , importHandicapsFromYAMLFile
     ) where
 
@@ -146,10 +147,10 @@ importStudentRegsToStudentsWithRegs :: [ImportStudentReg] -> StudentsWithRegs
 importStudentRegsToStudentsWithRegs = foldr insertStudent M.empty
   where
     insertStudent (ImportStudentReg mtkNr name' stg ancode) =
-      M.alter (Just . maybe (StudentWithRegs mtkNr name' stg [ancode])
+      M.alter (Just . maybe (StudentWithRegs mtkNr name' stg [ancode] Nothing)
                             (addAncode ancode)) mtkNr
-    addAncode ancode (StudentWithRegs mktNr name' stg ancodes) =
-        StudentWithRegs mktNr name' stg (ancode : ancodes)
+    addAncode ancode (StudentWithRegs mktNr name' stg ancodes maybeHandicap) =
+        StudentWithRegs mktNr name' stg (ancode : ancodes) maybeHandicap
 
 importStudentGroups :: SemesterConfig -> [ImportStudentRegs] -> StudentsWithRegs
 importStudentGroups config importStudentRegs =

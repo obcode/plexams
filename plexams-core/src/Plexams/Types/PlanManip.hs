@@ -25,10 +25,10 @@ instance FromJSON AddExamToSlot
 
 data AddRoomToExam =
     AddRoomToExam
-      { addRoomAnCode        :: Integer
-      , addRoomRoomName      :: String
-      , addRoomSeatsPlanned  :: Integer
-      , addRoomDeltaDuration :: Maybe Integer
+      { addRoomAnCode         :: Integer
+      , addRoomRoomName       :: String
+      , addRoomStudentsInRoom :: [Integer]
+      , addRoomDeltaDuration  :: Maybe Integer
       }
   deriving Show
 
@@ -36,7 +36,7 @@ instance Y.FromJSON AddRoomToExam where
     parseJSON (Y.Object v) = AddRoomToExam
                        <$> v Y..: "ancode"
                        <*> v Y..: "room"
-                       <*> v Y..: "seatsPlanned"
+                       <*> v Y..: "studentsInRoom"
                        <*> v Y..:? "deltaDuration" Y..!= Nothing
     parseJSON _            = empty
 

@@ -51,13 +51,28 @@ function viewDetails (event, anCode) {
       for (let i in exam.rooms) {
         const room = exam.rooms[i]
         output += `<li class="room ${room.roomID}">${room.roomID}: `
-        output += `${room.seatsPlanned}/${room.maxSeats}`
+        output += `${room.studentsInRoom.length}/${room.maxSeats}`
         if (room.reserveRoom) {
           output += ' (Reserve)'
+        }
+        if (room.handicapCompensation) {
+          output += ' (NTA)'
         }
         output += `</li>`
       }
       output += '</ul>'
+      if (exam.handicapStudents.length > 0) {
+        output += '<span class="NTA">Nachteilsausgleich</span><ul class="handicapStudents">'
+        for (let h in exam.handicapStudents) {
+          const student = exam.handicapStudents[h]
+          output +=
+            `<li class="handicapStudents">
+            ${student.studentName}<br>
+            ${student.studentHandicap.handicapCompensationText}
+             </li>`
+        }
+      }
+      output += "</ul>"
       $('#description').html(output)
       setConflicts(anCode, exam.conflictingAncodes)
       fetchExamsBySameLecturer(anCode)
@@ -89,36 +104,36 @@ function toggleSelect (thisObj) {
   }
 }
 
-function fetchOverlaps (anCode) {
-  var request = $.ajax({
-    type: 'POST',
-    url: endpoints.overlaps,
-    data: JSON.stringify(anCode),
-    contentType: 'application/json',
-    dataType: 'json'
-  })
-  request.done(function (overlappingExams) {
-    selectOverlapExams(overlappingExams, anCode);
-    var output = `
-    <ul id='overlaps'>
-    `
-    for (var i = 0; i < overlappingExams.length; i++) {
-      let group = overlappingExams[i]
-      output +=
-        `<li id='group'> ${group.olGroup.groupDegree}
-          <div>`
-      let overlap = group.olOverlaps[anCode]
-      for (var name in overlap) {
-        output += name + `: ` + overlap[name] + `</br>`
-      }
-      output += `
-          </div>
-          </li>`
-    }
-    output += `</ul>`
-    $('#overlaps').html(output)
-  })
-}
+// function fetchOverlaps (anCode) {
+//   var request = $.ajax({
+//     type: 'POST',
+//     url: endpoints.overlaps,
+//     data: JSON.stringify(anCode),
+//     contentType: 'application/json',
+//     dataType: 'json'
+//   })
+//   request.done(function (overlappingExams) {
+//     selectOverlapExams(overlappingExams, anCode);
+//     var output = `
+//     <ul id='overlaps'>
+//     `
+//     for (var i = 0; i < overlappingExams.length; i++) {
+//       let group = overlappingExams[i]
+//       output +=
+//         `<li id='group'> ${group.olGroup.groupDegree}
+//           <div>`
+//       let overlap = group.olOverlaps[anCode]
+//       for (var name in overlap) {
+//         output += name + `: ` + overlap[name] + `</br>`
+//       }
+//       output += `
+//           </div>
+//           </li>`
+//     }
+//     output += `</ul>`
+//     $('#overlaps').html(output)
+//   })
+// }
 
 function fetchExamsBySameLecturer (anCode) {
   var request = $.ajax({
@@ -136,15 +151,15 @@ function fetchExamsBySameLecturer (anCode) {
   })
 }
 
-function selectOverlapExams (overlaps, anCode) {
-  for (var i = 0; i < overlaps.length; i++) {
-    let group = overlaps[i]
-    let overlap = group.olOverlaps[anCode]
-    for (var name in overlap) {   
-      $('#'.concat(name)).addClass('overlap')
-    }
-  }
-}
+// function selectOverlapExams (overlaps, anCode) {
+//   for (var i = 0; i < overlaps.length; i++) {
+//     let group = overlaps[i]
+//     let overlap = group.olOverlaps[anCode]
+//     for (var name in overlap) {   
+//       $('#'.concat(name)).addClass('overlap')
+//     }
+//   }
+// }
 
 function setConflicts (anCode, conflictingAncodes) {
   for (var i in conflictingAncodes) {
@@ -234,4 +249,27 @@ function allowDropExam (ev) {
   if ((ev.currentTarget.classList.contains('outer')) || (ev.currentTarget.className === 'outerUnscheduled')) {
     ev.preventDefault()
   }
+}
+
+const fetchNTA = () => {
+  $.getJSON(endpoints.examsWithNTA, (examsWithNTA) => {
+    let output = `<h1>Nachteilsausgleich</h1>
+                  <ol class="Nachteilsausgleich">`
+    for (let i in examsWithNTA) {
+      const exam = examsWithNTA[i]
+      output += `<li class="Nachteilsausgleich">${exam.lecturer.personShortName}
+        <a href="mailto:${exam.lecturer.personEmail}">&lt;${exam.lecturer.personEmail}&gt;</a><br>
+        ${exam.anCode}. ${exam.name}
+        <ul class="Nachteilsausgleich">`
+      for (let j in exam.handicapStudents) {
+        const student = exam.handicapStudents[j]
+        output += `<li class="handicapStudents">
+                    ${student.studentName}: ${student.studentHandicap.handicapCompensationText}
+                   </li>`
+      }
+      output += '</ul></li>'
+    }
+    output += '</ul>'
+    $('#NTA').html(output)
+  })
 }

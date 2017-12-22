@@ -13,6 +13,9 @@ import           TextShow             (showt)
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do
   tell [Info "## Validating Rooms"]
+  -- normalRoomsNoHandicap
+  -- handicapRoomsAllHandicap
+  -- no student left outside of room
   enoughRoomsForExams <- validateEnoughRoomsForExams plan
   stillReserveForExams <- validationStillReserveForExams plan
   differentRoomsInSlot <- validateDifferentRoomsInSlots plan

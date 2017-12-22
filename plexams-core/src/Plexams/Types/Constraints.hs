@@ -15,6 +15,7 @@ data Constraints = Constraints
   { overlaps                    :: [Overlaps]
   , notOnSameDay                :: [[Ancode]]
   , inSameSlot                  :: [[Ancode]]
+  , inSameRoom                  :: [[Ancode]]
   , onOneOfTheseDays            :: [(Ancode, [Int])]
   , fixedSlot                   :: [(Ancode, (Int,Int))]
   , noInvigilations             :: [PersonID]
@@ -29,7 +30,7 @@ instance ToJSON Constraints where
     toEncoding = genericToEncoding defaultOptions
 
 noConstraints :: Constraints
-noConstraints = Constraints [] [] [] [] [] [] [] [] [] M.empty
+noConstraints = Constraints [] [] [] [] [] [] [] [] [] [] M.empty
 
 data Overlaps = Overlaps
   { olGroup :: Group
