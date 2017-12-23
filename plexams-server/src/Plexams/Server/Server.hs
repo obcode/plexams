@@ -11,10 +11,8 @@ import           Control.Concurrent.STM.TVar
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.STM
-import qualified Data.ByteString.Lazy.Char8  as BSL
 import           Data.List                   (nub, partition, sortBy)
 import qualified Data.Map                    as M
-import           Data.Maybe
 import           Data.Text                   (Text, unpack)
 import           GHC.Exts                    (sortWith)
 import           Network.Wai
@@ -27,7 +25,6 @@ import           Plexams.Validation
 import           Servant
 
 type API = "exams" :> Get '[JSON] [Exam]
---      :<|> "studentregs" :> Get '[JSON] [StudentWithRegs]
       :<|> "examDays" :> Get '[JSON] [String]
       :<|> "slots" :> Get '[JSON] Slots
       :<|> "slot" :> ReqBody '[JSON] (Int, Int) :> Post '[JSON] [Exam]
@@ -36,7 +33,6 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "addExam" :> ReqBody '[JSON] AddExamToSlot :> Post '[JSON] ()
       :<|> "unscheduledExams" :> Get '[JSON] [Exam]
       :<|> "notPlannedByMeExams" :> Get '[JSON] [Ancode]
-      :<|> "overlaps" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Overlaps]
       :<|> "validation" :> ReqBody '[JSON] [ValidateWhat] :> Post '[JSON] Validation
       :<|> "examsBySameLecturer" :> ReqBody '[JSON] Ancode :> Post '[JSON] [Exam]
       :<|> "goSlots" :> Get '[JSON] [(Int, Int)]
@@ -44,6 +40,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "validateWhat" :> Get '[JSON] [ValidateWhat]
       :<|> "reloadPlan" :> Get '[JSON] (Bool,[Text])
       :<|> "plan" :> Get '[JSON] Plan
+      :<|> "semesterConfig" :> Get '[JSON] SemesterConfig
       :<|> "invigilators" :> Get '[JSON] [Invigilator]
       :<|> "examsWithNTA" :> Get '[JSON] [Exam]
 
@@ -82,7 +79,6 @@ server :: State -> Server API
 server state =
   enter (stateHandlerToHandler state)
     $  exams'
---     :<|> studentregs
     :<|> examDays'
     :<|> slots'
     :<|> slot'
@@ -91,7 +87,6 @@ server state =
     :<|> addExam'
     :<|> unscheduledExams'
     :<|> notPlannedByMeExams'
-    :<|> overlaps'
     :<|> validation'
     :<|> examsBySameLecturer'
     :<|> goSlots'
@@ -99,6 +94,7 @@ server state =
     :<|> validateWhat'
     :<|> reloadPlan'
     :<|> plan'
+    :<|> semesterConfig'
     :<|> invigilators'
     :<|> examsWithNTA'
 
@@ -112,86 +108,81 @@ server state =
           State { plan = planT } <- ask
           liftIO $ atomically $ readTVar planT
 
+        semesterConfig' :: StateHandler SemesterConfig
+        semesterConfig' = do
+          State { plan = planT } <- ask
+          liftIO $ fmap semesterConfig $ atomically $ readTVar planT
+
         exams' :: StateHandler [Exam]
         exams' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ allExams plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ allExams plan''
 
         examsWithNTA' :: StateHandler [Exam]
         examsWithNTA' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
+          plan'' <- liftIO $ atomically $ readTVar planT
           return $ sortWith (personShortName . lecturer)
                  $ filter (not . null . handicapStudents)
-                 $ allExams plan'
+                 $ allExams plan''
 
         invigilators' :: StateHandler [Invigilator]
         invigilators' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ M.elems $ invigilators plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ M.elems $ invigilators plan''
 
         examDays' :: StateHandler [String]
         examDays' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ examDaysAsStrings $ semesterConfig plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ examDaysAsStrings $ semesterConfig plan''
 
         slots' :: StateHandler Slots
         slots' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ slots plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ slots plan''
 
         slot' :: (Int, Int) -> StateHandler [Exam]
         slot' s = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ maybe [] (M.elems . examsInSlot) $ M.lookup s $ slots plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ maybe [] (M.elems . examsInSlot) $ M.lookup s $ slots plan''
 
         slotsPerDay' :: StateHandler [String]
         slotsPerDay' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ slotsPerDay $ semesterConfig plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ slotsPerDay $ semesterConfig plan''
 
         slotsForDay' :: Int -> StateHandler Slots
         slotsForDay' dayIndex = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ M.filterWithKey (\k _ -> fst k == dayIndex) $ slots plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ M.filterWithKey (\k _ -> fst k == dayIndex) $ slots plan''
 
         unscheduledExams' :: StateHandler [Exam]
         unscheduledExams' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
+          plan'' <- liftIO $ atomically $ readTVar planT
           return $ sortBy (\e1 e2 -> compare (registrations e2)
                                           (registrations e1))
                  $ filter isUnscheduled
-                 $ allExams plan'
+                 $ allExams plan''
 
         notPlannedByMeExams' :: StateHandler [Ancode]
         notPlannedByMeExams' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ map head $ importedExams $ semesterConfig plan'
-
-        overlaps' :: Ancode -> StateHandler [Overlaps]
-        overlaps' anCode' = do
-          State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ (\plan'' -> filterOverlaps anCode'
-                             $ (studentsOverlaps plan'' :)
-                             $ overlaps
-                             $ constraints plan''
-                   ) plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ map head $ importedExams $ semesterConfig plan''
 
         examsBySameLecturer' :: Ancode -> StateHandler [Exam]
         examsBySameLecturer' anCode' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          let allExams' = allExams plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          let allExams' = allExams plan''
               (thisExam, otherExams) =
                                 partition ((==anCode') . anCode) allExams'
               lecturer'' = personID $ lecturer $ head thisExam
@@ -202,33 +193,33 @@ server state =
         validation' :: [ValidateWhat] -> StateHandler Validation
         validation' validateWhat'' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ uncurry Validation $ validate validateWhat'' plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ uncurry Validation $ validate validateWhat'' plan''
 
         goSlots' :: StateHandler [(Int, Int)]
         goSlots' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
-          return $ goSlots $ semesterConfig plan'
+          plan'' <- liftIO $ atomically $ readTVar planT
+          return $ goSlots $ semesterConfig plan''
 
         lecturer' :: StateHandler [Person]
         lecturer' = do
           State { plan = planT } <- ask
-          plan' <- liftIO $ atomically $ readTVar planT
+          plan'' <- liftIO $ atomically $ readTVar planT
           return $ sortWith personShortName
                  $ nub
                  $ map lecturer
-                 $ allExams plan'
+                 $ allExams plan''
 
         addExam' :: AddExamToSlot -> StateHandler ()
         addExam' addExamToSlot' = do
           State { plan = planT } <- ask
-          plan''' <- liftIO $ atomically $ do
-            plan' <- readTVar planT
-            let plan'' = applyAddExamToSlotListToPlan plan' [addExamToSlot']
-            writeTVar planT plan''
-            return plan''
-          let planManipFile' = planManipFile $ files $ semesterConfig plan'''
+          plan'''' <- liftIO $ atomically $ do
+            plan'' <- readTVar planT
+            let plan''' = applyAddExamToSlotListToPlan plan'' [addExamToSlot']
+            writeTVar planT plan'''
+            return plan'''
+          let planManipFile' = planManipFile $ files $ semesterConfig plan''''
           case planManipFile' of
               Just planManipFile'' -> do
                 liftIO $ updateManipFile planManipFile'' addExamToSlot'
@@ -248,19 +239,3 @@ server state =
               writeTVar planT newPlan
               return True
           return (newPlanSet, errorMessages)
-
-failingHandler :: MonadError ServantErr m => BSL.ByteString -> m a
-failingHandler s = throwError myerr
-  where myerr :: ServantErr
-        myerr = err503 { errBody = s }
-
-filterOverlaps :: Ancode -> [Overlaps] -> [Overlaps]
-filterOverlaps anCode' overlaps' = map overlap groups'
-  where groups' = filter
-          (isJust . M.lookup anCode' . olOverlaps) overlaps'
-        overlap group' = Overlaps
-          { olGroup = olGroup group'
-          , olOverlaps = olOverlaps' group'}
-        olOverlaps' group' =
-          M.fromList $ filter
-            (\overlap' -> fst overlap' == anCode') (M.toList (olOverlaps group'))

@@ -18,7 +18,8 @@ const endpoints =
     lecturer: host + '/lecturer',
     reloadPlan: host + '/reloadPlan',
     invigilators: host + '/invigilators',
-    examsWithNTA: host + '/examsWithNTA'
+    examsWithNTA: host + '/examsWithNTA',
+    semesterConfig: host + '/semesterConfig'
   }
 
 
@@ -133,29 +134,31 @@ let _fetchExams = function () {
 }
 
 let _fetchUnscheduledExams = function () {
-  $.getJSON(endpoints.unscheduledExams, function (uExams) {
-    let outputPlannedByMe = ``
-    for (var i in uExams) {
-      var exam = uExams[i]
-      var draggable = false
-      outputPlannedByMe +=
-        `<div id="${exam.anCode}" `
-      if (exam.plannedByMe) {
-        outputPlannedByMe += `class="innerUnscheduled" draggable="true"`
-      } else {
-        outputPlannedByMe += `class="innerUnscheduled notPlannedByMe" draggable="false"`
+  $.getJSON(endpoints.semesterConfig, function (semesterConfig) {
+    $.getJSON(endpoints.unscheduledExams, function (uExams) {
+      let outputPlannedByMe = ``
+      for (var i in uExams) {
+        var exam = uExams[i]
+        var draggable = !semesterConfig.scheduleFrozen
+        outputPlannedByMe +=
+          `<div id="${exam.anCode}" `
+        if (exam.plannedByMe) {
+          outputPlannedByMe += `class="innerUnscheduled" draggable="${draggable}"`
+        } else {
+          outputPlannedByMe += `class="innerUnscheduled notPlannedByMe" draggable="false"`
+        }
+        outputPlannedByMe += ` ondrop="return false;" ondragstart="dragExam(event)"
+            onclick="viewDetails(event, ${exam.anCode})"
+           >${exam.anCode}</br>${exam.name}</div>`
       }
-      outputPlannedByMe += ` ondrop="return false;" ondragstart="dragExam(event)"
-          onclick="viewDetails(event, ${exam.anCode})"
-         >${exam.anCode}</br>${exam.name}</div>`
-    }
-    $('#unscheduled').html(outputPlannedByMe)
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    $('#error').append(`Error on endpoint \\unscheduledExams: `)
-    $('#error').append(jqXHR.responseText)
-    $('#error').append(`<br>`)
-    $('#error').css({
-      'border': '3px solid #e22d2d'
+      $('#unscheduled').html(outputPlannedByMe)
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      $('#error').append(`Error on endpoint \\unscheduledExams: `)
+      $('#error').append(jqXHR.responseText)
+      $('#error').append(`<br>`)
+      $('#error').css({
+        'border': '3px solid #e22d2d'
+      })
     })
   })
 }
@@ -263,87 +266,89 @@ let _fetchExamDescription = function (inDay, inTime, slots) {
 }
 
 let _fetchExamDays = function () {
-  $.getJSON(endpoints.examDays, function (examDays) {
-      $.getJSON(endpoints.slotsPerDay, function (slotsPerDay) {
-        $.getJSON(endpoints.slots, function (slots) {
-          // Construct the plan output
-          let output =
-            `<table>
-                    <tr>
-                    <td>
-                      <table>
-                        <tr>
-                          <th></th>`
-          for (let i in examDays) {
-            let examDay = examDays[i]
-            output += `<th>${examDay}</th>`
-          }
-          output += `</tr>`
-
-          for (let i in slotsPerDay) {
-            let slot = slotsPerDay[i]
-            output += `<tr>
-                          <td class="times">${slot}</td>`
-            for (let j in examDays) {
-              let examDay = examDays[j]
-              let examData = _fetchExamsData(j, i, slots)
-              var anCodes = _getAncodesForSlot(j, i, slots);
-              output += `<td class="exams">
-                        <div id="slot_${j}_${i}" class="outer" data-day="${j}" data-slot="${i}"
-                        ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
-              for (let k in examData) {
-                const exam = examData[k]
-                output += `<div id="${exam.anCode}" class="inner `
-                if (exam.reExam) {
-                  output += 'reExam'
-                }
-                output += `" ondrop="return false;"
-                           draggable="true" ondragstart="dragExam(event)"
-                           onclick="viewDetails(event, ${exam.anCode})"
-                           title="${exam.anCode}"
-                           onmouseover="">
-                           ${exam.anCode}. `
-                for (let g in exam.registeredGroups) {
-                  const group = exam.registeredGroups[g]
-                  output += `<span class="${group.registeredGroupDegree}">
-                      ${group.registeredGroupDegree}(${group.registeredGroupStudents})
-                      </span>,`
-                }
-                output += `<br>
-                           <span class="examName">${exam.name}</span><br>
-                           ${exam.lecturer.personShortName}<br>`
-                for (let r in exam.rooms) {
-                  output += `${exam.rooms[r].roomID}, `
-                }
-                output += '<br>'
-                if (exam.handicapStudents.length > 0) {
-                  output += '<span class="NTA">NTA</span>'
-                }
-                output += `</div>`
-              }
-              output += `</div>
-                        </td>`
+  $.getJSON(endpoints.semesterConfig, function (semesterConfig) {
+    $.getJSON(endpoints.examDays, function (examDays) {
+        $.getJSON(endpoints.slotsPerDay, function (slotsPerDay) {
+          $.getJSON(endpoints.slots, function (slots) {
+            // Construct the plan output
+            const draggable = !semesterConfig.scheduleFrozen
+            let output =
+              `<table>
+                      <tr>
+                      <td>
+                        <table>
+                          <tr>
+                            <th></th>`
+            for (let i in examDays) {
+              let examDay = examDays[i]
+              output += `<th>${examDay}</th>`
             }
             output += `</tr>`
-          }
-          // Detailed description of the selected exams
-          output += `</tr>
-                </table>
-                </td>
-                <td style="vertical-align:top; word-break: break-word; width:15em;">
-                  <div id="description">
-                  </div>
-                </td>
-                </td>
-              </tr>
-            </table>
-            </br>`
-          $('#plan').html(output)
-          toggleGoSlots()
-          setNotPlannedByMe()
+
+            for (let i in slotsPerDay) {
+              let slot = slotsPerDay[i]
+              output += `<tr>
+                            <td class="times">${slot}</td>`
+              for (let j in examDays) {
+                let examDay = examDays[j]
+                let examData = _fetchExamsData(j, i, slots)
+                var anCodes = _getAncodesForSlot(j, i, slots);
+                output += `<td class="exams">
+                          <div id="slot_${j}_${i}" class="outer" data-day="${j}" data-slot="${i}"
+                          ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
+                for (let k in examData) {
+                  const exam = examData[k]
+                  output += `<div id="${exam.anCode}" class="inner `
+                  if (exam.reExam) {
+                    output += 'reExam'
+                  }
+                  output += `" ondrop="return false;"
+                             draggable="${draggable}" ondragstart="dragExam(event)"
+                             onclick="viewDetails(event, ${exam.anCode})"
+                             title="${exam.anCode}"
+                             onmouseover="">
+                             ${exam.anCode}. `
+                  for (let g in exam.registeredGroups) {
+                    const group = exam.registeredGroups[g]
+                    output += `<span class="${group.registeredGroupDegree}">
+                        ${group.registeredGroupDegree}(${group.registeredGroupStudents})
+                        </span>,`
+                  }
+                  output += `<br>
+                             <span class="examName">${exam.name}</span><br>
+                             ${exam.lecturer.personShortName}<br>`
+                  for (let r in exam.rooms) {
+                    output += `${exam.rooms[r].roomID}, `
+                  }
+                  output += '<br>'
+                  if (exam.handicapStudents.length > 0) {
+                    output += '<span class="NTA">NTA</span>'
+                  }
+                  output += `</div>`
+                }
+                output += `</div>
+                          </td>`
+              }
+              output += `</tr>`
+            }
+            // Detailed description of the selected exams
+            output += `</tr>
+                  </table>
+                  </td>
+                  <td style="vertical-align:top; word-break: break-word; width:15em;">
+                    <div id="description">
+                    </div>
+                  </td>
+                  </td>
+                </tr>
+              </table>
+              </br>`
+            $('#plan').html(output)
+            toggleGoSlots()
+            setNotPlannedByMe()
+          })
         })
-      })
-  })
+    })
     .fail(function (jqXHR, textStatus, errorThrown) {
       $('#error').append(`Error on endpoint \\examDays: `)
       $('#error').append(jqXHR.responseText)
@@ -352,6 +357,7 @@ let _fetchExamDays = function () {
         'border': '3px solid #e22d2d'
       })
     })
+  })
 }
 
 function setNotPlannedByMe () {

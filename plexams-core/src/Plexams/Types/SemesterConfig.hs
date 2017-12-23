@@ -65,6 +65,7 @@ data SemesterConfig = SemesterConfig
     , availableRooms :: [AvailableRoom]
     , importedExams  :: [[Integer]]
     , goOtherExams   :: [Ancode]
+    , scheduleFrozen :: Bool
     }
   deriving (Eq, Show, Generic)
 
@@ -83,6 +84,7 @@ instance Y.FromJSON SemesterConfig where
                         <*> v Y..: "rooms"
                         <*> v Y..: "notPlannedByMe"
                         <*> v Y..: "goOtherExams"
+                        <*> v Y..:? "scheduleFrozen" Y..!= False
     parseJSON _          = empty
 
 instance ToJSON SemesterConfig where
@@ -90,7 +92,7 @@ instance ToJSON SemesterConfig where
 
 makeSemesterConfig :: Text -> String -> String -> String -> [String]
                    -> SemesterConfigFiles
-                   -> [AvailableRoom] -> [[Integer]] -> [Ancode]
+                   -> [AvailableRoom] -> [[Integer]] -> [Ancode] -> Bool
                    -> SemesterConfig
 makeSemesterConfig s f l goDay0 =
         SemesterConfig s firstDay' lastDay' realExamDays goSlots'
