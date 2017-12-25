@@ -1,10 +1,12 @@
-module PlanManipSpec (spec) where
+module PlanManipSpec
+  ( spec
+  ) where
 
-import qualified Data.Map          as M
-import           Plexams.PlanManip
-import           Plexams.Types
-import           Test.Hspec
-import           Data.Time.Calendar
+import qualified Data.Map as M
+import Data.Time.Calendar
+import Plexams.PlanManip
+import Plexams.Types
+import Test.Hspec
 
 spec :: Spec
 spec = undefined {- do

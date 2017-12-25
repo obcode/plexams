@@ -1,8 +1,8 @@
 module Main where
 
-import           Plexams.CLI.Helper.Commands
-import           Plexams.CLI.Helper.Config
-import           Plexams.CLI.Helper.Types
+import Plexams.CLI.Helper.Commands
+import Plexams.CLI.Helper.Config
+import Plexams.CLI.Helper.Types
 
 main :: IO ()
 main = configmain main'

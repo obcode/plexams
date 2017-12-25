@@ -1,13 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
-module ImportSpec (spec) where
 
-import           Data.Aeson                (decode)
-import qualified Data.ByteString.Lazy      as BS
-import qualified Data.Map                  as M
-import           Data.Time.Calendar
-import           Plexams.Import.MasterData
-import           Plexams.Types
-import           Test.Hspec
+module ImportSpec
+  ( spec
+  ) where
+
+import Data.Aeson (decode)
+import qualified Data.ByteString.Lazy as BS
+import qualified Data.Map as M
+import Data.Time.Calendar
+import Plexams.Import.MasterData
+import Plexams.Types
+import Test.Hspec
 
 spec :: Spec
 spec = undefined {- do

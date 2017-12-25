@@ -3,11 +3,11 @@ module Plexams.Generators.Schedule
   , scheduleExamsWithSameName
   ) where
 
-import           Control.Arrow     ((&&&))
-import           Data.Maybe        (fromJust)
-import           Plexams.PlanManip
-import           Plexams.Query
-import           Plexams.Types
+import Control.Arrow ((&&&))
+import Data.Maybe (fromJust)
+import Plexams.PlanManip
+import Plexams.Query
+import Plexams.Types
 
 generateSchedule :: Plan -> (Plan, [AddExamToSlot])
 generateSchedule plan = undefined
@@ -21,15 +21,19 @@ findSlotForUnscheduledExam ancode plan = undefined
 -- Ignores exams with same name that are planned in different slots.
 scheduleExamsWithSameName :: Plan -> (Plan, [AddExamToSlot])
 scheduleExamsWithSameName plan =
-  let exams = filter (\(s,u) -> length s == 1)
-            . map (filter isScheduled &&& filter isUnscheduled)
-            $ examsWithSameName
-            $ setSlotsOnExams plan
+  let exams =
+        filter (\(s, u) -> length s == 1) .
+        map (filter isScheduled &&& filter isUnscheduled) $
+        examsWithSameName $ setSlotsOnExams plan
       dayScheduled = fst . fromJust . slot
       slotScheduled = snd . fromJust . slot
       makePlanManips ([scheduled], unscheduled) =
-        map (\exam -> AddExamToSlot (anCode exam) (dayScheduled scheduled)
-                                                  (slotScheduled scheduled))
-            unscheduled
+        map
+          (\exam ->
+             AddExamToSlot
+               (anCode exam)
+               (dayScheduled scheduled)
+               (slotScheduled scheduled))
+          unscheduled
       planManips = concatMap makePlanManips exams
   in (applyAddExamToSlotListToPlan plan planManips, planManips)

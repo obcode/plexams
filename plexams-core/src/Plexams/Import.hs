@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Plexams.Import
   ( importPlan
   , importExamSlotsFromYAMLFile
@@ -8,16 +9,16 @@ module Plexams.Import
   -- , module Plexams.Import.Registrations
   ) where
 
-import           Control.Monad.Trans          (liftIO)
-import           Control.Monad.Writer         (WriterT, runWriterT, tell)
-import qualified Data.Map                     as M
-import           Data.Text                    (Text, append, pack)
-import           Plexams.Import.MasterData
-import           Plexams.Import.Misc
-import           Plexams.Import.PlanManip
-import           Plexams.Import.Registrations
-import           Plexams.PlanManip
-import           Plexams.Types
+import Control.Monad.Trans (liftIO)
+import Control.Monad.Writer (WriterT, runWriterT, tell)
+import qualified Data.Map as M
+import Data.Text (Text, append, pack)
+import Plexams.Import.MasterData
+import Plexams.Import.Misc
+import Plexams.Import.PlanManip
+import Plexams.Import.Registrations
+import Plexams.PlanManip
+import Plexams.Types
 
 semesterConfigFile :: FilePath
 semesterConfigFile = "plexams.yaml"
@@ -27,81 +28,105 @@ importPlan = runWriterT importPlanWriter
 
 importPlanWriter :: WriterT [Text] IO (Maybe Plan)
 importPlanWriter = do
-  maybeSemesterConfig <- liftIO $ importSemesterConfigFromYAMLFile semesterConfigFile
+  maybeSemesterConfig <-
+    liftIO $ importSemesterConfigFromYAMLFile semesterConfigFile
   case maybeSemesterConfig of
     Nothing -> do
-      tell ["Semesterconfig file `" `append` pack semesterConfigFile `append` "` not found"]
+      tell
+        [ "Semesterconfig file `" `append` pack semesterConfigFile `append`
+          "` not found"
+        ]
       return Nothing
-    Just semesterConfig' ->
-      importPlan' semesterConfig'
+    Just semesterConfig' -> importPlan' semesterConfig'
 
 importPlan' :: SemesterConfig -> WriterT [Text] IO (Maybe Plan)
 importPlan' semesterConfig' = do
   let files' = files semesterConfig'
   -- load exams
-  exams' <- maybe (tell ["initial plan not readable"] >> return [])
-                  (importFromFilePath importExamsFromJSONFile [])
-                  $ initialPlanFile files'
+  exams' <-
+    maybe
+      (tell ["initial plan not readable"] >> return [])
+      (importFromFilePath importExamsFromJSONFile []) $
+    initialPlanFile files'
   -- load persons == lecturers
-  persons' <- maybe (tell ["persons file not readable"] >> return M.empty)
-                    (importFromFilePath importPersonsFromJSONFile M.empty)
-                    $ personsFile files'
+  persons' <-
+    maybe
+      (tell ["persons file not readable"] >> return M.empty)
+      (importFromFilePath importPersonsFromJSONFile M.empty) $
+    personsFile files'
   -- TODO: remove maybeStudents and handicaps''
   let maybeStudents = Nothing -- TODO: still needed?
       handicaps'' = []
   -- make the initial plan
       plan' = makePlan exams' semesterConfig' persons' maybeStudents handicaps''
   -- add constraints
-  constraints' <- maybe (tell ["constraints file not readable"] >> return noConstraints)
-                        (importFromFilePath importConstraintsFromYAMLFile noConstraints)
-                        $ constraintsFile files'
+  constraints' <-
+    maybe
+      (tell ["constraints file not readable"] >> return noConstraints)
+      (importFromFilePath importConstraintsFromYAMLFile noConstraints) $
+    constraintsFile files'
   let planWithConstraints = addConstraints constraints' plan'
   -- add students registrations
-  studentWithRegs' <- maybe (tell ["student regs file not readable"] >> return M.empty)
-    (importFromFilePath (importStudentsWithRegsFromYAMLFile semesterConfig') M.empty)
-    $ studentsRegsFile files'
+  studentWithRegs' <-
+    maybe
+      (tell ["student regs file not readable"] >> return M.empty)
+      (importFromFilePath
+         (importStudentsWithRegsFromYAMLFile semesterConfig')
+         M.empty) $
+    studentsRegsFile files'
   -- and add handicaps
-  handicaps' <- maybe (tell ["handicaps file not readable"] >> return [])
-                (importFromFilePath importHandicapsFromYAMLFile [])
-                $ handicapsFile files'
+  handicaps' <-
+    maybe
+      (tell ["handicaps file not readable"] >> return [])
+      (importFromFilePath importHandicapsFromYAMLFile []) $
+    handicapsFile files'
   let studentWithRegs'' = addHandicaps studentWithRegs' handicaps'
-      planWithRegs = addStudentRegistrationsToPlan studentWithRegs'' planWithConstraints
+      planWithRegs =
+        addStudentRegistrationsToPlan studentWithRegs'' planWithConstraints
   -- let planWithHandicaps = addHandicaps handicaps' planWithRegs
   -- add PlanManip ExamToSlot
-  addExamsToSlots <- maybe (tell ["planmanip file not readable"] >> return [])
-                           (importFromFilePath importExamSlotsFromYAMLFile [])
-                           $ planManipFile files'
-  let planWithExamsInSlots = applyAddExamToSlotListToPlan planWithRegs addExamsToSlots
+  addExamsToSlots <-
+    maybe
+      (tell ["planmanip file not readable"] >> return [])
+      (importFromFilePath importExamSlotsFromYAMLFile []) $
+    planManipFile files'
+  let planWithExamsInSlots =
+        applyAddExamToSlotListToPlan planWithRegs addExamsToSlots
   -- add rooms to exams
-  rooms' <- maybe (tell ["rooms file not readable"] >> return [])
-                  (importFromFilePath importAddRoomToExamFromYAMLFile [])
-                  $ roomsFile files'
+  rooms' <-
+    maybe
+      (tell ["rooms file not readable"] >> return [])
+      (importFromFilePath importAddRoomToExamFromYAMLFile []) $
+    roomsFile files'
   let planWithRooms = applyAddRoomToExamListToPlan planWithExamsInSlots rooms'
   -- add invigilators
-  invigilators' <- maybe (tell ["invigilators file not readable"] >> return [])
-                         (importFromFilePath importInvigilatorsFromJSONFile [])
-                         $ invigilatorsFile files'
+  invigilators' <-
+    maybe
+      (tell ["invigilators file not readable"] >> return [])
+      (importFromFilePath importInvigilatorsFromJSONFile []) $
+    invigilatorsFile files'
   let planWithInvigilators = addInvigilators invigilators' planWithRooms
   -- add invigilations
-  invigilations' <- maybe (tell ["invigilations file not readable"] >> return [])
-            (importFromFilePath importAddInvigilatorToRoomOrSlotFromYAMLFile [])
-            $ invigilationsFile files'
-  let planWithInvigilations = applyAddInvigilatorsToPlan planWithInvigilators
-                                                         invigilations'
+  invigilations' <-
+    maybe
+      (tell ["invigilations file not readable"] >> return [])
+      (importFromFilePath importAddInvigilatorToRoomOrSlotFromYAMLFile []) $
+    invigilationsFile files'
+  let planWithInvigilations =
+        applyAddInvigilatorsToPlan planWithInvigilators invigilations'
   return $ Just planWithInvigilations
 
-importFromFilePath :: (FilePath -> IO (Maybe a)) -> a -> FilePath -> WriterT [Text] IO a
-importFromFilePath importer errorResult fp = do
+importFromFilePath ::
+     (FilePath -> IO (Maybe a)) -> a -> FilePath -> WriterT [Text] IO a
+importFromFilePath importer errorResult fp
   -- TODO: if file does not exist
+ = do
   maybeResult <- liftIO $ importer fp
-  maybe (do
-          tell ["warning: " `append` pack fp `append` " is not parsable."]
-          return errorResult
-        )
-        (\r -> tell ["info: " `append` pack fp `append` " imported."] >> return r)
-        maybeResult
-
-
+  maybe
+    (do tell ["warning: " `append` pack fp `append` " is not parsable."]
+        return errorResult)
+    (\r -> tell ["info: " `append` pack fp `append` " imported."] >> return r)
+    maybeResult
 {-
 importPersons :: FilePath -> WriterT [Text] IO Persons
 importPersons filepath = do

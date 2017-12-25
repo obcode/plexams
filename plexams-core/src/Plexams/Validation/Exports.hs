@@ -1,83 +1,98 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Plexams.Validation.Exports
   ( validateZPAExport
   ) where
 
-import           Control.Monad.Writer
-import           Data.Text            (append)
-import           Plexams.Import.Misc  (importZPAExamsFromJSONFile)
-import           Plexams.Types
-import           TextShow             (showt)
+import Control.Monad.Writer
+import Data.Text (append)
+import Plexams.Import.Misc (importZPAExamsFromJSONFile)
+import Plexams.Types
+import TextShow (showt)
 
-validateZPAExport :: FilePath -> Plan -> IO (ValidationResult, [ValidationRecord])
+validateZPAExport ::
+     FilePath -> Plan -> IO (ValidationResult, [ValidationRecord])
 validateZPAExport fp plan = do
   maybeZpaExams <- importZPAExamsFromJSONFile fp
   case maybeZpaExams of
-    Nothing -> return ( HardConstraintsBroken
-                      , [ HardConstraintBroken
-                        $ "ZPAExams cannot be imported from " `append` showt fp])
+    Nothing ->
+      return
+        ( HardConstraintsBroken
+        , [ HardConstraintBroken $
+            "ZPAExams cannot be imported from " `append` showt fp
+          ])
     Just zpaExams -> return $ runWriter $ validate zpaExams plan
 
-validate :: [ZPAExam] -> Plan
-         -> Writer [ValidationRecord] ValidationResult
+validate :: [ZPAExam] -> Plan -> Writer [ValidationRecord] ValidationResult
 validate zpaExams plan = do
   tell [Info "# Validating ZPA export"]
   allOk <- allZPAExamsInExams zpaExams plan
   allExported <- allPlannedExamsInZPAExams zpaExams plan
   return $ validationResult [allOk, allExported]
 
-allZPAExamsInExams :: [ZPAExam] -> Plan
-                   -> Writer [ValidationRecord] ValidationResult
+allZPAExamsInExams ::
+     [ZPAExam] -> Plan -> Writer [ValidationRecord] ValidationResult
 allZPAExamsInExams zpaExams plan =
-    validationResult <$> mapM (`zpaExamInExams` allExams plan) zpaExams
+  validationResult <$> mapM (`zpaExamInExams` allExams plan) zpaExams
   where
-    zpaExamInExams :: ZPAExam -> [Exam]
-                   -> Writer [ValidationRecord] ValidationResult
+    zpaExamInExams ::
+         ZPAExam -> [Exam] -> Writer [ValidationRecord] ValidationResult
     zpaExamInExams zpaExam exams' =
       case filter ((== zpaExamAnCode zpaExam) . anCode) exams' of
         [exam] -> do
           plannedByMeOk <-
             if plannedByMe exam
-            then return EverythingOk
-            else do
-              tell [ HardConstraintBroken
-                   $ "Exported exam " `append` showt (zpaExamAnCode zpaExam)
-                    `append` " is not planned by me"]
-              return HardConstraintsBroken
+              then return EverythingOk
+              else do
+                tell
+                  [ HardConstraintBroken $
+                    "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
+                    " is not planned by me"
+                  ]
+                return HardConstraintsBroken
           dayOk <-
             if zpaExamDate zpaExam == examDateAsString exam plan
-            then return EverythingOk
-            else do
-                tell [ HardConstraintBroken
-                     $ "Exported exam " `append` showt (zpaExamAnCode zpaExam)
-                      `append` " has wrong date"]
+              then return EverythingOk
+              else do
+                tell
+                  [ HardConstraintBroken $
+                    "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
+                    " has wrong date"
+                  ]
                 return HardConstraintsBroken
           slotOk <-
             if zpaExamTime zpaExam == examSlotAsString exam plan
-            then return EverythingOk
-            else do
-                tell [ HardConstraintBroken
-                     $ "Exported exam " `append` showt (zpaExamAnCode zpaExam)
-                      `append` " has wrong time"]
+              then return EverythingOk
+              else do
+                tell
+                  [ HardConstraintBroken $
+                    "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
+                    " has wrong time"
+                  ]
                 return HardConstraintsBroken
           return $ validationResult [plannedByMeOk, dayOk, slotOk]
         _ -> do
-          tell [ HardConstraintBroken
-               $ "Exported exam " `append` showt (zpaExamAnCode zpaExam)
-                `append` " does not exist"]
+          tell
+            [ HardConstraintBroken $
+              "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
+              " does not exist"
+            ]
           return HardConstraintsBroken
 
-allPlannedExamsInZPAExams :: [ZPAExam] -> Plan
-                          -> Writer [ValidationRecord] ValidationResult
+allPlannedExamsInZPAExams ::
+     [ZPAExam] -> Plan -> Writer [ValidationRecord] ValidationResult
 allPlannedExamsInZPAExams zpaExams plan = do
-    let examsPlannedByMe = filter plannedByMe $ allExams plan
-    validationResult <$> mapM (`examExported` zpaExams) examsPlannedByMe
+  let examsPlannedByMe = filter plannedByMe $ allExams plan
+  validationResult <$> mapM (`examExported` zpaExams) examsPlannedByMe
   where
-    examExported :: Exam -> [ZPAExam] -> Writer [ValidationRecord] ValidationResult
+    examExported ::
+         Exam -> [ZPAExam] -> Writer [ValidationRecord] ValidationResult
     examExported exam zpaExams' =
       if anCode exam `elem` map zpaExamAnCode zpaExams'
-      then return EverythingOk
-      else do
-        tell [ HardConstraintBroken
-             $ "Exam " `append` showt (anCode exam) `append` " not exported"]
-        return HardConstraintsBroken
+        then return EverythingOk
+        else do
+          tell
+            [ HardConstraintBroken $
+              "Exam " `append` showt (anCode exam) `append` " not exported"
+            ]
+          return HardConstraintsBroken

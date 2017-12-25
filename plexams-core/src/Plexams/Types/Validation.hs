@@ -11,37 +11,37 @@ module Plexams.Types.Validation
   , validationResult
   ) where
 
-import           Data.Aeson
-import           Data.Text    (Text)
-import           GHC.Generics
+import Data.Aeson
+import Data.Text (Text)
+import GHC.Generics
 
 data Validation = Validation
-  { result            :: ValidationResult
+  { result :: ValidationResult
   , brokenConstraints :: [ValidationRecord]
-  }
-  deriving (Generic)
+  } deriving (Generic)
 
 instance ToJSON Validation
 
-data ValidationResult = EverythingOk
-                      | SoftConstraintsBroken
-                      | HardConstraintsBroken
+data ValidationResult
+  = EverythingOk
+  | SoftConstraintsBroken
+  | HardConstraintsBroken
   deriving (Eq, Ord, Generic)
 
 instance Show ValidationResult where
-  show EverythingOk          = "Validation ok!"
+  show EverythingOk = "Validation ok!"
   show SoftConstraintsBroken = ">>> Soft Constraints broken <<<"
   show HardConstraintsBroken = ">>> Hard Constraints broken <<<"
 
 instance ToJSON ValidationResult
 
 -- data SoftConstraint = SoftConstraint Text
-
-data ValidationRecord = Info Text
-                      | SoftConstraintBroken Text
-                      | HardConstraintBroken Text
-                      | ValidationListStart Text
-                      | ValidationListEnd
+data ValidationRecord
+  = Info Text
+  | SoftConstraintBroken Text
+  | HardConstraintBroken Text
+  | ValidationListStart Text
+  | ValidationListEnd
   deriving (Eq, Generic)
 
 instance ToJSON ValidationRecord
@@ -56,14 +56,16 @@ validationMessage ValidationListEnd = ""
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum
 
-data ValidateWhat = ValidateSources
-                  | ValidateSchedule
-                  | ValidateRooms
-                  | ValidateInvigilation
+data ValidateWhat
+  = ValidateSources
+  | ValidateSchedule
+  | ValidateRooms
+  | ValidateInvigilation
   deriving (Eq, Show, Generic, Enum)
 
 validateWhat :: [ValidateWhat]
 validateWhat = [ValidateSchedule .. ValidateInvigilation]
 
 instance FromJSON ValidateWhat
+
 instance ToJSON ValidateWhat

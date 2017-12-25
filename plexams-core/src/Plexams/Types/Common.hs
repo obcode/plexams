@@ -9,9 +9,15 @@ module Plexams.Types.Common
   ) where
 
 type DayIndex = Int
+
 type SlotIndex = Int
+
 type Ancode = Integer
+
 type Duration = Integer
+
 type ExamType = String
+
 type RoomID = String
+
 type PersonID = Integer
