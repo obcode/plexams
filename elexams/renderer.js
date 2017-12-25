@@ -281,14 +281,14 @@ let _fetchExamDays = function () {
                             <th></th>`
             for (let i in examDays) {
               let examDay = examDays[i]
-              output += `<th>${examDay}</th>`
+              output += `<th class="days">(${i}) ${examDay}</th>`
             }
             output += `</tr>`
 
             for (let i in slotsPerDay) {
               let slot = slotsPerDay[i]
               output += `<tr>
-                            <td class="times">${slot}</td>`
+                            <td class="times">${slot} (${i})</td>`
               for (let j in examDays) {
                 let examDay = examDays[j]
                 let examData = _fetchExamsData(j, i, slots)
@@ -318,7 +318,7 @@ let _fetchExamDays = function () {
                              <span class="examName">${exam.name}</span><br>
                              ${exam.lecturer.personShortName}<br>`
                   for (let r in exam.rooms) {
-                    output += `${exam.rooms[r].roomID}, `
+                    output += `<span class="room-${exam.rooms[r].roomID}">${exam.rooms[r].roomID}</span>, `
                   }
                   output += '<br>'
                   if (exam.handicapStudents.length > 0) {

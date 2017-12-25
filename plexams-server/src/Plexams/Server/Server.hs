@@ -42,6 +42,7 @@ type API = "exams" :> Get '[JSON] [Exam]
       :<|> "plan" :> Get '[JSON] Plan
       :<|> "semesterConfig" :> Get '[JSON] SemesterConfig
       :<|> "invigilators" :> Get '[JSON] [Invigilator]
+      -- :<|> "invigilatorsForDay" :> ReqBody '[JSON] Int :> Post '[JSON] ([Invigilator], [Invigilator])
       :<|> "examsWithNTA" :> Get '[JSON] [Exam]
 
 
@@ -96,6 +97,7 @@ server state =
     :<|> plan'
     :<|> semesterConfig'
     :<|> invigilators'
+    -- :<|> invigilatorsForDay'
     :<|> examsWithNTA'
 
       where
@@ -132,6 +134,12 @@ server state =
           State { plan = planT } <- ask
           plan'' <- liftIO $ atomically $ readTVar planT
           return $ M.elems $ invigilators plan''
+
+        -- invigilatorsForDay' :: Int -> StateHandler ([Invigilator],[Invigilator])
+        -- invigilatorsForDay' dayIndex = do
+        --   State { plan = planT } <- ask
+        --   plan'' <- liftIO $ atomically $ readTVar planT
+        --   return $ M.elems $ invigilators plan''
 
         examDays' :: StateHandler [String]
         examDays' = do

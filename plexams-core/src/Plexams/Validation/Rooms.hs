@@ -19,11 +19,29 @@ validate plan = do
   enoughRoomsForExams <- validateEnoughRoomsForExams plan
   stillReserveForExams <- validationStillReserveForExams plan
   differentRoomsInSlot <- validateDifferentRoomsInSlots plan
+  noStudentLeftOutsideRoom <- validateNoStudentLeftOutsideRoom plan
   return $ validationResult
             [ enoughRoomsForExams
             , stillReserveForExams
             , differentRoomsInSlot
+            , noStudentLeftOutsideRoom
             ]
+
+validateNoStudentLeftOutsideRoom :: Plan -> Writer [ValidationRecord] ValidationResult
+validateNoStudentLeftOutsideRoom plan = do
+  tell [Info "### Validation that all students have a seat"]
+  validationResult <$> mapM validateNoStudentLeftOutsideRoomForExam
+                            (filter plannedByMe $ scheduledExams plan)
+
+validateNoStudentLeftOutsideRoomForExam :: Exam -> Writer [ValidationRecord] ValidationResult
+validateNoStudentLeftOutsideRoomForExam exam =
+  if null $ registeredStudents exam
+    then return EverythingOk
+    else do
+      tell [HardConstraintBroken
+           $ "- exam " `append` showt (anCode exam) `append` ": no room for "
+             `append` showt (map studentName $ registeredStudents exam)]
+      return HardConstraintsBroken
 
 validateEnoughRoomsForExams :: Plan -> Writer [ValidationRecord] ValidationResult
 validateEnoughRoomsForExams plan = do
@@ -35,13 +53,13 @@ validateEnoughRoomsForExam :: Exam -> Writer [ValidationRecord] ValidationResult
 validateEnoughRoomsForExam exam = do
   let regs' = registrations exam
       seats = sum $ map maxSeats $ rooms exam
-  when (regs'>seats) $
-    tell [ HardConstraintBroken
-         $ "- exam " `append` showt (anCode exam)
-                     `append` " not enough rooms planned"]
-  return $ if regs'<=seats
-           then EverythingOk
-           else HardConstraintsBroken
+  if regs'>seats
+    then do
+      tell [ HardConstraintBroken
+           $ "- exam " `append` showt (anCode exam)
+                       `append` " not enough rooms planned"]
+      return HardConstraintsBroken
+    else return EverythingOk
 
 validationStillReserveForExams :: Plan -> Writer [ValidationRecord] ValidationResult
 validationStillReserveForExams plan = do
@@ -53,15 +71,16 @@ validationStillReserveForExam :: Exam -> Writer [ValidationRecord] ValidationRes
 validationStillReserveForExam exam = do
   let regs' = registrations exam
       seats = sum $ map maxSeats $ rooms exam
-  when (regs'+2>=seats) $
-    tell [ SoftConstraintBroken
-         $ "- exam " `append` showt (anCode exam)
-           `append` " not enough reserve seats left: "
-           `append` showt regs' `append`"/" `append` showt seats]
-  return $ if regs'+2<=seats
-           then EverythingOk
-           else SoftConstraintsBroken
+  if regs'+2>=seats
+    then do
+      tell [ SoftConstraintBroken
+           $ "- exam " `append` showt (anCode exam)
+             `append` " not enough reserve seats left: "
+             `append` showt regs' `append`"/" `append` showt seats]
+      return SoftConstraintsBroken
+    else return EverythingOk
 
+-- TODO: nochmal überarbeiten
 validateDifferentRoomsInSlots :: Plan -> Writer [ValidationRecord] ValidationResult
 validateDifferentRoomsInSlots plan = do
   tell [Info "### Validating different rooms in slot (hard)"]

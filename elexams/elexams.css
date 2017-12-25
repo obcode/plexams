@@ -11,13 +11,11 @@ th {
 }
 
 .NTA {
-  font-weight: bold;
   background-color: rgb(156, 39, 176);
 }
 
 .Reserve {
-  font-weight: bold;
-  background-color: rgb(255, 193, 7);
+  background-color: rgb(161, 136, 127);
 }
 
 .examName {
@@ -41,7 +39,14 @@ td.exams {
 }
 
 td.times {
-  width: 20px;
+  width: 40px;
+  background-color: rgb(176, 190, 197);
+  text-align: center;
+}
+
+th.days {
+  background-color: rgb(176, 190, 197);
+  text-align: center;
 }
 
 .HardConstraintBroken {
@@ -106,12 +111,19 @@ div.reExam {
 }
 
 div.goSlot{
-  background-color: rgb(128, 222, 234);
+  background-color: rgb(224, 224, 224);
 }
 
 span.GO {
-  background-color: rgb(0, 188, 212);
-  font-weight: bold;
+  background-color: rgb(224, 224, 224);
+}
+
+span.room-R1\.046 {
+  background-color: rgb(239, 83, 80);
+}
+
+span.room-R1\.049 {
+  background-color: rgb(66, 165, 245);
 }
 
 div.examsBySameLecturer {
@@ -283,6 +295,13 @@ h3 {
     background-color: rgb(128, 222, 234);
 }
 
+/* .tab {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+} */
+
 /* Style the buttons that are used to open the tab content */
 .tab button,
 .invigtab button,
@@ -332,11 +351,11 @@ h3 {
 }
 
 .needsInvigilator {
-  background-color: rgb(244, 67, 54)
+  background-color: rgb(255, 213, 79);
 }
 
 .hasInvigilator {
-  background-color: rgb(205, 220, 57)
+  background-color: rgb(205, 220, 57);
 }
 
 /* Modal */

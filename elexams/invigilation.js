@@ -92,7 +92,8 @@ const openInvigilation = (evt, dayIndex) => {
                   output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}')">
                                 ${exam.anCode}. ${exam.name}<br>
                                 Prüfer: ${exam.lecturer.personShortName}<br>
-                                ${room.roomID} (${room.studentsInRoom.length}/${room.maxSeats}):
+                                <span class="room-${room.roomID}">${room.roomID}</span>
+                                (${room.studentsInRoom.length}/${room.maxSeats}):
                                 ${invigilator.invigilatorName}<br>
                                 ${exam.duration + room.deltaDuration} Minuten`
                   if (room.reserveRoom) {
@@ -167,6 +168,8 @@ let fetchInvigilators = () => {
       `<table id="invigilatorList" class="invigilatorList" >
       <thead>
       <tr class="invigilatorList">
+        <th class="invigilatorList">Nr.</th>
+        <th class="invigilatorList">ID</th>
         <th class="invigilatorList">Name</th>
         <th class="invigilatorList">Prüfungstage</th>
         <th class="invigilatorList">ausgeschlossene Tage</th>
@@ -181,6 +184,8 @@ let fetchInvigilators = () => {
     for (let i in invigilators) {
       let invigilator = invigilators[i]
       output += `<tr class="invigilatorList">
+             <td class="invigilatorList">${i}</td>
+             <td class="invigilatorList">${invigilator.invigilatorID}</td>
              <td class="invigilatorList">${invigilator.invigilatorName}</td>
              <td class="invigilatorList">${invigilator.invigilatorExamDays}</td>
              <td class="invigilatorList">${invigilator.invigilatorExcludedDays}</td>
