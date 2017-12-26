@@ -18,6 +18,16 @@ th {
   background-color: rgb(161, 136, 127);
 }
 
+.wantInvigs {
+  padding: 1.8em;
+  background-color: rgb(174, 213, 129);
+}
+
+.canInvigs {
+  padding: 1.8em;
+  background-color: rgb(255, 241, 118);
+}
+
 .examName {
   font-weight: bold;
   font-size: 14pt;

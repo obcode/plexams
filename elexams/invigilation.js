@@ -49,13 +49,13 @@ const openInvigilation = (evt, dayIndex) => {
         $.getJSON(endpoints.slotsPerDay, function (slotsPerDay) {
           let modalOutput = ''
           let output =
-            `<table>
+            `<table class="invigilators">
               <tr>
                 <td>
-                  <table>
-                    <tr><td class="invigilators">Verfügbare Aufsichten</td></tr>
-                    <tr><td class="invigilators">Verfügbare Aufsichten</td></tr>
-                  </table>
+                 <h3 class="invigilators">Verfügbare Aufsichten (Want)</h3>
+                 <div id="invigilatorWantDays-${dayIndex}"></div>
+                 <h3 class="invigilators">Verfügbare Aufsichten (Can)</h3>
+                 <div id="invigilatorCanDays-${dayIndex}"></div>
                 <td>
                 <td>
                   <table>
@@ -131,6 +131,39 @@ const openInvigilation = (evt, dayIndex) => {
           output += '</table></td></tr></table>'
           output += modalOutput
           $('#invigilations' + dayIndex).html(output)
+        })
+        $.ajax({
+          type: 'POST',
+          url: endpoints.invigilatorsForDay,
+          data: JSON.stringify(dayIndex),
+          success: (invigs) => {
+            for (let i in invigs) { // 0 == want, 1 == can
+              let wantInvigs = true
+              if (i == 1) {
+                wantInvigs = false
+              }
+              let output = `<ol class="`
+              if (wantInvigs) {
+                output += `wantInvigs`
+              } else {
+                output += `canInvigs`
+              }
+              output += `">`
+              let invigilators = invigs[i]
+              for (let j in invigilators) {
+                let invig = invigilators[j]
+                output += `<li>${invig.invigilatorName}</li>`
+              }
+              output += `</ol>`
+              if (wantInvigs) {
+                $('#invigilatorWantDays-' + dayIndex).html(output)
+              } else {
+                $('#invigilatorCanDays-' + dayIndex).html(output)
+              }
+            }
+          },
+          contentType: 'application/json',
+          dataType: 'json'
         })
       },
       contentType: 'application/json',

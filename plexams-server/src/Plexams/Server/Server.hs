@@ -25,11 +25,45 @@ import Plexams.Validation
 import Servant
 
 type API
-   = "exams" :> Get '[ JSON] [Exam] :<|> "examDays" :> Get '[ JSON] [String] :<|> "slots" :> Get '[ JSON] Slots :<|> "slot" :> ReqBody '[ JSON] ( Int
-                                                                                                                                                , Int) :> Post '[ JSON] [Exam] :<|> "slotsPerDay" :> Get '[ JSON] [String] :<|> "slotsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] Slots :<|> "addExam" :> ReqBody '[ JSON] AddExamToSlot :> Post '[ JSON] () :<|> "unscheduledExams" :> Get '[ JSON] [Exam] :<|> "notPlannedByMeExams" :> Get '[ JSON] [Ancode] :<|> "validation" :> ReqBody '[ JSON] [ValidateWhat] :> Post '[ JSON] Validation :<|> "examsBySameLecturer" :> ReqBody '[ JSON] Ancode :> Post '[ JSON] [Exam] :<|> "goSlots" :> Get '[ JSON] [( Int
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    , Int)] :<|> "lecturer" :> Get '[ JSON] [Person] :<|> "validateWhat" :> Get '[ JSON] [ValidateWhat] :<|> "reloadPlan" :> Get '[ JSON] ( Bool
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          , [Text]) :<|> "plan" :> Get '[ JSON] Plan :<|> "semesterConfig" :> Get '[ JSON] SemesterConfig :<|> "invigilators" :> Get '[ JSON] [Invigilator]
-      -- :<|> "invigilatorsForDay" :> ReqBody '[JSON] Int :> Post '[JSON] ([Invigilator], [Invigilator])
+   = "exams" :> Get '[ JSON] [Exam]
+   -- examDays
+      :<|> "examDays" :> Get '[ JSON] [String]
+   -- slots
+      :<|> "slots" :> Get '[ JSON] Slots
+   -- slot
+      :<|> "slot" :> ReqBody '[ JSON] (Int, Int) :> Post '[ JSON] [Exam]
+   -- slotsPerDay
+      :<|> "slotsPerDay" :> Get '[ JSON] [String]
+   -- slotsForDay
+      :<|> "slotsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] Slots
+   -- addExam
+      :<|> "addExam" :> ReqBody '[ JSON] AddExamToSlot :> Post '[ JSON] ()
+   -- unscheduledExams
+      :<|> "unscheduledExams" :> Get '[ JSON] [Exam]
+   -- notPlannedByMeExams
+      :<|> "notPlannedByMeExams" :> Get '[ JSON] [Ancode]
+   -- validation
+      :<|> "validation" :> ReqBody '[ JSON] [ValidateWhat] :> Post '[ JSON] Validation
+   -- examsBySameLecturer
+      :<|> "examsBySameLecturer" :> ReqBody '[ JSON] Ancode :> Post '[ JSON] [Exam]
+   -- goSlots
+      :<|> "goSlots" :> Get '[ JSON] [(Int, Int)]
+      -- lecturer
+      :<|> "lecturer" :> Get '[ JSON] [Person]
+      -- validateWhat
+      :<|> "validateWhat" :> Get '[ JSON] [ValidateWhat]
+      -- reloadPlan
+      :<|> "reloadPlan" :> Get '[ JSON] (Bool, [Text])
+      -- plan
+      :<|> "plan" :> Get '[ JSON] Plan
+      -- semesterConfig
+      :<|> "semesterConfig" :> Get '[ JSON] SemesterConfig
+      -- invigilators
+      :<|> "invigilators" :> Get '[ JSON] [Invigilator]
+      -- invigilatorsForDay
+      :<|> "invigilatorsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] ( [Invigilator]
+                                                                         , [Invigilator])
+      -- examsWithNTA
       :<|> "examsWithNTA" :> Get '[ JSON] [Exam]
 
 newtype State = State
@@ -82,6 +116,7 @@ server state =
   plan' :<|>
   semesterConfig' :<|>
   invigilators' :<|>
+  invigilatorsForDay' :<|>
   examsWithNTA'
   where
     validateWhat' :: StateHandler [ValidateWhat]
@@ -111,11 +146,16 @@ server state =
       State {plan = planT} <- ask
       plan'' <- liftIO $ atomically $ readTVar planT
       return $ M.elems $ invigilators plan''
-        -- invigilatorsForDay' :: Int -> StateHandler ([Invigilator],[Invigilator])
-        -- invigilatorsForDay' dayIndex = do
-        --   State { plan = planT } <- ask
-        --   plan'' <- liftIO $ atomically $ readTVar planT
-        --   return $ M.elems $ invigilators plan''
+    invigilatorsForDay' :: Int -> StateHandler ([Invigilator], [Invigilator])
+    invigilatorsForDay' dayIndex = do
+      State {plan = planT} <- ask
+      invigilators'' <-
+        liftIO $ fmap (M.elems . invigilators) $ atomically $ readTVar planT
+      let wantInvigs =
+            filter ((dayIndex `elem`) . invigilatorWantDays) invigilators''
+          canInvigs =
+            filter ((dayIndex `elem`) . invigilatorCanDays) invigilators''
+      return (wantInvigs, canInvigs)
     examDays' :: StateHandler [String]
     examDays' = do
       State {plan = planT} <- ask

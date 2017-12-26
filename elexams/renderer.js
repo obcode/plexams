@@ -18,6 +18,7 @@ const endpoints =
     lecturer: host + '/lecturer',
     reloadPlan: host + '/reloadPlan',
     invigilators: host + '/invigilators',
+    invigilatorsForDay: host + '/invigilatorsForDay',
     examsWithNTA: host + '/examsWithNTA',
     semesterConfig: host + '/semesterConfig'
   }
