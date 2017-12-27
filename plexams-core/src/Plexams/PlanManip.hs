@@ -481,5 +481,7 @@ addInvigilators invigilatorList plan =
   in plan
      { invigilators =
          addPersonsAndMissingInvigilators (M.elems (persons plan)) $
-         M.fromList $ map (invigilatorID &&& addDays') invigilatorList
+         M.fromList $
+         filter ((`notElem` noInvigilations (constraints plan)) . fst) $
+         map (invigilatorID &&& addDays') invigilatorList
      }
