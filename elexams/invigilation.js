@@ -54,8 +54,6 @@ const openInvigilation = (evt, dayIndex) => {
                 <td>
                  <h3 class="invigilators">Verfügbare Aufsichten (Want)</h3>
                  <div id="invigilatorWantDays-${dayIndex}"></div>
-                 <h3 class="invigilators">Verfügbare Aufsichten (Can)</h3>
-                 <div id="invigilatorCanDays-${dayIndex}"></div>
                 <td>
                 <td>
                   <table>
@@ -74,7 +72,7 @@ const openInvigilation = (evt, dayIndex) => {
               }
               output += `">
                             ${slotsPerDay[i]}<br>
-                            ${reserveInvigilator}
+                            ${reserveInvigilator.invigilatorName}
                           </div></td>`
               for (let j in examData) {
                 const exam = examData[j]
@@ -89,12 +87,13 @@ const openInvigilation = (evt, dayIndex) => {
                     invigilator = room.invigilator
                     output += ' hasInvigilator'
                   }
-                  output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}')">
+                  output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}')"
+                                ondrop="dropInvigilator(event)" ondragover="allowDrop(event)">
                                 ${exam.anCode}. ${exam.name}<br>
                                 Prüfer: ${exam.lecturer.personShortName}<br>
                                 <span class="room-${room.roomID}">${room.roomID}</span>
                                 (${room.studentsInRoom.length}/${room.maxSeats}):
-                                ${invigilator.invigilatorName}<br>
+                                    ${invigilator.invigilatorName} <br>
                                 ${exam.duration + room.deltaDuration} Minuten`
                   if (room.reserveRoom) {
                     output += ` <span class="Reserve">(Reserve)</span>`
@@ -113,7 +112,15 @@ const openInvigilation = (evt, dayIndex) => {
                   if (room.handicapCompensation) {
                     modalOutput += ` <span class="NTA">(NTA)</span>`
                   }
-                  modalOutput += `</h2><ol class="studentList">`
+                  modalOutput += `</h2>`
+                  if (room.invigilator !== null) {
+                    modalOutput +=
+                      `<h3>Aufsicht: ${room.invigilator.invigilatorID}. ${room.invigilator.invigilatorName}
+                      <span id="remove-${exam.anCode}-${room.roomID}-${room.invigilator.invigilatorID}">
+                      entfernen</span>
+                      </h3>`
+                  }
+                  modalOutput += `<ol class="studentList">`
                   for (let s in room.studentsInRoom) {
                     const student = room.studentsInRoom[s]
                     modalOutput += `<li> ${student.studentName}`
@@ -128,7 +135,10 @@ const openInvigilation = (evt, dayIndex) => {
               output += `</tr>`
             }
           }
-          output += '</table></td></tr></table>'
+          output += `</table></td><td>
+                           <h3 class="invigilators">Verfügbare Aufsichten (Can)</h3>
+                           <div id="invigilatorCanDays-${dayIndex}"></div>
+                          <td></tr></table>`
           output += modalOutput
           $('#invigilations' + dayIndex).html(output)
         })
@@ -152,7 +162,21 @@ const openInvigilation = (evt, dayIndex) => {
               let invigilators = invigs[i]
               for (let j in invigilators) {
                 let invig = invigilators[j]
-                output += `<li>${invig.invigilatorName}</li>`
+                output += `<li class="invigilatorListItem">
+                          <div id="invigilator-${invig.invigilatorID}" class="invigilator `
+                if (wantInvigs) {
+                  output += `wantInvig`
+                } else {
+                  output += `canInvig`
+                }
+                output += `"
+                          draggable="true" ondragstart="dragInvigilatorStart(event, ${invig.invigilatorID})">
+                          <span class="invigName">${invig.invigilatorName}</span> (${invig.invigilatorID})<br>offen:
+                          ${invig.invigilatorMinutesTodo - invig.invigilatorsMinutesPlanned} Minuten<br>
+                          geplante Tage: ${invig.invigilatorInvigilationDays}<br>
+                          Wunschtage: ${invig.invigilatorWantDays}
+                          </div>
+                          </li>`
               }
               output += `</ol>`
               if (wantInvigs) {
@@ -172,6 +196,20 @@ const openInvigilation = (evt, dayIndex) => {
   }
 }
 
+const dragInvigilatorStart = (event, invigilatorID) => {
+  event.dataTransfer.setData("InvigilatorID", invigilatorID);
+}
+
+const dropInvigilator = (event) => {
+  event.preventDefault();
+  var data = event.dataTransfer.getData("InvigilatorID");
+  alert("dropped " + data)
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
 const openModal = (modalid) => {
   const modal = document.getElementById(modalid)
   const span = document.getElementById(modalid + '-close')
@@ -188,45 +226,59 @@ const openModal = (modalid) => {
 
 let fetchInvigilators = () => {
   $.getJSON(endpoints.invigilators, (invigilators) => {
-  //   let output = '<ol class="invigilatorList">'
-  //   for (let i in invigilators) {
-  //     const invigilator = invigilators[i]
-  //     output += `<li class="invigilatorList">${invigilator.invigilatorName}: ${invigilator.invigilatorPerson}</li>`
-  //   }
-  //   output += '</ol>'
-  //   $('#invigilators').html(output)
-  // })
-  // Aufsichten anzeigen
     let output =
-      `<table id="invigilatorList" class="invigilatorList" >
+      `<ul class="invigilations">
+        <li class="invigilations">Summe Aufsichten Prüfungen: ${invigilators[0].invigilationsSumExamRooms} Minuten</li>
+        <li class="invigilations">Summe Reserveaufsichten: ${invigilators[0].invigilationsSumReserve} Minuten</li>
+        <li class="invigilations">Summe Beisitz mündliche Prüfungen: ${invigilators[0].invigilationsSumOralExams} Minuten</li>
+        <li class="invigilations">Summe Mastergespräche: ${invigilators[0].invigilationsSumMaster} Minuten</li>
+        <li class="invigilations">Summe Aufsichten Livecoding: ${invigilators[0].invigilationsSumLivecoding} Minuten</li>
+        </ul>
+      <table id="invigilatorList" class="invigilatorList" >
       <thead>
       <tr class="invigilatorList">
         <th class="invigilatorList">Nr.</th>
         <th class="invigilatorList">ID</th>
         <th class="invigilatorList">Name</th>
         <th class="invigilatorList">Prüfungstage</th>
-        <th class="invigilatorList">ausgeschlossene Tage</th>
         <th class="invigilatorList">gewünschte Tage</th>
         <th class="invigilatorList">mögliche Tage</th>
+        <th class="invigilatorList">ausgeschlossene Tage</th>
         <th class="invigilatorList">zu leistende Zeit</th>
         <th class="invigilatorList">eingeplante Zeit</th>
         <th class="invigilatorList">noch offen</th>
+        <th class="invigilatorList">Teilzeit</th>
+        <th class="invigilatorList">Beisitzer</th>
+        <th class="invigilatorList">Master</th>
+        <th class="invigilatorList">Livecoding</th>
+        <th class="invigilatorList">mehr im letzten Semester</th>
+        <th class="invigilatorList">mehr dieses Semester</th>
+        <th class="invigilatorList">Freisemester</th>
      </tr>
      </thead>
      <tbody>`
-    for (let i in invigilators) {
-      let invigilator = invigilators[i]
-      output += `<tr class="invigilatorList">
+    for (let i in invigilators[1]) {
+      let invigilator = invigilators[1][i]
+      output +=
+           `<tr class="invigilatorList">
              <td class="invigilatorList">${i}</td>
              <td class="invigilatorList">${invigilator.invigilatorID}</td>
              <td class="invigilatorList">${invigilator.invigilatorName}</td>
-             <td class="invigilatorList">${invigilator.invigilatorExamDays}</td>
-             <td class="invigilatorList">${invigilator.invigilatorExcludedDays}</td>
-             <td class="invigilatorList">${invigilator.invigilatorWantDays}</td>
-             <td class="invigilatorList">${invigilator.invigilatorCanDays}</td>
-             <td class="invigilatorList">${invigilator.invigilatorMinutesTodo}</td>
-             <td class="invigilatorList">${invigilator.invigilatorsMinutesPlanned}</td>
-             <td class="invigilatorList">${invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned}</td> </tr>`
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorExamDays}">${invigilator.invigilatorExamDays}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorWantDays}">${invigilator.invigilatorWantDays}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorCanDays}">${invigilator.invigilatorCanDays}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorExcludedDays}">${invigilator.invigilatorExcludedDays}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMinutesTodo}">${invigilator.invigilatorMinutesTodo}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorsMinutesPlanned}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned}</td>
+             <td class="invigilatorList invigilatorListContentPartime${invigilator.invigilatorPartTime}">${invigilator.invigilatorPartTime}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorOralExams}">${invigilator.invigilatorOralExams}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMaster}">${invigilator.invigilatorMaster}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorLiveCoding}">${invigilator.invigilatorLiveCoding}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorOvertimeLastSemester}">${invigilator.invigilatorOvertimeLastSemester}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorOvertimeThisSemester}">${invigilator.invigilatorOvertimeThisSemester}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorFreeSemester}">${invigilator.invigilatorFreeSemester}</td>
+           </tr>`
     }
     output += `</tbody>
               </table>`

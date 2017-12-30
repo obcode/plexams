@@ -18,13 +18,44 @@ th {
   background-color: rgb(161, 136, 127);
 }
 
+/* Aufsichten */
+
+.invigilatorList {
+  user-select: text;
+  padding: 0.2em;
+}
+
+.invigName {
+  font-weight: bold;
+}
+
+.invigilatorListContent0 {
+  color: rgb(255, 224, 178);
+}
+
+.invigilatorListContentPartime1 {
+  color: rgb(255, 224, 178);
+}
+
 .wantInvigs {
   padding: 1.8em;
-  background-color: rgb(174, 213, 129);
 }
 
 .canInvigs {
   padding: 1.8em;
+}
+
+.invigilatorListItem {
+  padding: 0.3em;
+}
+
+.wantInvig {
+  padding: 0.3em;
+  background-color: rgb(174, 213, 129);
+}
+
+.canInvig {
+  padding: 0.3em;
   background-color: rgb(255, 241, 118);
 }
 
@@ -39,10 +70,7 @@ th {
   padding: 0.2em;
 }
 
-.invigilatorList {
-  user-select: text;
-  padding: 0.2em;
-}
+/* Prüfungsplanung */
 
 td.exams {
   height: 60px;
@@ -361,7 +389,7 @@ h3 {
 }
 
 .needsInvigilator {
-  background-color: rgb(255, 213, 79);
+  background-color: rgb(255, 183, 77);
 }
 
 .hasInvigilator {

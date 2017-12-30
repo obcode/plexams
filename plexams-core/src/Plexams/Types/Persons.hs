@@ -26,8 +26,10 @@ import qualified Data.Set as S
 import Data.Text (Text, unpack)
 import qualified Data.Yaml as Y
 import GHC.Generics
-import Plexams.Types.Common
+
 import TextShow (TextShow, showb)
+
+import Plexams.Types.Common
 
 type Persons = M.Map PersonID Person
 
@@ -126,6 +128,7 @@ data Invigilator = Invigilator
   , invigilatorExamDays :: [Int]
   , invigilatorWantDays :: [Int]
   , invigilatorCanDays :: [Int]
+  , invigilatorInvigilationDays :: [Int]
   , invigilatorPerson :: Maybe Person
   , invigilatorMinutesTodo :: Integer
   , invigilatorsMinutesPlanned :: Integer
@@ -143,7 +146,7 @@ data Invigilator = Invigilator
 
 instance FromJSON Invigilator where
   parseJSON (Object v) =
-    Invigilator [] [] [] [] Nothing 0 0 <$> v .: "invigilator" <*>
+    Invigilator [] [] [] [] [] Nothing 0 0 <$> v .: "invigilator" <*>
     v .: "inviligator_id" <*>
     v .: "excluded_dates" <*>
     v .: "part_time" <*>

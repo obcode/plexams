@@ -7,7 +7,7 @@ github: PumaD/plexams
 maintainer: Felician Pinkert <pinkert@hm.edu>
 category: Plexams
 
-ghc-options: -Wall
+ghc-options: -Wall -Werror
 
 dependencies:
   - base  >= 4.7 && < 5

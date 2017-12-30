@@ -3,20 +3,17 @@
 module Plexams.Import
   ( importPlan
   , importExamSlotsFromYAMLFile
-  -- , module Plexams.Import.MasterData
-  -- , module Plexams.Import.Misc
-  -- , module Plexams.Import.PlanManip
-  -- , module Plexams.Import.Registrations
   ) where
 
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Writer (WriterT, runWriterT, tell)
 import qualified Data.Map as M
 import Data.Text (Text, append, pack)
+
 import Plexams.Import.MasterData
-import Plexams.Import.Misc
 import Plexams.Import.PlanManip
 import Plexams.Import.Registrations
+import Plexams.Invigilation
 import Plexams.PlanManip
 import Plexams.Types
 

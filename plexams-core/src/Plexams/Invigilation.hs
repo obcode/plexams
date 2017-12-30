@@ -1,5 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Plexams.Invigilation
-  ( sumInvigilation
+  ( mkInvigilations
   , invigilatorsPerDay
   , sumPercentInvigilator
   , sumPercentAllInvigilators
@@ -10,25 +12,33 @@ module Plexams.Invigilation
   , addInvigilatorsPerDay
   , mkInvigilatorsPerDay
   , invigilationsPerPerson
+  , addInvigilators
+  , minutesForReserve
   ) where
 
-import Control.Arrow ((***))
-import Data.List (nub)
+import Control.Arrow ((&&&), (***))
+import Data.List ((\\), elemIndex, nub)
 import qualified Data.Map as M
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
+import Data.Text (Text, append, unpack)
+import qualified Data.Text as Text
+import Data.Time.Calendar
+import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import GHC.Exts (groupWith)
+
+import Plexams.Query (examDaysPerLecturer)
 import Plexams.Types
 
 allSumInvigilation :: Plan -> Integer
 allSumInvigilation plan =
-  let (e, r, o) = sumInvigilation plan
-  in e + r + o
+  let Invigilations e r o m l = mkInvigilations plan
+  in e + r + o + m + l
 
 minutesForReserve :: Integer
 minutesForReserve = 60
 
-sumInvigilation :: Plan -> (Integer, Integer, Integer)
-sumInvigilation plan =
+mkInvigilations :: Plan -> Invigilations
+mkInvigilations plan =
   let sumExams =
         sum $
         concatMap
@@ -42,14 +52,12 @@ sumInvigilation plan =
                then 0
                else minutesForReserve) $
         M.elems $ slots plan
-      sumMasterOralExamsAndLivecoding =
-        sum $
-        map
-          (\i ->
-             invigilatorOralExams i + invigilatorMaster i +
-             invigilatorLiveCoding i) $
-        M.elems $ invigilators plan
-  in (sumExams, sumReserve, sumMasterOralExamsAndLivecoding)
+      sumOralExams =
+        sum $ map invigilatorOralExams $ M.elems $ invigilators plan
+      sumMaster = sum $ map invigilatorMaster $ M.elems $ invigilators plan
+      sumLivecoding =
+        sum $ map invigilatorLiveCoding $ M.elems $ invigilators plan
+  in Invigilations sumExams sumReserve sumOralExams sumMaster sumLivecoding
 
 addInvigilatorsPerDay :: Plan -> Plan
 addInvigilatorsPerDay plan =
@@ -58,7 +66,7 @@ addInvigilatorsPerDay plan =
       M.map (map invigilatorID *** map invigilatorID) $
       mkInvigilatorsPerDay plan
   }
-                                         -- ( want      , can        )
+                                            -- ( want      , can        )
 
 mkInvigilatorsPerDay :: Plan -> M.Map DayIndex ([Invigilator], [Invigilator])
 mkInvigilatorsPerDay =
@@ -118,7 +126,8 @@ removeInvigilatorsWithEnough plan =
      { invigilators =
          M.filter
            (\invigilator' ->
-              invigilatorOralExams invigilator' + invigilatorMaster invigilator' <
+              invigilatorOralExams invigilator' + invigilatorMaster invigilator' +
+              invigilatorLiveCoding invigilator' <
               sumPercentInvigilator invigilator' * hundertPercentInMinutes' `div`
               100) $
          invigilators plan
@@ -169,7 +178,8 @@ invigilatorAddMinutes plan =
                  ((sumPercentInvigilator invigilator' * hundertPercentInMinutes') `div`
                   100) -
                  invigilatorOralExams invigilator' -
-                 invigilatorMaster invigilator'
+                 invigilatorMaster invigilator' -
+                 invigilatorLiveCoding invigilator'
              , invigilatorsMinutesPlanned =
                  M.findWithDefault
                    0
@@ -193,7 +203,7 @@ invigilatorsPlanned plan =
 invigilationsPerPerson :: Plan -> M.Map PersonID [Invigilation]
 invigilationsPerPerson plan =
   let invigilatorsPlanned' = invigilatorsPlanned plan
-      mkInvigilations invigilatorID' =
+      mkInvigilations' invigilatorID' =
         mkReserveInvigilations invigilatorID' ++
         mkExamInvigilations invigilatorID'
       mkReserveInvigilations invigilatorID' =
@@ -235,5 +245,88 @@ invigilationsPerPerson plan =
         M.toList $ slots plan
   in M.fromList $
      map
-       (\invigilatorID' -> (invigilatorID', mkInvigilations invigilatorID'))
+       (\invigilatorID' -> (invigilatorID', mkInvigilations' invigilatorID'))
        invigilatorsPlanned'
+
+addInvigilators :: [Invigilator] -> Plan -> Plan
+addInvigilators invigilatorList plan =
+  let invigilators' = mkInvigilators invigilatorList plan
+  in invigilatorAddMinutes $ plan {invigilators = invigilators'}
+
+mkInvigilators :: [Invigilator] -> Plan -> Invigilators
+mkInvigilators invigilatorList plan =
+  let makeDay :: Text -> Day
+      makeDay str =
+        fromMaybe
+          (error $ unpack $ "cannot parse date: " `append` str)
+          (parseTimeM True defaultTimeLocale "%d.%m.%y" (unpack str))
+      examDaysPerLecturer' = examDaysPerLecturer plan
+      allDays = [0 .. maxDayIndex plan]
+      examDays' invigilator' =
+        M.findWithDefault [] (invigilatorID invigilator') examDaysPerLecturer'
+      excludedDays' invigilator' =
+        nub $
+        concatMap
+          snd
+          (filter
+             ((== invigilatorID invigilator') . fst)
+             (noInvigilationDays $ constraints plan)) ++
+        mapMaybe
+          (flip elemIndex (examDays $ semesterConfig plan) . makeDay)
+          (invigilatorExcludedDates invigilator')
+      wantDays invigilator' =
+        examDays' invigilator' \\ excludedDays' invigilator'
+      canDays invigilator' =
+        if length (wantDays invigilator') >= 3
+          then []
+          else (allDays \\ wantDays invigilator') \\ excludedDays' invigilator'
+      addDays' invigilator' =
+        invigilator'
+        { invigilatorExamDays = examDays' invigilator'
+        , invigilatorExcludedDays = excludedDays' invigilator'
+        , invigilatorWantDays = wantDays invigilator'
+        , invigilatorCanDays = canDays invigilator'
+        }
+      personIsInvigilator person =
+        not (personIsLBA person) &&
+        (personFK person == "FK07") &&
+        ("Prof." `Text.isPrefixOf` personFullName person) &&
+        (personID person `notElem` noInvigilations (constraints plan))
+      addInfoOrCreate :: Person -> Maybe Invigilator -> Maybe Invigilator
+      addInfoOrCreate person' Nothing =
+        Just $
+        addDays'
+          Invigilator
+          { invigilatorExcludedDays = []
+          , invigilatorExamDays = []
+          , invigilatorWantDays = []
+          , invigilatorCanDays = allDays
+          , invigilatorInvigilationDays = []
+          , invigilatorPerson = Just person'
+          , invigilatorMinutesTodo = 0
+          , invigilatorsMinutesPlanned = 0
+          , invigilatorName = personShortName person'
+          , invigilatorID = personID person'
+          , invigilatorExcludedDates = []
+          , invigilatorPartTime = 1.0
+          , invigilatorFreeSemester = 0.0
+          , invigilatorOvertimeThisSemester = 0.0
+          , invigilatorOvertimeLastSemester = 0.0
+          , invigilatorOralExams = 0
+          , invigilatorMaster = 0
+          , invigilatorLiveCoding = 0
+          }
+      addInfoOrCreate person' (Just invigilator') =
+        Just $ invigilator' {invigilatorPerson = Just person'}
+      addPersonsAndMissingInvigilators ::
+           [Person] -> Invigilators -> Invigilators
+      addPersonsAndMissingInvigilators persons' invigilators' =
+        foldr
+          (\person invigilators'' ->
+             M.alter (addInfoOrCreate person) (personID person) invigilators'')
+          invigilators' $
+        filter personIsInvigilator persons'
+  in addPersonsAndMissingInvigilators (M.elems (persons plan)) $
+     M.fromList $
+     filter ((`notElem` noInvigilations (constraints plan)) . fst) $
+     map (invigilatorID &&& addDays') invigilatorList

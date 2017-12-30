@@ -8,36 +8,37 @@ module Plexams.Validation
 import Control.Monad.Writer
 import Data.List (nub)
 import Data.Text (append)
+
+import TextShow (showt)
+
 import Plexams.Query
 import Plexams.Types
 import Plexams.Validation.Exports
 import qualified Plexams.Validation.Invigilation
 import qualified Plexams.Validation.Rooms
 import qualified Plexams.Validation.ScheduledExams
-import qualified Plexams.Validation.Sources
-import TextShow (showt)
 
 validate :: [ValidateWhat] -> Plan -> (ValidationResult, [ValidationRecord])
-validate validateWhat = runWriter . validate' validateWhat
+validate validateWhat' = runWriter . validate' validateWhat'
 
 validate' ::
      [ValidateWhat] -> Plan -> Writer [ValidationRecord] ValidationResult
-validate' validateWhat plan = do
+validate' validateWhat' plan = do
   tell [Info "# Validation"]
   scheduledExams' <-
-    if ValidateSchedule `elem` validateWhat
+    if ValidateSchedule `elem` validateWhat'
       then do
         scheduledExams'' <- Plexams.Validation.ScheduledExams.validate plan
         max3days <- validateLecturersMax3ExamDays plan
         return $ validationResult [scheduledExams'', max3days]
       else return EverythingOk
   roomsOk <-
-    if ValidateRooms `elem` validateWhat
+    if ValidateRooms `elem` validateWhat'
       then Plexams.Validation.Rooms.validate plan
       -- tell [Info "no validation of rooms requested"]
       else return EverythingOk
   invigilationsOk <-
-    if ValidateInvigilation `elem` validateWhat
+    if ValidateInvigilation `elem` validateWhat'
       then Plexams.Validation.Invigilation.validate plan
       -- tell [Info "no validation of invigilation requested"]
       else return EverythingOk

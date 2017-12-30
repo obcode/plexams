@@ -5,6 +5,7 @@ module Plexams.Types.PlanManip
   ( AddExamToSlot(..)
   , AddRoomToExam(..)
   , AddInvigilatorToRoomOrSlot(..)
+  , RemoveInvigilatorFromRoomOrSlot(..)
   ) where
 
 import Control.Applicative (empty)
@@ -42,4 +43,19 @@ data AddInvigilatorToRoomOrSlot = AddInvigilatorToRoomOrSlot
   , addInvigilatorSlot :: (DayIndex, SlotIndex)
     -- Nothing means ReserveInvigilator for Slot
   , addInvigilatorRoom :: Maybe String
-  }
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON AddInvigilatorToRoomOrSlot
+
+instance FromJSON AddInvigilatorToRoomOrSlot
+
+data RemoveInvigilatorFromRoomOrSlot = RemoveInvigilatorFromRoomOrSlot
+  { removeInvigilatorID :: PersonID
+  , removeInvigilatorSlot :: (DayIndex, SlotIndex)
+    -- Nothing means ReserveInvigilator for Slot
+  , removeInvigilatorRoom :: Maybe String
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON RemoveInvigilatorFromRoomOrSlot
+
+instance FromJSON RemoveInvigilatorFromRoomOrSlot

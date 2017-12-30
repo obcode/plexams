@@ -9,6 +9,7 @@ import qualified Data.ByteString.Lazy.Internal as BSLI
 import Data.List (intercalate)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+
 import Plexams.CLI.Types
 import Plexams.Export.HTML
 import Plexams.Export.Markdown
@@ -42,7 +43,7 @@ stdoutOrFile config output =
 
 stdoutOrFileBS :: Config -> BSLI.ByteString -> IO ()
 stdoutOrFileBS config output =
-  maybe (BSL.putStrLn output) (`BSL.writeFile` output) $ outfile config
+  maybe (print output) (`BSL.writeFile` output) $ outfile config
 
 markdown :: Config -> Plan -> IO ()
 markdown config = stdoutOrFile config . planToMD

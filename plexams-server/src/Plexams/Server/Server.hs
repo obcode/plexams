@@ -13,19 +13,25 @@ import Control.Monad.Reader
 import Control.Monad.STM
 import Data.List (nub, partition, sortBy)
 import qualified Data.Map as M
+import Data.Maybe (listToMaybe)
 import Data.Text (Text, unpack)
 import GHC.Exts (sortWith)
+
 import Network.Wai
 import Network.Wai.Handler.Warp
+import Servant
+
 import Plexams.Import
+import Plexams.Invigilation
 import Plexams.PlanManip
 import Plexams.Server.PlanManip
 import Plexams.Types
 import Plexams.Validation
-import Servant
 
 type API
    = "exams" :> Get '[ JSON] [Exam]
+   -- exam
+      :<|> "exam" :> Capture "examid" Integer :> Get '[ JSON] (Maybe Exam)
    -- examDays
       :<|> "examDays" :> Get '[ JSON] [String]
    -- slots
@@ -59,10 +65,14 @@ type API
       -- semesterConfig
       :<|> "semesterConfig" :> Get '[ JSON] SemesterConfig
       -- invigilators
-      :<|> "invigilators" :> Get '[ JSON] [Invigilator]
+      :<|> "invigilators" :> Get '[ JSON] (Invigilations, [Invigilator])
       -- invigilatorsForDay
       :<|> "invigilatorsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] ( [Invigilator]
                                                                          , [Invigilator])
+      -- addInvigilator
+      :<|> "addInvigilator" :> ReqBody '[ JSON] AddInvigilatorToRoomOrSlot :> Post '[ JSON] ()
+      -- removeInvigilator
+      :<|> "removeInvigilator" :> ReqBody '[ JSON] RemoveInvigilatorFromRoomOrSlot :> Post '[ JSON] ()
       -- examsWithNTA
       :<|> "examsWithNTA" :> Get '[ JSON] [Exam]
 
@@ -102,7 +112,7 @@ api = Proxy
 server :: State -> Server API
 server state =
   enter (stateHandlerToHandler state) $
-  exams' :<|> examDays' :<|> slots' :<|> slot' :<|> slotsPerDay' :<|>
+  exams' :<|> exam' :<|> examDays' :<|> slots' :<|> slot' :<|> slotsPerDay' :<|>
   slotsForDay' :<|>
   addExam' :<|>
   unscheduledExams' :<|>
@@ -117,6 +127,8 @@ server state =
   semesterConfig' :<|>
   invigilators' :<|>
   invigilatorsForDay' :<|>
+  addInvigilator :<|>
+  removeInvigilator :<|>
   examsWithNTA'
   where
     validateWhat' :: StateHandler [ValidateWhat]
@@ -134,6 +146,11 @@ server state =
       State {plan = planT} <- ask
       plan'' <- liftIO $ atomically $ readTVar planT
       return $ allExams plan''
+    exam' :: Integer -> StateHandler (Maybe Exam)
+    exam' examid = do
+      State {plan = planT} <- ask
+      plan'' <- liftIO $ atomically $ readTVar planT
+      return $ listToMaybe $ filter ((== examid) . anCode) $ allExams plan''
     examsWithNTA' :: StateHandler [Exam]
     examsWithNTA' = do
       State {plan = planT} <- ask
@@ -141,11 +158,11 @@ server state =
       return $
         sortWith (personShortName . lecturer) $
         filter (not . null . handicapStudents) $ allExams plan''
-    invigilators' :: StateHandler [Invigilator]
+    invigilators' :: StateHandler (Invigilations, [Invigilator])
     invigilators' = do
       State {plan = planT} <- ask
       plan'' <- liftIO $ atomically $ readTVar planT
-      return $ M.elems $ invigilators plan''
+      return (mkInvigilations plan'', M.elems $ invigilators plan'')
     invigilatorsForDay' :: Int -> StateHandler ([Invigilator], [Invigilator])
     invigilatorsForDay' dayIndex = do
       State {plan = planT} <- ask
@@ -237,7 +254,30 @@ server state =
           liftIO $
             putStrLn $ "error while trying to add " ++ show addExamToSlot'
           return ()
-    reloadPlan' :: StateHandler (Bool, [Text])
+    addInvigilator :: AddInvigilatorToRoomOrSlot -> StateHandler ()
+    addInvigilator (AddInvigilatorToRoomOrSlot invigID invigSlot invigRoom) = do
+      State {plan = planT} <- ask
+      liftIO $
+        atomically $ do
+          plan'' <- readTVar planT
+          let plan''' =
+                addInvigilatorToExamOrSlot invigID invigSlot invigRoom plan''
+          writeTVar planT plan'''
+        -- TODO: Update invigFile
+    removeInvigilator :: RemoveInvigilatorFromRoomOrSlot -> StateHandler ()
+    removeInvigilator (RemoveInvigilatorFromRoomOrSlot invigID invigSlot invigRoom) = do
+      State {plan = planT} <- ask
+      liftIO $
+        atomically $ do
+          plan'' <- readTVar planT
+          let plan''' =
+                removeInvigilatorFromExamOrSlot
+                  invigID
+                  invigSlot
+                  invigRoom
+                  plan''
+          writeTVar planT plan'''
+        -- TODO: Update invigFile    reloadPlan' :: StateHandler (Bool, [Text])
     reloadPlan' = do
       State {plan = planT} <- ask
       (maybePlan, errorMessages) <- liftIO importPlan

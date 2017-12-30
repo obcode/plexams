@@ -7,7 +7,7 @@ github: obcode/plexams
 maintainer: Oliver Braun <ob@obraun.net>
 category: Plexams
 
-ghc-options: -Wall
+ghc-options: -Wall -Werror
 
 dependencies:
   - base  >= 4.7 && < 5
@@ -29,6 +29,10 @@ library:
     - Plexams.Import.Misc
     - Plexams.Import.PlanManip
     - Plexams.Import.Registrations
+    - Plexams.PlanManip.Exam
+    - Plexams.PlanManip.Invigilator
+    - Plexams.PlanManip.Room
+    - Plexams.PlanManip.StudentRegs
     - Plexams.Validation.Rooms
     - Plexams.Validation.ScheduledExams
     - Plexams.Validation.Sources

@@ -218,9 +218,12 @@ invigilatorsPerDayToString =
 
 invigilationInfo :: Plan -> String
 invigilationInfo plan =
-  let (sumExams, sumReserve, sumMasterAndOralExams) = sumInvigilation plan
+  let Invigilations sumExams sumReserve sumOralExams sumMaster sumLivecoding =
+        mkInvigilations plan
       sumPercent = sumPercentAllInvigilators plan
       hundertPercentInMinutes' = hundertPercentInMinutes plan
+      sumMasterAndOralExamsAndLivecoding =
+        sumOralExams + sumMaster + sumLivecoding
   in "\n\n## Infos zu Aufsichtsbedarf\n\n" ++
      "- Summe Aufsichten: " ++
      show sumExams ++
@@ -228,8 +231,8 @@ invigilationInfo plan =
      "- Summe Reserveaufsichten: " ++
      show sumReserve ++
      " Minuten\n\n" ++
-     "- Summe Beisitz/Master: " ++
-     show sumMasterAndOralExams ++
+     "- Summe Beisitz/Master/Livecoding: " ++
+     show sumMasterAndOralExamsAndLivecoding ++
      " Minuten\n\n" ++
      "- Summe der Prozente aller Aufsichten: " ++
      show sumPercent ++

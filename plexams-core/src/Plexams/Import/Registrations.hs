@@ -1,10 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Plexams.Import.Registrations
-    -- ( importRegistrationsFromYAMLFile
-    -- , importOverlapsFromYAMLFile
-    -- , importStudentsFromYAMLFile
-    -- ,
   ( importStudentsWithRegsFromYAMLFile
   , importHandicapsFromYAMLFile
   ) where
@@ -12,7 +8,6 @@ module Plexams.Import.Registrations
 import Control.Applicative ((<$>), (<*>), empty)
 import qualified Data.ByteString as BSI
 import qualified Data.Map as M
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Yaml as Y
 import Plexams.Types
@@ -37,27 +32,6 @@ instance Y.FromJSON ImportRegistration where
   parseJSON (Y.Object v) =
     ImportRegistration <$> v Y..: "ancode" <*> v Y..: "sum"
   parseJSON _ = empty
-
-iRegsToRegs :: SemesterConfig -> ImportRegistrations -> Registrations
-iRegsToRegs config (ImportRegistrations g rs) =
-  Registrations
-  { regsGroup = g
-  , regs =
-      M.fromList $
-      if g == "GO"
-        then filter ((`notElem` goOtherExams config) . fst) regList
-        else regList
-  }
-  where
-    regList = map (\(ImportRegistration a s) -> (a, s)) rs
-
-iRegsLToRegsL :: SemesterConfig -> [ImportRegistrations] -> [Registrations]
-iRegsLToRegsL config = map (iRegsToRegs config)
-
-importRegistrationsFromYAMLFile ::
-     SemesterConfig -> FilePath -> IO (Maybe [Registrations])
-importRegistrationsFromYAMLFile config =
-  fmap (fmap (iRegsLToRegsL config) . Y.decode) . BSI.readFile
 
 --------------------------------------------------------------------------------
 -- Overlaps from YAML file
@@ -89,23 +63,6 @@ instance Y.FromJSON ImportOverlap where
     ImportOverlap <$> v Y..: "otherExam" <*> v Y..: "noOfStudents"
   parseJSON _ = empty
 
-iOLToOL :: ImportOverlaps -> Overlaps
-iOLToOL (ImportOverlaps g rs) =
-  Overlaps
-  { olGroup = read g
-  , olOverlaps =
-      M.fromList $
-      map (\(ImportOverlapsList a s) -> (a, M.fromList $ map toTupel s)) rs
-  }
-  where
-    toTupel (ImportOverlap a s) = (a, s)
-
-iOLToOLList :: [ImportOverlaps] -> [Overlaps]
-iOLToOLList = map iOLToOL
-
-importOverlapsFromYAMLFile :: FilePath -> IO (Maybe [Overlaps])
-importOverlapsFromYAMLFile = fmap (fmap iOLToOLList . Y.decode) . BSI.readFile
-
 --------------------------------------------------------------------------------
 -- Students from YAML file
 --------------------------------------------------------------------------------
@@ -118,18 +75,6 @@ instance Y.FromJSON ImportStudent where
   parseJSON (Y.Object v) =
     ImportStudent <$> v Y..: "mtknr" <*> v Y..: "name" <*> v Y..: "ancode"
   parseJSON _ = empty
-
-importStudentsToStudents :: [ImportStudent] -> Students
-importStudentsToStudents = foldr insertStudent M.empty
-  where
-    insertStudent (ImportStudent mtkNr name' ancode) =
-      M.alter
-        (Just . maybe (S.singleton (mtkNr, name')) (S.insert (mtkNr, name')))
-        ancode
-
-importStudentsFromYAMLFile :: FilePath -> IO (Maybe Students)
-importStudentsFromYAMLFile =
-  fmap (fmap importStudentsToStudents . Y.decode) . BSI.readFile
 
 --------------------------------------------------------------------------------
 -- StudentsRegistrations from YAML file
