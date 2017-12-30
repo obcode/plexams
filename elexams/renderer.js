@@ -20,7 +20,9 @@ const endpoints =
     invigilators: host + '/invigilators',
     invigilatorsForDay: host + '/invigilatorsForDay',
     examsWithNTA: host + '/examsWithNTA',
-    semesterConfig: host + '/semesterConfig'
+    semesterConfig: host + '/semesterConfig',
+    addInvigilator: host + '/addInvigilator',
+    removeInvigilator: host + '/removeInvigilator'
   }
 
 

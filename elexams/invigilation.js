@@ -38,6 +38,10 @@ const openInvigilation = (evt, dayIndex) => {
   // Show the current tab, and add an "active" class to the button that opened the tab
   document.getElementById('invig' + dayIndex).style.display = 'block'
   evt.currentTarget.className += ' active'
+  openInvigilationContent(dayIndex)
+}
+
+const openInvigilationContent = (dayIndex) => {
   if (dayIndex === -1) {
     fetchInvigilators()
   } else {
@@ -70,7 +74,8 @@ const openInvigilation = (evt, dayIndex) => {
               } else {
                 output += ' hasInvigilator'
               }
-              output += `">
+              output += `" ondrop="dropInvigilator(event, ${dayIndex}, ${i}, null)"
+                          ondragover="allowDrop(event)">
                             ${slotsPerDay[i]}<br>
                             ${reserveInvigilator.invigilatorName}
                           </div></td>`
@@ -88,13 +93,13 @@ const openInvigilation = (evt, dayIndex) => {
                     output += ' hasInvigilator'
                   }
                   output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}')"
-                                ondrop="dropInvigilator(event)" ondragover="allowDrop(event)">
+                                ondrop="dropInvigilator(event, ${exam.slot}, '${room.roomID}')" ondragover="allowDrop(event)">
                                 ${exam.anCode}. ${exam.name}<br>
                                 Prüfer: ${exam.lecturer.personShortName}<br>
                                 <span class="room-${room.roomID}">${room.roomID}</span>
                                 (${room.studentsInRoom.length}/${room.maxSeats}):
                                     ${invigilator.invigilatorName} <br>
-                                ${exam.duration + room.deltaDuration} Minuten`
+                                ${exam.duration + room.deltaDuration} Minuten, ${exam.slot}`
                   if (room.reserveRoom) {
                     output += ` <span class="Reserve">(Reserve)</span>`
                   }
@@ -200,10 +205,34 @@ const dragInvigilatorStart = (event, invigilatorID) => {
   event.dataTransfer.setData("InvigilatorID", invigilatorID);
 }
 
-const dropInvigilator = (event) => {
+const addInvigilatorToExamOrSlot = (invigilatorID, dayIdx, slotIdx, room) => {
+  let result = false
+  const dataToTransfer = JSON.stringify({
+    addInvigilatorID: invigilatorID,
+    addInvigilatorSlot: [dayIdx, slotIdx],
+    addInvigilatorRoom: room
+  })
+  // alert(dataToTransfer)
+
+  $.ajax({
+    type: 'POST',
+    url: endpoints.addInvigilator,
+    data: dataToTransfer,
+    success: function () {
+      openInvigilationContent(dayIdx)
+      result = true
+    },
+    contentType: 'application/json',
+    dataType: 'json'
+  })
+  return result
+}
+
+const dropInvigilator = (event, dayIdx, slotIdx, room) => {
   event.preventDefault();
-  var data = event.dataTransfer.getData("InvigilatorID");
-  alert("dropped " + data)
+  const invigilatorID = parseInt(event.dataTransfer.getData("InvigilatorID"))
+  const dropped = addInvigilatorToExamOrSlot(invigilatorID, dayIdx, slotIdx, room)
+  // alert(`addInvigilatorToExamOrSlot(${invigilatorID}, ${dayIdx}, ${slotIdx}, ${room})`)
 }
 
 function allowDrop(event) {

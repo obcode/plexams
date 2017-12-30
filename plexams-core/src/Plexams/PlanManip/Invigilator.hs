@@ -42,89 +42,74 @@ addOrRemoveInvigilatorFromExamOrSlot ::
   -> Maybe String
   -> Plan
   -> Maybe Plan
-addOrRemoveInvigilatorFromExamOrSlot whatToDo personID' slotKey maybeRoom plan = do
-  invigilator' <- M.lookup personID' $ invigilators plan
-  slot' <- M.lookup slotKey $ slots plan
+addOrRemoveInvigilatorFromExamOrSlot whatToDo personID' slotKey maybeRoom plan
+  -- invigilator' <- M.lookup personID' $ invigilators plan
+ =
   case maybeRoom of
-    Nothing ->
-      addOrRemoveInvigilatorSlot whatToDo invigilator' (slotKey, slot') plan
+    Nothing -> addOrRemoveInvigilatorSlot whatToDo personID' slotKey plan
     Just roomID' ->
-      addOrRemoveInvigilatorExam
-        whatToDo
-        invigilator'
-        (slotKey, slot')
-        roomID'
-        plan
+      addOrRemoveInvigilatorExam whatToDo personID' slotKey roomID' plan
 
 addOrRemoveInvigilatorSlot ::
-     WhatToDo
-  -> Invigilator
-  -> ((DayIndex, SlotIndex), Slot)
-  -> Plan
-  -> Maybe Plan
-addOrRemoveInvigilatorSlot whatToDo invigilator' (slotKey, slot') plan =
+     WhatToDo -> Integer -> (DayIndex, SlotIndex) -> Plan -> Maybe Plan
+addOrRemoveInvigilatorSlot whatToDo personID' slotKey plan = do
+  invigilator' <- M.lookup personID' $ invigilators plan
+  slot' <- M.lookup slotKey $ slots plan
   let maybeReserveInvigilator' = reserveInvigilator slot'
-  in case whatToDo of
-       Remove ->
-         case maybeReserveInvigilator' of
-           Just reserveInvigilator'
-             | invigilatorID invigilator' == invigilatorID reserveInvigilator' ->
-               Just $
-               plan
-               { slots =
-                   M.insert slotKey (slot' {reserveInvigilator = Nothing}) $
-                   slots plan
-               , invigilators =
-                   M.insert
-                     (invigilatorID invigilator')
-                     (invigilator'
-                      { invigilatorsMinutesPlanned =
-                          invigilatorsMinutesPlanned invigilator' -
-                          minutesForReserve
-                      }) $
-                   invigilators plan
-               }
-           _ -> Nothing
-       Add ->
-         case maybeReserveInvigilator' of
-           Just reserveInvigilator'
-             | invigilatorID invigilator' == invigilatorID reserveInvigilator' ->
-               Nothing
-           Just reserveInvigilator' -> do
-             plan' <-
-               addOrRemoveInvigilatorSlot
-                 Remove
-                 reserveInvigilator'
-                 (slotKey, slot')
-                 plan
-             addOrRemoveInvigilatorSlot
-               whatToDo
-               invigilator'
-               (slotKey, slot')
-               plan'
-           Nothing ->
-             Just $
-             plan
-             { slots =
-                 M.insert
-                   slotKey
-                   (slot' {reserveInvigilator = Just invigilator'}) $
-                 slots plan
-             , invigilators =
-                 M.insert
-                   (invigilatorID invigilator')
-                   (invigilator'
-                    { invigilatorsMinutesPlanned =
-                        invigilatorsMinutesPlanned invigilator' +
-                        minutesForReserve
-                    }) $
-                 invigilators plan
-             }
+  case whatToDo of
+    Remove ->
+      case maybeReserveInvigilator' of
+        Just reserveInvigilator'
+          | invigilatorID invigilator' == invigilatorID reserveInvigilator' ->
+            Just $
+            plan
+            { slots =
+                M.insert slotKey (slot' {reserveInvigilator = Nothing}) $
+                slots plan
+            , invigilators =
+                M.insert
+                  (invigilatorID invigilator')
+                  (invigilator'
+                   { invigilatorsMinutesPlanned =
+                       invigilatorsMinutesPlanned invigilator' -
+                       minutesForReserve
+                   }) $
+                invigilators plan
+            }
+        _ -> Nothing
+    Add -- TODO: zu want-Tagen hinzufügen? Vielleicht alle Invigs speichern, damit wir wissen, wann wieder entfernen
+     ->
+      case maybeReserveInvigilator' of
+        Just reserveInvigilator'
+          | invigilatorID invigilator' /= invigilatorID reserveInvigilator' -> do
+            plan' <-
+              addOrRemoveInvigilatorSlot
+                Remove
+                (invigilatorID reserveInvigilator')
+                slotKey
+                plan
+            addOrRemoveInvigilatorSlot Add personID' slotKey plan'
+        Just _ -> Nothing
+        Nothing ->
+          Just $
+          plan
+          { slots =
+              M.insert slotKey (slot' {reserveInvigilator = Just invigilator'}) $
+              slots plan
+          , invigilators =
+              M.insert
+                (invigilatorID invigilator')
+                (invigilator'
+                 { invigilatorsMinutesPlanned =
+                     invigilatorsMinutesPlanned invigilator' + minutesForReserve
+                 }) $
+              invigilators plan
+          }
 
 addOrRemoveInvigilatorExam ::
      WhatToDo
-  -> Invigilator
-  -> ((DayIndex, SlotIndex), Slot)
+  -> Integer
+  -> (DayIndex, SlotIndex)
   -> String
   -> Plan
   -> Maybe Plan

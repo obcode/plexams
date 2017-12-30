@@ -56,7 +56,10 @@ addExamToSlot' ancode dayIdx slotIdx plan =
           (\slot' ->
              Just $
              slot'
-             {examsInSlot = M.insert (anCode exam) exam $ examsInSlot slot'})
+             { examsInSlot =
+                 M.insert (anCode exam) (exam {slot = Just (dayIdx, slotIdx)}) $
+                 examsInSlot slot'
+             })
           (dayIdx, slotIdx) $
         uncurry M.insert oldSlotWithoutExam $ slots plan
   in if dayIdxOutOfBounds || slotIndexOutOfBounds
@@ -65,7 +68,7 @@ addExamToSlot' ancode dayIdx slotIdx plan =
               Just exam' ->
                 plan
                 { unscheduledExams = M.delete ancode $ unscheduledExams plan
-                , slots = newSlots exam'
+                , slots = newSlots (exam' {slot = Just (dayIdx, slotIdx)})
                 }
               Nothing ->
                 if examInOtherSlot
