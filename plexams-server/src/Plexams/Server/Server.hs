@@ -168,11 +168,19 @@ server state =
       State {plan = planT} <- ask
       invigilators'' <-
         liftIO $ fmap (M.elems . invigilators) $ atomically $ readTVar planT
-      let wantInvigs =
-            filter ((dayIndex `elem`) . invigilatorWantDays) invigilators''
+      let wantAndPlannedInvigs =
+            filter
+              (\i ->
+                 dayIndex `elem` invigilatorWantDays i ||
+                 dayIndex `elem` invigilatorInvigilationDays i)
+              invigilators''
           canInvigs =
-            filter ((dayIndex `elem`) . invigilatorCanDays) invigilators''
-      return (wantInvigs, canInvigs)
+            filter
+              (\i ->
+                 dayIndex `elem` invigilatorCanDays i &&
+                 dayIndex `notElem` invigilatorInvigilationDays i)
+              invigilators''
+      return (wantAndPlannedInvigs, canInvigs)
     examDays' :: StateHandler [String]
     examDays' = do
       State {plan = planT} <- ask

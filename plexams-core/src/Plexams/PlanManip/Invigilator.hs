@@ -4,6 +4,7 @@ module Plexams.PlanManip.Invigilator
   , addInvigilatorToExamOrSlot
   ) where
 
+import Data.List ((\\))
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 
@@ -73,6 +74,8 @@ addOrRemoveInvigilatorSlot whatToDo personID' slotKey plan = do
                    { invigilatorsMinutesPlanned =
                        invigilatorsMinutesPlanned invigilator' -
                        minutesForReserve
+                   , invigilatorInvigilationDays =
+                       invigilatorInvigilationDays invigilator' \\ [fst slotKey]
                    }) $
                 invigilators plan
             }
@@ -102,6 +105,8 @@ addOrRemoveInvigilatorSlot whatToDo personID' slotKey plan = do
                 (invigilator'
                  { invigilatorsMinutesPlanned =
                      invigilatorsMinutesPlanned invigilator' + minutesForReserve
+                 , invigilatorInvigilationDays =
+                     fst slotKey : invigilatorInvigilationDays invigilator'
                  }) $
               invigilators plan
           }
