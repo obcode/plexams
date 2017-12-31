@@ -43,9 +43,7 @@ addOrRemoveInvigilatorFromExamOrSlot ::
   -> Maybe String
   -> Plan
   -> Maybe Plan
-addOrRemoveInvigilatorFromExamOrSlot whatToDo personID' slotKey maybeRoom plan
-  -- invigilator' <- M.lookup personID' $ invigilators plan
- =
+addOrRemoveInvigilatorFromExamOrSlot whatToDo personID' slotKey maybeRoom plan =
   case maybeRoom of
     Nothing -> addOrRemoveInvigilatorSlot whatToDo personID' slotKey plan
     Just roomID' ->
@@ -80,8 +78,7 @@ addOrRemoveInvigilatorSlot whatToDo personID' slotKey plan = do
                 invigilators plan
             }
         _ -> Nothing
-    Add -- TODO: zu want-Tagen hinzufügen? Vielleicht alle Invigs speichern, damit wir wissen, wann wieder entfernen
-     ->
+    Add ->
       case maybeReserveInvigilator' of
         Just reserveInvigilator'
           | invigilatorID invigilator' /= invigilatorID reserveInvigilator' -> do
@@ -118,8 +115,115 @@ addOrRemoveInvigilatorExam ::
   -> String
   -> Plan
   -> Maybe Plan
-addOrRemoveInvigilatorExam -- whatToDo invigilator' (slotKey, slot') roomID' plan =
- = undefined
+addOrRemoveInvigilatorExam whatToDo personID' slotKey roomID' plan = do
+  invigilator' <- M.lookup personID' $ invigilators plan
+  slot' <- M.lookup slotKey $ slots plan
+  let (examsWithRoomID, examsWithoutRoomID) =
+        M.partition (elem roomID' . map roomID . rooms) $ examsInSlot slot'
+      maximumDurationInRoom =
+        if M.null examsWithRoomID
+          then 0
+          else maximum
+                 [ duration e + deltaDuration r
+                 | e <- M.elems examsWithRoomID
+                 , r <- rooms e
+                 , roomID r == roomID'
+                 ]
+      invigilatorInRoom =
+        [ invigilator r
+        | e <- M.elems examsWithRoomID
+        , r <- rooms e
+        , roomID r == roomID'
+        ]
+  case whatToDo of
+    Remove ->
+      case invigilatorInRoom of
+        (Just invigilatorInRoom':_)
+          | invigilatorID invigilator' == invigilatorID invigilatorInRoom' ->
+            Just $
+            plan
+            { slots =
+                M.insert
+                  slotKey
+                  (slot'
+                   { examsInSlot =
+                       examsWithoutRoomID `M.union`
+                       M.map
+                         (\e ->
+                            e
+                            { rooms =
+                                map
+                                  (\r ->
+                                     if roomID r == roomID'
+                                       then r {invigilator = Nothing}
+                                       else r) $
+                                rooms e
+                            })
+                         examsWithRoomID
+                   }) $
+                slots plan
+            , invigilators =
+                M.insert
+                  (invigilatorID invigilator')
+                  (invigilator'
+                   { invigilatorsMinutesPlanned =
+                       invigilatorsMinutesPlanned invigilator' -
+                       maximumDurationInRoom
+                   , invigilatorInvigilationDays =
+                       invigilatorInvigilationDays invigilator' \\ [fst slotKey]
+                   }) $
+                invigilators plan
+            }
+        _ -> Nothing
+    Add ->
+      case invigilatorInRoom of
+        (Just invigilatorInRoom':_)
+          | invigilatorID invigilator' /= invigilatorID invigilatorInRoom' -> do
+            plan' <-
+              addOrRemoveInvigilatorExam
+                Remove
+                (invigilatorID invigilatorInRoom')
+                slotKey
+                roomID'
+                plan
+            addOrRemoveInvigilatorExam Add personID' slotKey roomID' plan'
+        (Nothing:_) ->
+          Just $
+          plan
+          { slots =
+              M.insert
+                slotKey
+                (slot'
+                 { examsInSlot =
+                     examsWithoutRoomID `M.union`
+                     M.map
+                       (\e ->
+                          e
+                          { rooms =
+                              map
+                                (\r ->
+                                   if roomID r == roomID'
+                                     then r {invigilator = Just invigilator'}
+                                     else r) $
+                              rooms e
+                          })
+                       examsWithRoomID
+                 }) $
+              slots plan
+          , invigilators =
+              M.insert
+                (invigilatorID invigilator')
+                (invigilator'
+                 { invigilatorsMinutesPlanned =
+                     invigilatorsMinutesPlanned invigilator' +
+                     maximumDurationInRoom
+                 , invigilatorInvigilationDays =
+                     fst slotKey : invigilatorInvigilationDays invigilator'
+                 }) $
+              invigilators plan
+          }
+        _ -> Nothing
+ -- = undefined
 -- f =
 --   let invigilator' = M.lookup personID' $ invigilators plan
 --       maybeSlot = M.lookup slotKey $ slots plan

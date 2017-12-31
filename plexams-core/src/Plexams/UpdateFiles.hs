@@ -5,6 +5,7 @@ module Plexams.UpdateFiles
 
 import qualified Data.ByteString as BSI
 import qualified Data.Yaml as Y
+import GHC.Exts (sortWith)
 
 import Plexams.Import
        (importAddInvigilatorToRoomOrSlotFromYAMLFile,
@@ -37,7 +38,8 @@ changeSlot examSlot examSlots = fmap (++ [examSlot]) filtered
 updateInvigilationFile :: FilePath -> AddInvigilatorToRoomOrSlot -> IO ()
 updateInvigilationFile filepath newInvig@(AddInvigilatorToRoomOrSlot _ invigSlot invigRoom) = do
   invigilations <- importAddInvigilatorToRoomOrSlotFromYAMLFile filepath
-  let invigilations' = fmap replaceInvigilation invigilations
+  let invigilations' =
+        fmap (sortWith addInvigilatorSlot . replaceInvigilation) invigilations
   BSI.writeFile filepath $ Y.encode invigilations'
   where
     replaceInvigilation =

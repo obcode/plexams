@@ -22,6 +22,7 @@ th {
 
 .invigilatorList {
   user-select: text;
+  text-align: center;
   padding: 0.2em;
 }
 
@@ -57,6 +58,14 @@ th {
 .canInvig {
   padding: 0.3em;
   background-color: rgb(255, 241, 118);
+}
+
+.invigilationPositiv {
+  background-color: rgb(174, 213, 129);
+}
+
+.invigilationNegativ {
+  background-color: rgb(255, 183, 77);
 }
 
 .examName {

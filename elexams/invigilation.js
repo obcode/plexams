@@ -99,7 +99,7 @@ const openInvigilationContent = (dayIndex) => {
                                 <span class="room-${room.roomID}">${room.roomID}</span>
                                 (${room.studentsInRoom.length}/${room.maxSeats}):
                                     ${invigilator.invigilatorName} <br>
-                                ${exam.duration + room.deltaDuration} Minuten, ${exam.slot}`
+                                ${exam.duration + room.deltaDuration} Minuten`
                   if (room.reserveRoom) {
                     output += ` <span class="Reserve">(Reserve)</span>`
                   }
@@ -176,8 +176,13 @@ const openInvigilationContent = (dayIndex) => {
                 }
                 output += `"
                           draggable="true" ondragstart="dragInvigilatorStart(event, ${invig.invigilatorID})">
-                          <span class="invigName">${invig.invigilatorName}</span> (${invig.invigilatorID})<br>offen:
-                          ${invig.invigilatorMinutesTodo - invig.invigilatorsMinutesPlanned} Minuten<br>
+                          <span class="invigName">${invig.invigilatorName}</span> (${invig.invigilatorID})<br>offen:`
+                if (invig.invigilatorMinutesTodo - invig.invigilatorsMinutesPlanned < 0) {
+                  output += '<span class="invigilationNegativ">'
+                } else {
+                  output += '<span class="invigilationPositiv">'
+                }
+                output += `${invig.invigilatorMinutesTodo - invig.invigilatorsMinutesPlanned} Minuten</span><br>
                           geplante Tage: ${invig.invigilatorInvigilationDays}<br>
                           Wunschtage: ${invig.invigilatorWantDays}
                           </div>
@@ -298,8 +303,13 @@ let fetchInvigilators = () => {
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorCanDays}">${invigilator.invigilatorCanDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorExcludedDays}">${invigilator.invigilatorExcludedDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMinutesTodo}">${invigilator.invigilatorMinutesTodo}</td>
-             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorsMinutesPlanned}</td>
-             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorsMinutesPlanned}</td>`
+      if (invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned < 0) {
+        output += '<td class="invigilatorList invigilationNegativ">'
+      } else {
+        output += '<td class="invigilatorList invigilationPositiv">'
+      }
+      output += `${invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned}</td>
              <td class="invigilatorList invigilatorListContentPartime${invigilator.invigilatorPartTime}">${invigilator.invigilatorPartTime}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorOralExams}">${invigilator.invigilatorOralExams}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMaster}">${invigilator.invigilatorMaster}</td>
