@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/obcode/plexams.svg?branch=master)](https://travis-ci.org/obcode/plexams)
+[![Build status](https://ci.appveyor.com/api/projects/status/eraclkgf9kctilm7?svg=true)](https://ci.appveyor.com/project/obcode/plexams)
+
 
 # plexams
 

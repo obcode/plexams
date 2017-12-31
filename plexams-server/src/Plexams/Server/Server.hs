@@ -24,8 +24,8 @@ import Servant
 import Plexams.Import
 import Plexams.Invigilation
 import Plexams.PlanManip
-import Plexams.Server.PlanManip
 import Plexams.Types
+import Plexams.UpdateFiles
 import Plexams.Validation
 
 type API
@@ -255,23 +255,29 @@ server state =
           return plan'''
       let planManipFile' = planManipFile $ files $ semesterConfig plan''''
       case planManipFile' of
-        Just planManipFile'' -> do
-          liftIO $ updateManipFile planManipFile'' addExamToSlot'
-          return ()
-        Nothing -> do
+        Just planManipFile'' ->
+          liftIO $ updatePlanManipFile planManipFile'' addExamToSlot'
+        Nothing ->
           liftIO $
-            putStrLn $ "error while trying to add " ++ show addExamToSlot'
-          return ()
+          putStrLn $ "error while trying to add " ++ show addExamToSlot'
     addInvigilator :: AddInvigilatorToRoomOrSlot -> StateHandler ()
-    addInvigilator (AddInvigilatorToRoomOrSlot invigID invigSlot invigRoom) = do
+    addInvigilator addinvig@(AddInvigilatorToRoomOrSlot invigID invigSlot invigRoom) = do
       State {plan = planT} <- ask
-      liftIO $
+      plan'''' <-
+        liftIO $
         atomically $ do
           plan'' <- readTVar planT
           let plan''' =
                 addInvigilatorToExamOrSlot invigID invigSlot invigRoom plan''
           writeTVar planT plan'''
-        -- TODO: Update invigFile
+          return plan'''
+      let invigilationsFile' =
+            invigilationsFile $ files $ semesterConfig plan''''
+      case invigilationsFile' of
+        Just invigilationsFile'' ->
+          liftIO $ updateInvigilationFile invigilationsFile'' addinvig
+        Nothing ->
+          liftIO $ putStrLn $ "error while trying to add " ++ show addinvig
     removeInvigilator :: RemoveInvigilatorFromRoomOrSlot -> StateHandler ()
     removeInvigilator (RemoveInvigilatorFromRoomOrSlot invigID invigSlot invigRoom) = do
       State {plan = planT} <- ask
@@ -285,7 +291,7 @@ server state =
                   invigRoom
                   plan''
           writeTVar planT plan'''
-        -- TODO: Update invigFile    reloadPlan' :: StateHandler (Bool, [Text])
+    reloadPlan' :: StateHandler (Bool, [Text])
     reloadPlan' = do
       State {plan = planT} <- ask
       (maybePlan, errorMessages) <- liftIO importPlan

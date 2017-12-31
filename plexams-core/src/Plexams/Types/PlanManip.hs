@@ -45,7 +45,9 @@ data AddInvigilatorToRoomOrSlot = AddInvigilatorToRoomOrSlot
   , addInvigilatorRoom :: Maybe String
   } deriving (Eq, Show, Generic)
 
-instance ToJSON AddInvigilatorToRoomOrSlot
+instance Y.ToJSON AddInvigilatorToRoomOrSlot where
+  toJSON (AddInvigilatorToRoomOrSlot i s mr) =
+    object ["id" .= i, "slot" .= s, "room" .= mr]
 
 instance FromJSON AddInvigilatorToRoomOrSlot
 

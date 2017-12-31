@@ -3,6 +3,7 @@
 module Plexams.Import
   ( importPlan
   , importExamSlotsFromYAMLFile
+  , importAddInvigilatorToRoomOrSlotFromYAMLFile
   ) where
 
 import Control.Monad.Trans (liftIO)
