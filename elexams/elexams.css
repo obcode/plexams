@@ -10,13 +10,6 @@ th {
   border: 2px solid black;
 }
 
-.NTA {
-  background-color: rgb(156, 39, 176);
-}
-
-.Reserve {
-  background-color: rgb(161, 136, 127);
-}
 
 /* Aufsichten */
 
@@ -443,4 +436,16 @@ h3 {
     color: black;
     text-decoration: none;
     cursor: pointer;
+}
+
+.NTA {
+  background-color: rgb(156, 39, 176);
+}
+
+.Reserve {
+  background-color: rgb(161, 136, 127);
+}
+
+.roomSlotList {
+  padding: 1em
 }

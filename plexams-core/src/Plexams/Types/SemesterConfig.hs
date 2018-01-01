@@ -6,6 +6,7 @@ module Plexams.Types.SemesterConfig
   ( SemesterConfig(..)
   , SemesterConfigFiles(..)
   , examDaysAsStrings
+  , slotsAsStringsForRoom
   , AvailableRoom(..)
   , AvailableRooms
   ) where
@@ -14,13 +15,15 @@ import Control.Applicative ((<$>), (<*>), empty)
 import Data.Aeson (ToJSON, defaultOptions, genericToEncoding)
 import Data.List (elemIndex)
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Calendar
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
+import Data.Time.LocalTime (TimeOfDay(TimeOfDay))
 import qualified Data.Yaml as Y
 import GHC.Generics
+
 import Plexams.Types.Common
 
 data SemesterConfigFiles = SemesterConfigFiles
@@ -66,6 +69,22 @@ data SemesterConfig = SemesterConfig
 
 examDaysAsStrings :: SemesterConfig -> [String]
 examDaysAsStrings = map (formatTime defaultTimeLocale "%a, %d.%m.%y") . examDays
+
+slotsAsStringsForRoom :: SemesterConfig -> [String]
+slotsAsStringsForRoom =
+  map showSlotForRoom .
+  mapMaybe (parseTimeM True defaultTimeLocale "%R") . slotsPerDay
+  where
+    showSlotForRoom (TimeOfDay h m _) =
+      if m >= 15
+        then showSlotForRoom' h (m - 15)
+        else showSlotForRoom' (h - 1) (m + 45)
+    showSlotForRoom' h m =
+      show2d h ++ ":" ++ show2d m ++ " - " ++ show2d (h + 2) ++ ":" ++ show2d m
+    show2d :: Int -> String
+    show2d n
+      | n <= 9 = "0" ++ show n
+      | otherwise = show n
 
 instance Y.FromJSON SemesterConfig where
   parseJSON (Y.Object v) =

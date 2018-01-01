@@ -9,6 +9,7 @@ module Plexams.Query
   , lecturerExamDays
   , examsWithSameName
   , queryStudentByName
+  , queryRoomByID
   ) where
 
 import Data.List (isInfixOf, nub, sortBy)
@@ -17,6 +18,7 @@ import Data.Maybe (maybe)
 import Data.Set (Set)
 import Data.Text (unpack)
 import GHC.Exts (groupWith)
+
 import Plexams.Types
 
 queryByAnCode :: Integer -> Plan -> [Exam]
@@ -48,7 +50,7 @@ querySlot :: (Int, Int) -> Plan -> [Exam]
 querySlot s = maybe [] (M.elems . examsInSlot) . M.lookup s . slots
 
 queryDay :: Int -> Plan -> [Exam]
-queryDay d plan = concat $ map querySlot' slots'
+queryDay d plan = concatMap querySlot' slots'
   where
     slotsPerDay' = length $ slotsPerDay $ semesterConfig plan
     slots' = [(d, x) | x <- [0 .. (slotsPerDay' - 1)]]
@@ -77,3 +79,21 @@ examsWithSameName = filter ((> 1) . length) . groupWith name . allExams
 queryStudentByName :: String -> Plan -> [(MtkNr, (StudentName, Set Ancode))]
 queryStudentByName str =
   filter (isInfixOf str . unpack . fst . snd) . M.toList . studentsExams
+
+queryRoomByID :: String -> Plan -> PlannedRoomWithSlots
+queryRoomByID roomID' plan =
+  let showDay xs =
+        ( examDaysAsStrings' !! fst (head xs)
+        , map ((slotsAsStringsForRoom' !!) . snd) xs)
+      slotsAsStringsForRoom' = slotsAsStringsForRoom $ semesterConfig plan
+      examDaysAsStrings' = map (drop 5) $ examDaysAsStrings $semesterConfig plan
+  in PlannedRoomWithSlots roomID' $
+     map (uncurry PlannedRoomSlot . showDay) $
+     groupWith fst $ queryRoomByID' roomID' plan
+
+queryRoomByID' :: String -> Plan -> [(DayIndex, SlotIndex)]
+queryRoomByID' roomID' plan =
+  [ slotKey
+  | (slotKey, slot') <- M.toList $ slots plan
+  , roomID' `elem` concatMap (map roomID . rooms) (examsInSlot slot')
+  ]

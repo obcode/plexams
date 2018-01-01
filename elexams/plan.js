@@ -104,37 +104,6 @@ function toggleSelect (thisObj) {
   }
 }
 
-// function fetchOverlaps (anCode) {
-//   var request = $.ajax({
-//     type: 'POST',
-//     url: endpoints.overlaps,
-//     data: JSON.stringify(anCode),
-//     contentType: 'application/json',
-//     dataType: 'json'
-//   })
-//   request.done(function (overlappingExams) {
-//     selectOverlapExams(overlappingExams, anCode);
-//     var output = `
-//     <ul id='overlaps'>
-//     `
-//     for (var i = 0; i < overlappingExams.length; i++) {
-//       let group = overlappingExams[i]
-//       output +=
-//         `<li id='group'> ${group.olGroup.groupDegree}
-//           <div>`
-//       let overlap = group.olOverlaps[anCode]
-//       for (var name in overlap) {
-//         output += name + `: ` + overlap[name] + `</br>`
-//       }
-//       output += `
-//           </div>
-//           </li>`
-//     }
-//     output += `</ul>`
-//     $('#overlaps').html(output)
-//   })
-// }
-
 function fetchExamsBySameLecturer (anCode) {
   var request = $.ajax({
     type: 'POST',
@@ -150,16 +119,6 @@ function fetchExamsBySameLecturer (anCode) {
     }
   })
 }
-
-// function selectOverlapExams (overlaps, anCode) {
-//   for (var i = 0; i < overlaps.length; i++) {
-//     let group = overlaps[i]
-//     let overlap = group.olOverlaps[anCode]
-//     for (var name in overlap) {   
-//       $('#'.concat(name)).addClass('overlap')
-//     }
-//   }
-// }
 
 function setConflicts (anCode, conflictingAncodes) {
   for (var i in conflictingAncodes) {

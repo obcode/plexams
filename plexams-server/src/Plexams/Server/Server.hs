@@ -24,6 +24,7 @@ import Servant
 import Plexams.Import
 import Plexams.Invigilation
 import Plexams.PlanManip
+import Plexams.Query (queryRoomByID)
 import Plexams.Types
 import Plexams.UpdateFiles
 import Plexams.Validation
@@ -75,6 +76,8 @@ type API
       :<|> "removeInvigilator" :> ReqBody '[ JSON] RemoveInvigilatorFromRoomOrSlot :> Post '[ JSON] ()
       -- examsWithNTA
       :<|> "examsWithNTA" :> Get '[ JSON] [Exam]
+      -- plannedRooms
+      :<|> "plannedRooms" :> Get '[ JSON] [PlannedRoomWithSlots]
 
 newtype State = State
   { plan :: TVar Plan
@@ -129,7 +132,8 @@ server state =
   invigilatorsForDay' :<|>
   addInvigilator :<|>
   removeInvigilator :<|>
-  examsWithNTA'
+  examsWithNTA' :<|>
+  plannedRooms'
   where
     validateWhat' :: StateHandler [ValidateWhat]
     validateWhat' = return validateWhat
@@ -228,6 +232,13 @@ server state =
           otherExams' =
             filter ((== lecturer'') . personID . lecturer) otherExams
       return otherExams'
+    plannedRooms' :: StateHandler [PlannedRoomWithSlots]
+    plannedRooms' = do
+      State {plan = planT} <- ask
+      plan'' <- liftIO $ atomically $ readTVar planT
+      return $
+        map ((`queryRoomByID` plan'') . availableRoomName) $
+        availableRooms $ semesterConfig plan''
     validation' :: [ValidateWhat] -> StateHandler Validation
     validation' validateWhat'' = do
       State {plan = planT} <- ask

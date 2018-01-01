@@ -22,7 +22,8 @@ const endpoints =
     examsWithNTA: host + '/examsWithNTA',
     semesterConfig: host + '/semesterConfig',
     addInvigilator: host + '/addInvigilator',
-    removeInvigilator: host + '/removeInvigilator'
+    removeInvigilator: host + '/removeInvigilator',
+    plannedRooms: host + '/plannedRooms'
   }
 
 
@@ -48,6 +49,8 @@ const openTab = (evt, tabname) => {
     fetchExamDays()
     fetchUnscheduledExams()
     // _fetchValidateWhat()
+  } else if (tabname === 'Raumplanung') {
+    fetchRooms()
   } else if (tabname === 'Aufsichtenplanung') {
     fetchInvigilations()
   } else if (tabname === 'NTA') {

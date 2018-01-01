@@ -20,6 +20,7 @@
   <script src="renderer.js"></script>
   <script src="plan.js"></script>
   <script src="invigilation.js"></script>
+  <script src="rooms.js"></script>
   <script src="validation.js"></script>
 
 </head>
@@ -27,6 +28,7 @@
 <body>
   <div class="tab">
     <button class="tablinks active" onclick="openTab(event, 'Prüfungsplanung')">Prüfungsplanung</button>
+    <button class="tablinks" onclick="openTab(event, 'Raumplanung')">Raumplanung</button>
     <button class="tablinks" onclick="openTab(event, 'Aufsichtenplanung')">Aufsichtenplanung</button>
     <button class="tablinks" onclick="openTab(event, 'NTA')">NTA</button>
     <button class="tablinks" onclick="openTab(event, 'Validation')">Validation</button>
@@ -40,6 +42,9 @@
       <div id="unscheduled" class="outerUnscheduled" draggable="false">
       </div>
     </div>
+  </div>
+  <div id="Raumplanung" class="tabcontent" style="display: none;">
+    <div id="rooms"></div>
   </div>
   <div id="Aufsichtenplanung" class="tabcontent" style="display: none;">
     <div id="invigilations"></div>

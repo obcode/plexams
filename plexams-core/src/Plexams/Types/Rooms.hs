@@ -4,6 +4,8 @@
 module Plexams.Types.Rooms
   ( Room(..)
   , seatsPlanned
+  , PlannedRoomWithSlots(..)
+  , PlannedRoomSlot(..)
   ) where
 
 import Data.Aeson
@@ -49,3 +51,21 @@ instance Show Room where
       " **Aufsicht fehlt**"
       ((", Aufsicht: " ++) . unpack . invigilatorName)
       (invigilator room)
+
+data PlannedRoomWithSlots = PlannedRoomWithSlots
+  { plannedRoomID :: String
+  , plannedRoomDaysAndSlots :: [PlannedRoomSlot]
+  } deriving (Generic)
+
+instance FromJSON PlannedRoomWithSlots
+
+instance ToJSON PlannedRoomWithSlots
+
+data PlannedRoomSlot = PlannedRoomSlot
+  { plannedRoomDay :: String
+  , plannedRoomSlots :: [String]
+  } deriving (Generic)
+
+instance FromJSON PlannedRoomSlot
+
+instance ToJSON PlannedRoomSlot
