@@ -34,10 +34,7 @@ const fetchRooms = () => {
                     const room = exam.rooms[r]
                     output += `<div id="${exam.anCode}-${room.roomID}"
                               onclick="openModal('modal-plannedRooms-${room.roomID}')"
-                              class="inner `
-                    output += `"
-                               onclick="viewDetails(event, ${exam.anCode})"
-                               onmouseover=""><span class="`
+                              class="room `
                     if (room.handicapCompensation) {
                       output += 'NTA'
                     }
@@ -50,7 +47,9 @@ const fetchRooms = () => {
                     if (room.roomID === 'R1.049') {
                       output += 'room-R1.049'
                     }
-                    output += `">${room.roomID} (${room.studentsInRoom.length}/${room.maxSeats})</span></div>`
+                    output += `"
+                               onclick="viewDetails(event, ${exam.anCode})"
+                               onmouseover="">${room.roomID} (${room.studentsInRoom.length}/${room.maxSeats})</div>`
                   }
                 }
                 output += `</div>

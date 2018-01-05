@@ -158,11 +158,35 @@ span.GO {
   background-color: rgb(224, 224, 224);
 }
 
-span.room-R1\.046 {
+/* rooms */
+
+.room {
+  padding: 5px;
+  top: 5px;
+  overflow: hidden;
+  border: 1px solid white;
+  background-color: rgb(255, 193, 7);
+  vertical-align: top;
+  display: block;
+}
+
+.NTA {
+  background-color: rgb(156, 39, 176);
+}
+
+.Reserve {
+  background-color: rgb(161, 136, 127);
+}
+
+.roomSlotList {
+  padding: 1em
+}
+
+.room-R1\.046 {
   background-color: rgb(239, 83, 80);
 }
 
-span.room-R1\.049 {
+.room-R1\.049 {
   background-color: rgb(66, 165, 245);
 }
 
@@ -436,16 +460,4 @@ h3 {
     color: black;
     text-decoration: none;
     cursor: pointer;
-}
-
-.NTA {
-  background-color: rgb(156, 39, 176);
-}
-
-.Reserve {
-  background-color: rgb(161, 136, 127);
-}
-
-.roomSlotList {
-  padding: 1em
 }
