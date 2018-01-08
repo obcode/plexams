@@ -278,6 +278,7 @@ let fetchInvigilators = () => {
         <th class="invigilatorList">gewünschte Tage</th>
         <th class="invigilatorList">mögliche Tage</th>
         <th class="invigilatorList">ausgeschlossene Tage</th>
+        <th class="invigilatorList">geplante Tage</th>
         <th class="invigilatorList">zu leistende Zeit</th>
         <th class="invigilatorList">eingeplante Zeit</th>
         <th class="invigilatorList">noch offen</th>
@@ -302,6 +303,7 @@ let fetchInvigilators = () => {
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorWantDays}">${invigilator.invigilatorWantDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorCanDays}">${invigilator.invigilatorCanDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorExcludedDays}">${invigilator.invigilatorExcludedDays}</td>
+             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorInvigilationDays}">${invigilator.invigilatorInvigilationDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMinutesTodo}">${invigilator.invigilatorMinutesTodo}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorsMinutesPlanned}</td>`
       if (invigilator.invigilatorMinutesTodo - invigilator.invigilatorsMinutesPlanned < 0) {

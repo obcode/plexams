@@ -18,10 +18,10 @@ import TextShow (showt)
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do
   tell [Info "## Validating Invigilations"]
-  allSlotsHaveReserves <- validateAllSlotsHaveReserves plan
-  allRoomsHaveInvigilators <- validateAllRoomsHaveInvigilators plan
   invigilatorOk <- validateInvigilator plan
   handicapsOk <- validateHandicapsInvigilator plan
+  allSlotsHaveReserves <- validateAllSlotsHaveReserves plan
+  allRoomsHaveInvigilators <- validateAllRoomsHaveInvigilators plan
   return $
     validationResult
       [ allSlotsHaveReserves
@@ -226,7 +226,7 @@ validateHandicapsInvigilator plan
         let slots' = sortWith (snd . fst) day'
         in zip slots' (tail slots')
   validationResult <$>
-    mapM (\d -> validationResult <$> mapM validateHandicapsInvigilator' d) days'
+    mapM (fmap validationResult . mapM validateHandicapsInvigilator') days'
 
 validateHandicapsInvigilator' ::
      (((DayIndex, SlotIndex), Slot), ((DayIndex, SlotIndex), Slot))
@@ -234,13 +234,13 @@ validateHandicapsInvigilator' ::
 validateHandicapsInvigilator' ((si@(d1, s1), slot'), ((d2, s2), nextSlot)) = do
   when (d1 /= d2) $
     tell
-      [ HardConstraintBroken $
-        ">>> This should not happen. Validating handicaps on different days"
+      [ HardConstraintBroken
+          ">>> This should not happen. Validating handicaps on different days"
       ]
   when (s1 + 1 /= s2) $
     tell
-      [ HardConstraintBroken $
-        ">>> This should not happen. Validating handicaps on non-following slots"
+      [ HardConstraintBroken
+          ">>> This should not happen. Validating handicaps on non-following slots"
       ]
   let handicapInvigilators =
         nub $
