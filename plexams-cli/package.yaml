@@ -22,6 +22,7 @@ library:
     - plexams-core
     - plexams-generators
     - plexams-validation
+    - plexams-datamgmt
     - pretty-show
     - text
     - time
@@ -34,6 +35,7 @@ executables:
     dependencies:
       - plexams-cli
       - plexams-core
+      - plexams-datamgmt
       - text
   plexams-helper:
     main: Plexams-Helper.hs

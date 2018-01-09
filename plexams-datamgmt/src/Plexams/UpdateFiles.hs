@@ -4,8 +4,9 @@ module Plexams.UpdateFiles
   ) where
 
 import qualified Data.ByteString as BSI
-import qualified Data.Yaml as Y
 import GHC.Exts (sortWith)
+
+import qualified Data.Yaml as Y
 
 import Plexams.Import
        (importAddInvigilatorToRoomOrSlotFromYAMLFile,

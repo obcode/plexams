@@ -6,6 +6,7 @@ module Plexams.Import.Misc
 
 import Data.Aeson (decode)
 import qualified Data.ByteString.Lazy as BS
+
 import Plexams.Types
 
 --------------------------------------------------------------------------------

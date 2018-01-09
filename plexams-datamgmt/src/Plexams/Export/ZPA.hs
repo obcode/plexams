@@ -10,6 +10,7 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.ByteString.Lazy.Internal as BS
 import qualified Data.Map as M
 import GHC.Exts (sortWith)
+
 import Plexams.Types
 
 --------------------------------------------------------------------------------

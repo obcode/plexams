@@ -26,6 +26,7 @@ dependencies:
   - yaml
   - plexams-core
   - plexams-validation
+  - plexams-datamgmt
 
 library:
   source-dirs: src

@@ -1,6 +1,6 @@
-name: plexams-validation
+name: plexams-datamgmt
 version: '0.9.0.0'
-synopsis: Validation modules for planning exams
+synopsis: Data Management modules for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3
 github: obcode/plexams
@@ -11,17 +11,19 @@ ghc-options: -Wall -Werror
 
 dependencies:
   - base  >= 4.7 && < 5
+  - aeson
+  - aeson-pretty
+  - bytestring
   - containers
   - mtl
   - text
-  - text-show
+  - yaml
   - plexams-core
-  - plexams-datamgmt
 
 library:
   source-dirs: src
   other-modules:
-    - Plexams.Validation.Rooms
-    - Plexams.Validation.ScheduledExams
-    - Plexams.Validation.Sources
-    - Plexams.Validation.Exports
+    - Plexams.Import.MasterData
+    - Plexams.Import.Misc
+    - Plexams.Import.PlanManip
+    - Plexams.Import.Registrations

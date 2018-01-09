@@ -5,6 +5,7 @@ module Plexams.Export.Common
 
 import Data.List (sortBy)
 import qualified Data.Map as M
+
 import Plexams.Types
 
 unscheduledExamsSortedByRegistrations :: Plan -> [Exam]
