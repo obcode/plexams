@@ -33,7 +33,3 @@ library:
     - Plexams.PlanManip.Invigilator
     - Plexams.PlanManip.Room
     - Plexams.PlanManip.StudentRegs
-    - Plexams.Validation.Rooms
-    - Plexams.Validation.ScheduledExams
-    - Plexams.Validation.Sources
-    - Plexams.Validation.Exports

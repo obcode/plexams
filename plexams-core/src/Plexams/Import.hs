@@ -4,6 +4,7 @@ module Plexams.Import
   ( importPlan
   , importExamSlotsFromYAMLFile
   , importAddInvigilatorToRoomOrSlotFromYAMLFile
+  , importZPAExamsFromJSONFile
   ) where
 
 import Control.Monad.Trans (liftIO)
@@ -12,6 +13,7 @@ import qualified Data.Map as M
 import Data.Text (Text, append, pack)
 
 import Plexams.Import.MasterData
+import Plexams.Import.Misc
 import Plexams.Import.PlanManip
 import Plexams.Import.Registrations
 import Plexams.Invigilation

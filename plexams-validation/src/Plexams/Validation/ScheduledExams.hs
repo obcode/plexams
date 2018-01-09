@@ -13,9 +13,11 @@ import qualified Data.Set as S
 import Data.Text (append)
 import qualified Data.Text as Text
 import GHC.Exts (groupWith)
+
+import TextShow (showt)
+
 import Plexams.Query
 import Plexams.Types
-import TextShow (showt)
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do

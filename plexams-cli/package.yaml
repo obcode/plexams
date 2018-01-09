@@ -21,6 +21,7 @@ library:
     - optparse-applicative
     - plexams-core
     - plexams-generators
+    - plexams-validation
     - pretty-show
     - text
     - time

@@ -11,9 +11,11 @@ import qualified Data.Map as M
 import Data.Maybe (catMaybes, isNothing, mapMaybe)
 import Data.Text (append, pack)
 import GHC.Exts (groupWith, sortWith)
+
+import TextShow (showt)
+
 import Plexams.Invigilation
 import Plexams.Types
-import TextShow (showt)
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do

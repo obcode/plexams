@@ -6,9 +6,11 @@ module Plexams.Validation.Exports
 
 import Control.Monad.Writer
 import Data.Text (append)
-import Plexams.Import.Misc (importZPAExamsFromJSONFile)
-import Plexams.Types
+
 import TextShow (showt)
+
+import Plexams.Import (importZPAExamsFromJSONFile)
+import Plexams.Types
 
 validateZPAExport ::
      FilePath -> Plan -> IO (ValidationResult, [ValidationRecord])

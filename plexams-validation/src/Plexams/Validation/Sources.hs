@@ -7,8 +7,10 @@ module Plexams.Validation.Sources
 import Control.Monad.Writer
 import qualified Data.Map as M
 import Data.Text (Text, append)
-import Plexams.Types
+
 import TextShow
+
+import Plexams.Types
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do

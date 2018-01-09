@@ -8,8 +8,10 @@ import Control.Monad.Writer
 import Data.List (nub)
 import qualified Data.Map as M
 import Data.Text (append)
-import Plexams.Types
+
 import TextShow (showt)
+
+import Plexams.Types
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do

@@ -16,7 +16,6 @@ dependencies:
   - text
   - wai
   - warp
-  - plexams-core
   - optparse-applicative
   - mtl
   - directory
@@ -25,6 +24,8 @@ dependencies:
   - containers
   - stm
   - yaml
+  - plexams-core
+  - plexams-validation
 
 library:
   source-dirs: src
