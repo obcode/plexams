@@ -82,7 +82,4 @@ typings/
 elexams/resources/plexams
 elexams/resources/plexams-helper
 elexams/resources/plexams-server
-plexams-cli/plexams-cli.cabal
-plexams-core/plexams-core.cabal
-plexams-generators/plexams-generators.cabal
-plexams-server/plexams-server.cabal
+*.cabal
