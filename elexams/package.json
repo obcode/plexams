@@ -1,8 +1,8 @@
 {
   "name": "elexams",
   "productName": "elexams",
-  "author": "Felician Pinkert",
-  "version": "0.1.0",
+  "author": "Oliver Braun, Felician Pinkert",
+  "version": "1.0.0",
   "description": "A gui for plexams based on electron",
   "main": "main.js",
   "scripts": {

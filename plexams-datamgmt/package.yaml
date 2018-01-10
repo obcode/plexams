@@ -1,5 +1,5 @@
 name: plexams-datamgmt
-version: '0.9.0.0'
+version: '1.0.0.0'
 synopsis: Data Management modules for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3
