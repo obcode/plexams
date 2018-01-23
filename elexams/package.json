@@ -11,7 +11,7 @@
   "license": "BSD-3-Clause",
   "repository": "https://github.com/obcode/plexams",
   "devDependencies": {
-    "electron": "^1.7.9"
+    "electron": "^1.7.11"
   },
   "dependencies": {
     "bootstrap": "^4.0.0-beta.2"
