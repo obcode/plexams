@@ -2,7 +2,7 @@
 const electron = require('electron')
 
 // Used to spawn processes
-// const childProcess = require('child_process')
+const childProcess = require('child_process')
 // Module to control application life.
 const app = electron.app
 // Module to create native browser window.
@@ -13,7 +13,7 @@ const path = require('path')
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 // Do the same for the backend web server
-// let backendServer
+let backendServer
 
 function createWindow () {
   // Create the browser window.
@@ -22,7 +22,7 @@ function createWindow () {
     height: 1000
   })
 
-  mainWindow.setTitle(require('./package.json').name);
+  mainWindow.setTitle(require('./package.json').name)
   // and load the index.html of the app.
   mainWindow.loadURL(path.join('file://', __dirname, '/index.html'))
 
@@ -38,9 +38,9 @@ function createWindow () {
   })
 }
 
-// function createBackendServer () {
-  // backendServer = child_process.spawn('./resources/plexams-server')
-// }
+function createBackendServer () {
+  backendServer = childProcess.spawn('plexams-server', { stdio: 'inherit' })
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -48,11 +48,11 @@ function createWindow () {
 app.on('ready', createWindow)
 
 // Start the backend web server when Electron has finished initializing
-// app.on('ready', createBackendServer)
+app.on('ready', createBackendServer)
 
 // Close the server when the application is shut down
 app.on('will-quit', function () {
-  // backendServer.kill()
+  backendServer.kill()
 })
 
 // Quit when all windows are closed.

@@ -15,6 +15,7 @@ dependencies:
   - aeson-pretty
   - bytestring
   - containers
+  - directory
   - mtl
   - text
   - yaml

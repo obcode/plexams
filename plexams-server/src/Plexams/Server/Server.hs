@@ -93,6 +93,7 @@ stateHandlerToHandler state = NT stateHandlerToHandler'
 
 startApp :: IO ()
 startApp = do
+  setPlexamsDirectory
   plan' <- getPlan
   planTVar <- atomically $ newTVar plan'
   let state = State planTVar

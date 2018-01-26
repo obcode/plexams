@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Plexams.Import
-  ( importPlan
+  ( setPlexamsDirectory
+  , importPlan
   , importExamSlotsFromYAMLFile
   , importAddInvigilatorToRoomOrSlotFromYAMLFile
   , importZPAExamsFromJSONFile
@@ -11,6 +12,7 @@ import Control.Monad.Trans (liftIO)
 import Control.Monad.Writer (WriterT, runWriterT, tell)
 import qualified Data.Map as M
 import Data.Text (Text, append, pack)
+import System.Directory (getHomeDirectory, setCurrentDirectory)
 
 import Plexams.Import.MasterData
 import Plexams.Import.Misc
@@ -19,6 +21,16 @@ import Plexams.Import.Registrations
 import Plexams.Invigilation
 import Plexams.PlanManip
 import Plexams.Types
+
+plexamsrc :: FilePath
+plexamsrc = ".plexamsrc"
+
+setPlexamsDirectory :: IO ()
+setPlexamsDirectory = do
+  homedir <- getHomeDirectory
+  dir <- fmap (head . lines) $ readFile $ homedir ++ "/" ++ plexamsrc
+  putStrLn $ "-> setting working directory to: " ++ dir ++ "<-"
+  setCurrentDirectory dir
 
 semesterConfigFile :: FilePath
 semesterConfigFile = "plexams.yaml"
