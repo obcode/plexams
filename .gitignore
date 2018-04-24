@@ -83,3 +83,5 @@ elexams/resources/plexams
 elexams/resources/plexams-helper
 elexams/resources/plexams-server
 *.cabal
+
+.idea/
