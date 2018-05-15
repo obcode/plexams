@@ -135,10 +135,10 @@ getContents' :: FilePath -> IO String
 getContents' iPath = do
   h <- openFile iPath ReadMode
   hSetEncoding h utf8
-  map replaceRwithN <$> hGetContents h
-  where
-    replaceRwithN '\r' = '\n'
-    replaceRwithN c = c
+  hGetContents h
+  -- where
+  --   replaceRwithN '\r' = '\n'
+  --   replaceRwithN c = c
 
 split :: Char -> String -> [String]
 split _ [] = []
