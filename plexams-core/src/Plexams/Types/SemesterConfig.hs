@@ -41,13 +41,13 @@ data SemesterConfigFiles = SemesterConfigFiles
 instance Y.FromJSON SemesterConfigFiles where
   parseJSON (Y.Object v) =
     SemesterConfigFiles <$> v Y..: "initialPlan" <*> v Y..: "persons" <*>
-    v Y..: "planManip" <*>
+    v Y..:? "planManip" <*>
     v Y..: "handicaps" <*>
     v Y..: "studentregs" <*>
-    v Y..: "rooms" <*>
+    v Y..:? "rooms" <*>
     v Y..: "constraints" <*>
-    v Y..: "invigilators" <*>
-    v Y..: "invigilations"
+    v Y..:? "invigilators" <*>
+    v Y..:? "invigilations"
   parseJSON _ = empty
 
 instance ToJSON SemesterConfigFiles where
@@ -126,11 +126,17 @@ makeSemesterConfig s f l goDay0 =
     lastDay' = makeDay l
     realExamDays = filter (notWeekend . toWeekDate) [firstDay' .. lastDay']
     notWeekend (_, _, weekday) = weekday <= 5
-    goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays
-    goSlots' = map (\(d, t) -> (d + goDay0Index, t)) rawGOSlots
+    goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays -- BUG
+    goSlots' =
+      filter ((>= 0) . fst) $ map (\(d, t) -> (d + goDay0Index, t)) rawGOSlots
     rawGOSlots =
-      [ (0, 0)
-      , (0, 1) -- Tag 0
+      [ (-3, 0)
+      , (-3, 1)
+      , (-1, 3)
+      , (-1, 4)
+      , (-1, 5)
+      , (0, 0)
+      , (0, 1)
       , (1, 3)
       , (1, 4)
       , (1, 5)
