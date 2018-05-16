@@ -2,7 +2,7 @@ module Plexams.PlanManip.StudentRegs
   ( addStudentRegistrationsToPlan
   ) where
 
-import Data.List ((\\), nub, sort)
+import Data.List ((\\))
 import qualified Data.Map as M
 import GHC.Exts (groupWith)
 
@@ -33,8 +33,8 @@ addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
     (\e ->
        e
        { conflictingAncodes =
-           filter (`elem` allAncodes \\ [anCode e]) $
-           sort $ nub $conflictingAncodes e
+           M.filterWithKey (\k _ -> k `elem` allAncodes \\ [anCode e]) $
+           conflictingAncodes e
        , registeredGroups = sumRegisteredGroups $ registeredGroups e
        }) $
   foldr insertStudentReg examsMap $ M.elems studentsWithRegs
@@ -54,7 +54,10 @@ addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
                RegisteredGroup (studentGroup studentWithReg) 1 :
                registeredGroups e
            , conflictingAncodes =
-               studentAncodes studentWithReg ++ conflictingAncodes e
+               foldr
+                 (M.alter (Just . maybe 1 (+ 1)))
+                 (conflictingAncodes e)
+                 (studentAncodes studentWithReg)
            , handicapStudents =
                maybe
                  (handicapStudents e)

@@ -12,9 +12,11 @@ module Plexams.Types.Exam
 
 import Data.Aeson
 import Data.List (intercalate)
+import qualified Data.Map as M
 import Data.Maybe (isJust)
 import Data.Text (unpack)
 import GHC.Generics
+
 import Plexams.Types.Common
 import Plexams.Types.Groups
 import Plexams.Types.Persons
@@ -34,7 +36,7 @@ data Exam = Exam
   , slot :: Maybe (Int, Int) -- ^ (Tag, Slot)
   , registeredStudents :: [StudentWithRegs]
   , registeredGroups :: [RegisteredGroup]
-  , conflictingAncodes :: [Ancode]
+  , conflictingAncodes :: M.Map Ancode Integer -- ^ Ancode maps to number of students with this conflict
   , handicapStudents :: [StudentWithRegs]
   } deriving (Eq, Generic)
 

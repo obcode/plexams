@@ -28,7 +28,7 @@ function viewDetails (event, anCode) {
           exam = exams[i]
         }
       }
-      output += ` <h2 >${exam.anCode}. ${exam.name}</h1>
+      output += ` <h2 >${exam.anCode}. ${exam.name}</h2>
                   ${exam.duration} Minuten`
       if (exam.reExam) {
         output += ', Wiederholungsprüfung'
@@ -72,7 +72,10 @@ function viewDetails (event, anCode) {
              </li>`
         }
       }
-      output += "</ul>"
+      output += '</ul>'
+      Object.keys(exam.conflictingAncodes).forEach((k) => {
+        output += `${k} (${exam.conflictingAncodes[k]}),`
+      })
       $('#description').html(output)
       setConflicts(anCode, exam.conflictingAncodes)
       fetchExamsBySameLecturer(anCode)
@@ -120,7 +123,8 @@ function fetchExamsBySameLecturer (anCode) {
   })
 }
 
-function setConflicts (anCode, conflictingAncodes) {
+function setConflicts (anCode, conflicting) {
+  const conflictingAncodes = Object.keys(conflicting)
   for (var i in conflictingAncodes) {
     let conflictingAncode = conflictingAncodes[i]
     $('#'.concat(conflictingAncode)).addClass('conflicts')

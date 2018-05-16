@@ -116,7 +116,8 @@ validateConflicts' ::
   -> Writer [ValidationRecord] ValidationResult
 validateConflicts' _ [] = return EverythingOk
 validateConflicts' hard [((d, s), es)] = do
-  let conflicts = map anCode es `intersect` concatMap conflictingAncodes es
+  let conflicts =
+        map anCode es `intersect` concatMap (M.keys . conflictingAncodes) es
   if null conflicts
     then return EverythingOk
     else do
@@ -135,7 +136,7 @@ validateConflicts' hard [((d, s), es)] = do
 validateConflicts' hard slotsAndExams = do
   let ancodes = concatMap (map anCode . snd) slotsAndExams
       conflictingancodes =
-        concatMap (map conflictingAncodes . snd) slotsAndExams
+        concatMap (map (M.keys . conflictingAncodes) . snd) slotsAndExams
       conflicts = ancodes `intersect` concat conflictingancodes
       conflictingAncodesWithSlot =
         concatMap
