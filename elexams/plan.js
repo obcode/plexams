@@ -91,18 +91,15 @@ function viewDetails (event, anCode) {
 }
 
 function toggleSelect (thisObj) {
-  if (thisObj[0].className.includes('div_select')) {
-    thisObj.parents('table').find('div').removeClass('div_select')
-    thisObj.parents('div').find('div').removeClass('div_select')
-    thisObj.parents('div').find('div').removeClass('overlap')
-    thisObj.parents('div').find('div').removeClass('conflicts')
-    thisObj.parents('div').find('div').removeClass('examsBySameLecturer')
-  } else {
-    thisObj.parents('table').find('div').removeClass('div_select')
-    thisObj.parents('div').find('div').removeClass('div_select')
-    thisObj.parents('div').find('div').removeClass('overlap')
-    thisObj.parents('div').find('div').removeClass('conflicts')
-    thisObj.parents('div').find('div').removeClass('examsBySameLecturer')
+  thisObj.parents('table').find('div').removeClass('div_select')
+  thisObj.parents('div').find('div').removeClass('div_select')
+  thisObj.parents('div').find('div').removeClass('overlap')
+  thisObj.parents('div').find('div').removeClass('conflictsLT5')
+  thisObj.parents('div').find('div').removeClass('conflictsLT10')
+  thisObj.parents('div').find('div').removeClass('conflictsLT20')
+  thisObj.parents('div').find('div').removeClass('conflicts')
+  thisObj.parents('div').find('div').removeClass('examsBySameLecturer')
+  if (!thisObj[0].className.includes('div_select')) {
     thisObj.addClass('div_select')
   }
 }
@@ -127,7 +124,15 @@ function setConflicts (anCode, conflicting) {
   const conflictingAncodes = Object.keys(conflicting)
   for (var i in conflictingAncodes) {
     let conflictingAncode = conflictingAncodes[i]
-    $('#'.concat(conflictingAncode)).addClass('conflicts')
+    if (conflicting[conflictingAncode] < 5) {
+      $('#'.concat(conflictingAncode)).addClass('conflictsLT5')
+    } else if (conflicting[conflictingAncode] < 10) {
+      $('#'.concat(conflictingAncode)).addClass('conflictsLT10')
+    } else if (conflicting[conflictingAncode] < 20) {
+      $('#'.concat(conflictingAncode)).addClass('conflictsLT20')
+    } else {
+      $('#'.concat(conflictingAncode)).addClass('conflicts')
+    }
   }
 }
 

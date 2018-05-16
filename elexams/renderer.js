@@ -147,11 +147,14 @@ let _fetchUnscheduledExams = function () {
         var exam = uExams[i]
         var draggable = !semesterConfig.scheduleFrozen
         outputPlannedByMe +=
-          `<div id="${exam.anCode}" `
+          `<div id="${exam.anCode}" class="innerUnscheduled`
+        if (exam.reExam) {
+          outputPlannedByMe += ' reExam '
+        }
         if (exam.plannedByMe) {
-          outputPlannedByMe += `class="innerUnscheduled" draggable="${draggable}"`
+          outputPlannedByMe += `" draggable="${draggable}"`
         } else {
-          outputPlannedByMe += `class="innerUnscheduled notPlannedByMe" draggable="false"`
+          outputPlannedByMe += ` notPlannedByMe" draggable="false"`
         }
         outputPlannedByMe += ` ondrop="return false;" ondragstart="dragExam(event)"
             onclick="viewDetails(event, ${exam.anCode})"

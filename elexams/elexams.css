@@ -148,7 +148,7 @@ div.inner {
 }
 
 div.reExam {
-  background-color: rgb(255, 235, 59);
+  background-color: rgb(188, 238, 242);
 }
 
 div.goSlot{
@@ -213,6 +213,36 @@ div.notPlannedByMe {
   vertical-align: top;
   display: block;
   background-color: rgb(158, 158, 158);
+}
+
+div.conflictsLT5 {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+  font-weight: bold;
+  background-color: rgb(233, 230, 99);
+}
+
+div.conflictsLT10 {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+  font-weight: bold;
+  background-color: rgb(233, 180, 99);
+}
+
+div.conflictsLT20 {
+  padding: 2px;
+  top: 0px;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+  font-weight: bold;
+  background-color: rgb(233, 130, 99);
 }
 
 div.conflicts {
