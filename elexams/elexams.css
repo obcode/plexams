@@ -121,7 +121,7 @@ div#description {
 .containerUnscheduled {
   padding: 0.3em;
   margin: 10px;
-  border: 1px solid #fff;
+  border: 1px solid #000;
   background-color: rgb(205, 220, 57);
   box-shadow: 0px 2px 7px #292929;
   border-radius: 10px;
@@ -256,11 +256,14 @@ div.conflicts {
 }
 
 div.innerUnscheduled {
-  padding: 2px;
+  padding: 5px;
   top: 0px;
+  border: 2px;
   overflow: hidden;
   display: inline-block;
   vertical-align: top;
+  border: 20px;
+  border-color: #000;
 }
 
 div.innerUnscheduled:hover {

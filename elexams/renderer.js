@@ -158,7 +158,14 @@ let _fetchUnscheduledExams = function () {
         }
         outputPlannedByMe += ` ondrop="return false;" ondragstart="dragExam(event)"
             onclick="viewDetails(event, ${exam.anCode})"
-           >${exam.anCode}</br>${exam.name}</div>`
+           >${exam.anCode}</br>${exam.name}<br />`
+        for (let g in exam.registeredGroups) {
+          const group = exam.registeredGroups[g]
+          outputPlannedByMe += `<span class="${group.registeredGroupDegree}">
+               ${group.registeredGroupDegree}(${group.registeredGroupStudents})
+               </span>,`
+        }
+        outputPlannedByMe += '</div>'
       }
       $('#unscheduled').html(outputPlannedByMe)
     }).fail(function (jqXHR, textStatus, errorThrown) {
