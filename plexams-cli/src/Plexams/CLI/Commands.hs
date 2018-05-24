@@ -90,6 +90,8 @@ query config plan =
     query' (Query (ByName n) _) = map show $ queryByName n plan
     query' (Query (ByLecturer l) _) = map show $ queryByLecturer l plan
     query' (Query (ByGroup g) u) = map show $ queryByGroup g u plan
+    query' (Query (ByRegisteredGroup g) u) =
+      map show $ queryByRegisteredGroup g u plan
     query' (Query (BySlot s) _) = map show $ querySlot s plan
     query' (Query (StudentByName s) _) = map show $ queryStudentByName s plan
     query' _ = []

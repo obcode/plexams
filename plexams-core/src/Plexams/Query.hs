@@ -3,6 +3,7 @@ module Plexams.Query
   , queryByName
   , queryByLecturer
   , queryByGroup
+  , queryByRegisteredGroup
   , querySlot
   , queryDay
   , examDaysPerLecturer
@@ -10,9 +11,10 @@ module Plexams.Query
   , examsWithSameName
   , queryStudentByName
   , queryRoomByID
+  , conflictingSlotsForAncode
   ) where
 
-import Data.List (isInfixOf, nub, sortBy)
+import Data.List (isInfixOf, nub, sort, sortBy)
 import qualified Data.Map as M
 import Data.Maybe (maybe)
 import Data.Set (Set)
@@ -31,13 +33,17 @@ queryByLecturer :: String -> Plan -> [Exam]
 queryByLecturer str =
   filter (isInfixOf str . unpack . personShortName . lecturer) . allExams
 
+allOrUnscheduledExams :: Bool -> Plan -> [Exam]
+allOrUnscheduledExams unscheduledOnly =
+  if unscheduledOnly
+    then sortBy (\e1 e2 -> compare (registrations e2) (registrations e1)) .
+         M.elems . unscheduledExams
+    else allExams
+
 queryByGroup :: String -> Bool -> Plan -> [Exam]
 queryByGroup group unscheduledOnly =
   filter (not . null . elemOrSubGroup (parseGroup group) . groups) .
-  (if unscheduledOnly
-     then sortBy (\e1 e2 -> compare (registrations e2) (registrations e1)) .
-          M.elems . unscheduledExams
-     else allExams)
+  allOrUnscheduledExams unscheduledOnly
   where
     elemOrSubGroup :: Group -> [Group] -> [Group]
     elemOrSubGroup (Group degree Nothing Nothing _) groups' =
@@ -45,6 +51,12 @@ queryByGroup group unscheduledOnly =
     elemOrSubGroup (Group degree semester' Nothing _) groups' =
       filter (\(Group d s _ _) -> degree == d && semester' == s) groups'
     elemOrSubGroup group' groups' = filter (== group') groups'
+
+queryByRegisteredGroup :: String -> Bool -> Plan -> [Exam]
+queryByRegisteredGroup group unscheduledOnly =
+  filter
+    ((group `elem`) . map (unpack . registeredGroupDegree) . registeredGroups) .
+  allOrUnscheduledExams unscheduledOnly
 
 querySlot :: (Int, Int) -> Plan -> [Exam]
 querySlot s = maybe [] (M.elems . examsInSlot) . M.lookup s . slots
@@ -97,3 +109,18 @@ queryRoomByID' roomID' plan =
   | (slotKey, slot') <- M.toList $ slots plan
   , roomID' `elem` concatMap (map roomID . rooms) (examsInSlot slot')
   ]
+
+conflictingSlotsForAncode :: Ancode -> Plan -> [(Int, Int)]
+conflictingSlotsForAncode ancode plan' =
+  let exams ancode' = filter ((== ancode') . anCode) $ allExams plan'
+      findSlotsForAncode ancode' =
+        case exams ancode' of
+          [] -> []
+          (exam:_) ->
+            maybe [] (\(d, s) -> [(d, s - 1), (d, s), (d, s + 1)]) $ slot exam
+  in case exams ancode of
+       [] -> []
+       (exam:_) ->
+         sort $
+         filter ((`elem` [0 .. maxSlotIndex plan']) . snd) $
+         nub $ concatMap findSlotsForAncode $ M.keys $ conflictingAncodes exam

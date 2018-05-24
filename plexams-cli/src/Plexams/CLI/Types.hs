@@ -30,6 +30,7 @@ data QueryWhat
   | ByName String
   | ByLecturer String
   | ByGroup String
+  | ByRegisteredGroup String
   | BySlot (Int, Int)
   | StudentByName String
   deriving (Eq)

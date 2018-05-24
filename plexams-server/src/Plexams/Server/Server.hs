@@ -24,7 +24,7 @@ import Servant
 import Plexams.Import
 import Plexams.Invigilation
 import Plexams.PlanManip
-import Plexams.Query (queryRoomByID)
+import Plexams.Query (conflictingSlotsForAncode, queryRoomByID)
 import Plexams.Types
 import Plexams.UpdateFiles
 import Plexams.Validation
@@ -43,6 +43,9 @@ type API
       :<|> "slotsPerDay" :> Get '[ JSON] [String]
    -- slotsForDay
       :<|> "slotsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] Slots
+   -- conflictingSlots
+      :<|> "conflictingSlots" :> ReqBody '[ JSON] Integer :> Post '[ JSON] [( Int
+                                                                            , Int)]
    -- addExam
       :<|> "addExam" :> ReqBody '[ JSON] AddExamToSlot :> Post '[ JSON] ()
    -- unscheduledExams
@@ -118,6 +121,7 @@ server state =
   enter (stateHandlerToHandler state) $
   exams' :<|> exam' :<|> examDays' :<|> slots' :<|> slot' :<|> slotsPerDay' :<|>
   slotsForDay' :<|>
+  conflictingSlots' :<|>
   addExam' :<|>
   unscheduledExams' :<|>
   notPlannedByMeExams' :<|>
@@ -211,6 +215,10 @@ server state =
       State {plan = planT} <- ask
       plan'' <- liftIO $ atomically $ readTVar planT
       return $ M.filterWithKey (\k _ -> fst k == dayIndex) $ slots plan''
+    conflictingSlots' ancode = do
+      State {plan = planT} <- ask
+      plan'' <- liftIO $ atomically $ readTVar planT
+      return $ conflictingSlotsForAncode ancode plan''
     unscheduledExams' :: StateHandler [Exam]
     unscheduledExams' = do
       State {plan = planT} <- ask

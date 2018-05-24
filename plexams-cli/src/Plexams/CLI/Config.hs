@@ -54,6 +54,7 @@ queryOpts :: Parser Command
 queryOpts =
   Query <$>
   (queryByAncode <|> queryByName <|> queryByLecturer <|> queryByGroup <|>
+   queryByRegisteredGroup <|>
    queryBySlot <|>
    queryStudentByName) <*>
   switch (long "unscheduled-only" <> short 'u' <> help "show only unscheduled")
@@ -84,6 +85,13 @@ queryByGroup =
   ByGroup <$>
   strOption
     (long "group" <> short 'g' <> metavar "GROUP" <> help "query by group")
+
+queryByRegisteredGroup :: Parser QueryWhat
+queryByRegisteredGroup =
+  ByRegisteredGroup <$>
+  strOption
+    (long "registeredgroup" <> short 'r' <> metavar "REGISTEREDGROUP" <>
+     help "query by registered group")
 
 queryBySlot :: Parser QueryWhat
 queryBySlot =
