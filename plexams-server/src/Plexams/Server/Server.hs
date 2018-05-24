@@ -166,7 +166,7 @@ server state =
       plan'' <- liftIO $ atomically $ readTVar planT
       return $
         sortWith (personShortName . lecturer) $
-        filter (not . null . handicapStudents) $ allExams plan''
+        filter (not . null . handicapStudents) $ allExamsPlannedByMe plan''
     invigilators' :: StateHandler (Invigilations, [Invigilator])
     invigilators' = do
       State {plan = planT} <- ask

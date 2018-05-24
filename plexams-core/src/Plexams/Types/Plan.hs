@@ -4,6 +4,7 @@ module Plexams.Types.Plan
   ( Plan(..)
   , scheduledExams
   , allExams
+  , allExamsPlannedByMe
   , isScheduledAncode
   , isUnscheduledAncode
   , isUnknownExamAncode
@@ -60,6 +61,9 @@ allExams :: Plan -> [Exam]
 allExams plan =
   let plan' = setSlotsOnExams plan
   in M.elems (unscheduledExams plan') ++ scheduledExams plan'
+
+allExamsPlannedByMe :: Plan -> [Exam]
+allExamsPlannedByMe = filter plannedByMe . allExams
 
 isScheduledAncode :: Ancode -> Plan -> Bool
 isScheduledAncode ancode =
