@@ -15,6 +15,7 @@ const endpoints =
     validateWhat: host + '/validateWhat',
     examsBySameLecturer: host + '/examsBySameLecturer',
     goSlots: host + '/goSlots',
+    conflictingSlots: host + '/conflictingSlots',
     lecturer: host + '/lecturer',
     reloadPlan: host + '/reloadPlan',
     invigilators: host + '/invigilators',
@@ -95,6 +96,7 @@ let _fetchExams = function () {
       `<table id="examList" class="examList" >
       <thead>
       <tr class="examList">
+        <th class="examList">lfd Nr.</th>
         <th class="examList">Prüfung</th>
         <th class="examList">Prüfer</th>
         <th class="examList">Anmeldecode</th>
@@ -106,8 +108,9 @@ let _fetchExams = function () {
      </thead>
      <tbody>`
     for (let i in exams) {
-      let exam = exams[i]
+      const exam = exams[i]
       output += `<tr class="examList">
+             <td class="examList">${i}</td>
              <td class="examList">${exam.name}</td>
              <td class="examList">${exam.lecturer.personShortName}</td>
              <td class="examList">${exam.anCode}</td>

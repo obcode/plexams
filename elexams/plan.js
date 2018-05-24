@@ -73,11 +73,13 @@ function viewDetails (event, anCode) {
         }
       }
       output += '</ul>'
+      output += Object.keys(exam.conflictingAncodes).length + ' Konflikte: '
       Object.keys(exam.conflictingAncodes).forEach((k) => {
         output += `${k} (${exam.conflictingAncodes[k]}),`
       })
       $('#description').html(output)
       setConflicts(anCode, exam.conflictingAncodes)
+      setConflictingSlots(anCode)
       fetchExamsBySameLecturer(anCode)
     }).fail(function (jqXHR, textStatus, errorThrown) {
       $('#error').append(`Error on viewDetails: `)
@@ -98,6 +100,7 @@ function toggleSelect (thisObj) {
   thisObj.parents('div').find('div').removeClass('conflictsLT10')
   thisObj.parents('div').find('div').removeClass('conflictsLT20')
   thisObj.parents('div').find('div').removeClass('conflicts')
+  thisObj.parents('div').find('div').removeClass('conflictingSlot')
   thisObj.parents('div').find('div').removeClass('examsBySameLecturer')
   if (!thisObj[0].className.includes('div_select')) {
     thisObj.addClass('div_select')
@@ -134,6 +137,23 @@ function setConflicts (anCode, conflicting) {
       $('#'.concat(conflictingAncode)).addClass('conflicts')
     }
   }
+
+}
+
+function setConflictingSlots (anCode) {
+  var request = $.ajax({
+    type: 'POST',
+    url: endpoints.conflictingSlots,
+    data: JSON.stringify(anCode),
+    contentType: 'application/json',
+    dataType: 'json'
+  })
+  request.done(function (slots) {
+    for (let i in slots) {
+      const slot = slots[i]
+      $(['#slot_', slot[0], '_', slot[1]].join('')).addClass('conflictingSlot')
+    }
+  })
 }
 
 function groupsToHTML (groups) {

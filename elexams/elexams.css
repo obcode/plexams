@@ -142,7 +142,7 @@ div.inner {
   top: 5px;
   overflow: hidden;
   border: 1px solid white;
-  background-color: rgb(255, 193, 7);
+  background-color: rgb(205, 220, 57);
   vertical-align: top;
   display: block;
 }
@@ -255,6 +255,10 @@ div.conflicts {
   background-color: rgb(233, 30, 99);
 }
 
+div.conflictingSlot {
+  background-color: rgb(0, 0, 0);
+}
+
 div.innerUnscheduled {
   padding: 5px;
   top: 0px;
@@ -275,13 +279,11 @@ div.outer {
   padding: 5px;
   padding-top: 15px;
   height: 100%;
-  max-width: 200px
+  max-width: 200px;
 }
 
 div.outerUnscheduled {
   display: inline-block;
-  width: 900px;
-  max-width: 1000px;
   min-width: 300px;
   min-height: 100px;
 }
