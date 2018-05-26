@@ -245,7 +245,7 @@ const fetchNTA = () => {
                   <ol class="Nachteilsausgleich">`
     for (let i in examsWithNTA) {
       const exam = examsWithNTA[i]
-      output += `<li class="Nachteilsausgleich">${exam.lecturer.personShortName}
+      output += `<li class="Nachteilsausgleich">${exam.lecturer.personFullName}
         <a href="mailto:${exam.lecturer.personEmail}">&lt;${exam.lecturer.personEmail}&gt;</a><br>
         ${exam.anCode}. ${exam.name}
         <ul class="Nachteilsausgleich">`
