@@ -82,12 +82,13 @@ mkAvailableRooms plan rooms' =
   let slots' = M.keys $ slots plan
       (handicapCompensationRooms', normalRooms') =
         partition availableRoomHandicap rooms'
+      (normalRoomsNeedRequest, normalOwnRooms) =
+        partition availableRoomNeedsRequest normalRooms'
       normalRooms =
-        sortBy (comparing (Down . availableRoomMaxSeats)) normalRooms'
+        sortBy (comparing availableRoomMaxSeats) normalRoomsNeedRequest ++
+        sortBy (comparing (Down . availableRoomMaxSeats)) normalOwnRooms
       handicapCompensationRooms =
-        sortBy
-          (comparing (Down . availableRoomMaxSeats))
-          handicapCompensationRooms'
+        sortBy (comparing availableRoomMaxSeats) handicapCompensationRooms'
       (handicapCompensationRoomOdd, handicapCompensationRoomEven) =
         (map snd *** map snd) $
         partition fst $

@@ -40,16 +40,25 @@ seatsMissing' exam =
 setNormalRoomsOnSlot ::
      [AvailableRoom] -> [Exam] -> Writer [AddRoomToExam] [Exam]
 setNormalRoomsOnSlot [] _ = error "no normal rooms left for slot"
-setNormalRoomsOnSlot (room:rooms') exams' = do
+setNormalRoomsOnSlot rooms' exams' = do
   let exams'' = sortBy (comparing (Down . seatsMissing')) exams'
   case exams'' of
     [] -> return exams'
     (nextExam:sortedExams) ->
-      if seatsMissing' nextExam <= 0
-        then return sortedExams
-        else do
-          exam' <- setRoomOnExam nextExam room
-          setNormalRoomsOnSlot rooms' (exam' : sortedExams)
+      let seatsMissing'' = seatsMissing' nextExam
+          nextOwnRoomAtFront = dropWhile availableRoomNeedsRequest rooms'
+          (room:rooms'') =
+            if null nextOwnRoomAtFront
+              then rooms'
+              else let room' = head nextOwnRoomAtFront
+                   in if seatsMissing'' <= availableRoomMaxSeats room'
+                        then nextOwnRoomAtFront
+                        else rooms'
+      in if seatsMissing'' <= 0
+           then return sortedExams
+           else do
+             exam' <- setRoomOnExam nextExam room
+             setNormalRoomsOnSlot rooms'' (exam' : sortedExams)
 
 setRoomOnExam :: Exam -> AvailableRoom -> Writer [AddRoomToExam] Exam
 setRoomOnExam exam availableRoom = do
@@ -99,7 +108,12 @@ setHandicapRoomsOnSlot (room:rooms') exams'
       else error "too much handicap students, room to small"
     unless (null studentsOwnRoom) $
       if length studentsOwnRoom == 1
-        then setHandicapsRoomAlone (head studentsOwnRoom) (head rooms') exams'
+        then setHandicapsRoomAlone
+               (head studentsOwnRoom)
+               (if null otherStudents
+                  then room
+                  else head rooms')
+               exams'
         else error "more than one students needs room for its own"
     return ()
 

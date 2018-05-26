@@ -161,12 +161,14 @@ data AvailableRoom = AvailableRoom
   { availableRoomName :: String
   , availableRoomMaxSeats :: Integer
   , availableRoomHandicap :: Bool
+  , availableRoomNeedsRequest :: Bool
   } deriving (Eq, Show, Generic)
 
 instance Y.FromJSON AvailableRoom where
   parseJSON (Y.Object v) =
     AvailableRoom <$> v Y..: "name" <*> v Y..: "seats" <*>
-    v Y..:? "handicap" Y..!= False
+    v Y..:? "handicap" Y..!= False <*>
+    v Y..:? "needsRequest" Y..!= False
   parseJSON _ = empty
 
 instance ToJSON AvailableRoom where
