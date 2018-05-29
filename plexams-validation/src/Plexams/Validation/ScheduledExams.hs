@@ -9,7 +9,8 @@ import Control.Monad.Writer
 import Data.List (intersect, nub)
 import qualified Data.Map as M
 import Data.Maybe (isJust, mapMaybe)
-import qualified Data.Set as S
+
+-- import qualified Data.Set as S
 import Data.Text (append)
 import qualified Data.Text as Text
 import GHC.Exts (groupWith)
@@ -440,62 +441,65 @@ validateLecturerMaxOneExamPerSlot plan = do
 -- prüfungen
 validateStudentsMaxTwoExamsPerDay ::
      Plan -> Writer [ValidationRecord] ValidationResult
-validateStudentsMaxTwoExamsPerDay plan
-  -- TODO: hard/soft okay?
- = do
-  tell
-    [ Info $
-      "### Validate numbers of exams per student per day" `append`
-      " (2 are soft, 3 are hard, but not if noOfExams > 13)"
-    ]
-  let examsPerDays :: [[Ancode]]
-      examsPerDays =
-        map
-          (\d ->
-             concatMap (M.keys . examsInSlot) $
-             mapMaybe
-               (\s -> M.lookup (d, s) (slots plan))
-               [0 .. maxSlotIndex plan])
-          [0 .. maxDayIndex plan]
-      studentsWithMoreThanOneExamPerDay =
-        map mkTuples $ groupWith head $ concatMap checkStudents examsPerDays
-      checkStudents :: [Ancode] -> [[MtkNr]]
-      checkStudents =
-        filter ((> 1) . length) .
-        groupWith id .
-        concatMap (map fst . S.toList) .
-        mapMaybe (\a -> M.lookup a (students plan))
-      mkTuples :: [[MtkNr]] -> (MtkNr, [Int])
-      mkTuples mtknr' = (head $ head mtknr', map length mtknr')
-      -- oneHasThree = filter (\(_, examsPerDay) -> any (>2) examsPerDay)
-      --                       studentsWithMoreThanOneExamPerDay
-      allAncodes = map anCode $ allExams plan
-  forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr', noOfExams) -> do
-    let exams' =
-          maybe [] (filter (`elem` allAncodes) . S.toList . snd) $
-          M.lookup mtknr' $ studentsExams plan
-    let three = any (> 2) noOfExams
-    tell
-      [ SoftConstraintBroken $
-        (if three
-           then "-   Student has three or more exams a day:"
-           else "-   Student has two exams per day: ") `append`
-        showt noOfExams `append`
-        " of " `append`
-        showt (length exams') `append`
-        ", MtkNr " `append`
-        showt mtknr' `append`
-        "  \n" `append`
-        showt exams'
-      ]
-  return $
-    if null studentsWithMoreThanOneExamPerDay
-      then EverythingOk
-      else SoftConstraintsBroken {- if null oneHasThree
-                then SoftConstraintsBroken
-                else let nosOfExams = map length
-                           $ mapMaybe ((`M.lookup` studentsExams plan) . fst)
-                                      oneHasThree
-                     in if all (>13) nosOfExams
-                        then SoftConstraintsBroken
-                        else HardConstraintsBroken -}
+validateStudentsMaxTwoExamsPerDay _ = do
+  tell [SoftConstraintBroken "not testing exams for students atm, TODO"]
+  return SoftConstraintsBroken
+-- plan
+--   -- TODO: hard/soft okay?
+--  = do
+--   tell
+--     [ Info $
+--       "### Validate numbers of exams per student per day" `append`
+--       " (2 are soft, 3 are hard, but not if noOfExams > 13)"
+--     ]
+--   let examsPerDays :: [[Ancode]]
+--       examsPerDays =
+--         map
+--           (\d ->
+--              concatMap (M.keys . examsInSlot) $
+--              mapMaybe
+--                (\s -> M.lookup (d, s) (slots plan))
+--                [0 .. maxSlotIndex plan])
+--           [0 .. maxDayIndex plan]
+--       studentsWithMoreThanOneExamPerDay =
+--         map mkTuples $ groupWith head $ concatMap checkStudents examsPerDays
+--       checkStudents :: [Ancode] -> [[MtkNr]]
+--       checkStudents =
+--         filter ((> 1) . length) .
+--         groupWith id .
+--         concatMap (map fst . S.toList) .
+--         mapMaybe (\a -> M.lookup a (students plan))
+--       mkTuples :: [[MtkNr]] -> (MtkNr, [Int])
+--       mkTuples mtknr' = (head $ head mtknr', map length mtknr')
+--       -- oneHasThree = filter (\(_, examsPerDay) -> any (>2) examsPerDay)
+--       --                       studentsWithMoreThanOneExamPerDay
+--       allAncodes = map anCode $ allExams plan
+--   forM_ studentsWithMoreThanOneExamPerDay $ \(mtknr', noOfExams) -> do
+--     let exams' =
+--           maybe [] (filter (`elem` allAncodes) . S.toList . snd) $
+--           M.lookup mtknr' $ studentsExams plan
+--     let three = any (> 2) noOfExams
+--     tell
+--       [ SoftConstraintBroken $
+--         (if three
+--            then "-   Student has three or more exams a day:"
+--            else "-   Student has two exams per day: ") `append`
+--         showt noOfExams `append`
+--         " of " `append`
+--         showt (length exams') `append`
+--         ", MtkNr " `append`
+--         showt mtknr' `append`
+--         "  \n" `append`
+--         showt exams'
+--       ]
+--   return $
+--     if null studentsWithMoreThanOneExamPerDay
+--       then EverythingOk
+--       else SoftConstraintsBroken {- if null oneHasThree
+--                 then SoftConstraintsBroken
+--                 else let nosOfExams = map length
+--                            $ mapMaybe ((`M.lookup` studentsExams plan) . fst)
+--                                       oneHasThree
+--                      in if all (>13) nosOfExams
+--                         then SoftConstraintsBroken
+--                         else HardConstraintsBroken -}

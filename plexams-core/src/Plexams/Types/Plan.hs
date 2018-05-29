@@ -15,7 +15,6 @@ module Plexams.Types.Plan
   , examSlotAsString
   , setSlotsOnExams
   , dateString
-  , studentsOverlaps
   ) where
 
 import Data.Aeson
@@ -23,13 +22,11 @@ import Data.Aeson
 import Data.List ((\\), partition, sortBy)
 import qualified Data.Map as M
 import Data.Ord (Down(Down), comparing)
-import qualified Data.Set as S
 import Data.Time.Calendar
 import GHC.Generics
 import Plexams.Types.Common
 import Plexams.Types.Constraints
 import Plexams.Types.Exam
-import Plexams.Types.Groups
 import Plexams.Types.Persons
 import Plexams.Types.SemesterConfig
 import Plexams.Types.Slots
@@ -40,9 +37,6 @@ data Plan = Plan
   , unscheduledExams :: M.Map Ancode Exam
   , persons :: Persons
   , constraints :: Constraints
-  , students :: Students -- TODO: remove field
-  , studentsExams :: StudentsExams
-  , handicaps :: [Handicap]
   , invigilators :: Invigilators
   , invigilatorsPerDay :: M.Map DayIndex ([PersonID], [PersonID])
   , initialPlan :: [Exam]
@@ -144,15 +138,3 @@ addSlotKeyToExam k slot' =
   slot' {examsInSlot = M.map (addSlotKey k) $ examsInSlot slot'}
   where
     addSlotKey k' exam = exam {slot = Just k'}
-
-studentsOverlaps :: Plan -> Overlaps
-studentsOverlaps plan =
-  let studentsExamsPairs =
-        concatMap (mkPairs . S.elems . snd) $ M.elems $ studentsExams plan
-      mkPairs xs = [(a, b) | a <- xs, b <- xs, a /= b]
-      allOverlaps = foldr insertPair M.empty studentsExamsPairs
-      insertPair (ancode, ancode') = M.alter (insertAncode ancode') ancode
-      insertAncode ancode' Nothing = Just (M.singleton ancode' 1)
-      insertAncode ancode' (Just ancodes) =
-        Just (M.alter (Just . maybe 1 (+ 1)) ancode' ancodes)
-  in Overlaps (Group ALL Nothing Nothing Nothing) allOverlaps

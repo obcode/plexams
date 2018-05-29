@@ -11,17 +11,6 @@ configP =
   Config <$>
   hsubparser
     (command
-       "registrations"
-       (info
-          (pure PrepareRegistrations)
-          (progDesc "prepare a registration file")) <>
-     command
-       "overlaps"
-       (info (pure PrepareOverlaps) (progDesc "prepare an overlaps file")) <>
-     command
-       "students"
-       (info (pure PrepareStudents) (progDesc "prepare a students file")) <>
-     command
        "studentregs"
        (info
           (pure PrepareStudentRegs)

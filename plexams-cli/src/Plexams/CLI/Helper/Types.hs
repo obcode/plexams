@@ -7,10 +7,7 @@ import Data.Text (Text)
 import qualified Data.Yaml as Y
 
 data Command
-  = PrepareRegistrations -- { pRGroup :: String }
-  | PrepareOverlaps --  { pOGroup :: String }
-  | PrepareStudents --
-  | PrepareStudentRegs
+  = PrepareStudentRegs
   | PrepareAncodes
   | CheckAncodes
 

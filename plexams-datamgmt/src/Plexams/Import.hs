@@ -66,9 +66,6 @@ importPlan' semesterConfig' = do
       (tell ["persons file not readable"] >> return M.empty)
       (importFromFilePath importPersonsFromJSONFile M.empty) $
     personsFile files'
-  -- TODO: remove maybeStudents and handicaps''
-  let maybeStudents = Nothing -- TODO: still needed?
-      handicaps'' = []
   -- make the initial plan
   -- add constraints
   constraints' <-
@@ -77,14 +74,7 @@ importPlan' semesterConfig' = do
       (importFromFilePath importConstraintsFromYAMLFile noConstraints) $
     constraintsFile files'
   -- let planWithConstraints = addConstraints constraints' plan'
-  let plan' =
-        makePlan
-          exams'
-          semesterConfig'
-          persons'
-          maybeStudents
-          handicaps''
-          constraints'
+  let plan' = makePlan exams' semesterConfig' persons' constraints'
   -- add students registrations
   studentWithRegs' <-
     maybe

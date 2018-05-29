@@ -252,7 +252,7 @@ const fetchNTA = () => {
       for (let j in exam.handicapStudents) {
         const student = exam.handicapStudents[j]
         output += `<li class="handicapStudents">
-                    ${student.studentName}: ${student.studentHandicap.handicapCompensationText}
+                    ${student.studentFamilyname}, ${student.studentFirstname}: ${student.studentHandicap.handicapCompensationText}
                    </li>`
       }
       output += '</ul></li>'

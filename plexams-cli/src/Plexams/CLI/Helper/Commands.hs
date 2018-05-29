@@ -11,68 +11,6 @@ import Plexams.CLI.Helper.Types
 import System.IO
 
 runCommand :: Config -> IO ()
-runCommand config@(Config PrepareRegistrations g iPath _) = do
-  contents <- getContents' iPath
-  let examLines =
-        map
-          (\e ->
-             if null $ e !! 4
-               then ""
-               else "  - ancode: " ++ head e ++ "\n    sum: " ++ e !! 4) $
-        filter ((>= 5) . length) $ map (split ';') $ tail $ lines contents
-  stdoutOrFile config $
-    "- group: " ++
-    g ++
-    "\n  registrations:\n" ++
-    intercalate "\n" (filter (not . null) examLines) ++ "\n"
-runCommand config@(Config PrepareOverlaps g iPath _) = do
-  contents <- getContents' iPath
-  let (header':overlapsLines) = map (split ';') $ lines contents
-      header =
-        let h = dropWhile (/= 'A') $ head header'
-        in h : tail header'
-      overlapsTupels =
-        filter ((> 3) . length) $
-        map (filter (not . null . snd) . zip header) overlapsLines
-      overlaps = map mkOverlapsYaml overlapsTupels
-  stdoutOrFile config $
-    "- group: " ++
-    g ++
-    "\n  overlapsList:\n"
-                     -- ++ show overlaps
-     ++
-    intercalate "\n" overlaps ++ "\n"
-  where
-    mkOverlapsYaml (("AnCode", ac):_:_:overlaps) =
-      "    - ancode: " ++
-      tail ac ++ "\n" ++ "      overlaps:\n" ++ concatMap mkOverlap overlaps
-    mkOverlapsYaml x = error $ "Cannot mkOverlap " ++ show x
-    mkOverlap (ac, noOfStuds) =
-      "        - otherExam: " ++
-      tail ac ++ "\n" ++ "          noOfStudents: " ++ noOfStuds ++ "\n"
-runCommand config@(Config PrepareStudents g iPath _) = do
-  contents <- getContents' iPath
-  let (header:studentLines) = map (split ';') $ lines contents
-      studentTupels =
-        filter ((> 2) . length) $
-        map (filter (not . null . snd) . zip header) studentLines
-      students = map mkStudentsYaml studentTupels
-  stdoutOrFile config $
-    "# group: " ++ g ++ "\n" ++ intercalate "\n" students ++ "\n"
-  where
-    get fieldname = snd . head . filter (isSuffixOf fieldname . fst)
-    getName studentTupel =
-      let (family, first) = span (/= ',') $ get "NAME" studentTupel
-      in (family, dropWhile (== ' ') $ tail first)
-    mkStudentsYaml studentTupel =
-      "- mtknr: " ++
-      get "MTKNR" studentTupel ++
-      "\n" ++
-      "  familyname: " ++
-      fst (getName studentTupel) ++
-      "  firstname: " ++
-      snd (getName studentTupel) ++
-      "\n" ++ "  ancode: " ++ get "ANCODE" studentTupel ++ "\n"
 runCommand config@(Config PrepareStudentRegs g iPath _) = do
   contents <- getContents' iPath
   let (header:studentLines) = map (split ';') $ lines contents

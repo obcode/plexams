@@ -11,11 +11,8 @@ module Plexams.PlanManip
   , module Plexams.PlanManip.StudentRegs
   ) where
 
-import Control.Arrow (second)
 import Data.List (nub, partition)
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe)
-import qualified Data.Set as S
 
 import Plexams.PlanManip.Exam
 import Plexams.PlanManip.Invigilator
@@ -23,17 +20,8 @@ import Plexams.PlanManip.Room
 import Plexams.PlanManip.StudentRegs
 import Plexams.Types
 
-makePlan ::
-     [Exam]
-  -> SemesterConfig
-  -> Persons
-  -> Maybe Students
-  -> [Handicap]
-  -> Constraints
-  -> Plan
--- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
--- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams'' semesterConfig' pers maybeStudents handicaps' constraints' =
+makePlan :: [Exam] -> SemesterConfig -> Persons -> Constraints -> Plan
+makePlan exams'' semesterConfig' pers constraints' =
   foldr
     addExamFromListToSlot
     Plan
@@ -42,9 +30,6 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' constraints' =
     , unscheduledExams = unscheduledExams''
     , persons = pers
     , constraints = constraints'
-    , students = fromMaybe M.empty maybeStudents -- TODO: remove this one
-    , studentsExams = mkStudentsExams maybeStudents -- TODO: remove this one
-    , handicaps = handicaps' -- TODO: remove this one
     , invigilators = M.empty
     , invigilatorsPerDay = M.empty
     , initialPlan = exams'
@@ -80,16 +65,6 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' constraints' =
     addExamFromListToSlot [a, d, t] plan =
       addExamToSlot' a (fromInteger d) (fromInteger t) plan
     addExamFromListToSlot _ plan = plan
-    mkStudentsExams Nothing = M.empty
-    mkStudentsExams (Just students') =
-      foldr insertAncodes M.empty $ M.toList students'
-      where
-        insertAncodes (ancode, students'') studentsExams' =
-          foldr (insertStudent ancode) studentsExams' $ S.toList students''
-        insertStudent ancode (m, n) =
-          M.alter
-            (Just . maybe (n, S.singleton ancode) (second (S.insert ancode)))
-            m
     setPerson :: Persons -> Exam -> Exam
     setPerson ps exam =
       let pExam = lecturer exam

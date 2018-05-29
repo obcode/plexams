@@ -89,8 +89,7 @@ examsWithSameName :: Plan -> [[Exam]]
 examsWithSameName = filter ((> 1) . length) . groupWith name . allExams
 
 queryStudentByName :: String -> Plan -> [(MtkNr, (StudentName, Set Ancode))]
-queryStudentByName str =
-  filter (isInfixOf str . unpack . fst . snd) . M.toList . studentsExams
+queryStudentByName = undefined
 
 queryRoomByID :: String -> Plan -> PlannedRoomWithSlots
 queryRoomByID roomID' plan =
