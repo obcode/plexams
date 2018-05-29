@@ -2,9 +2,8 @@ module Plexams.Generators.Rooms
   ( generateRooms
   ) where
 
-import Control.Arrow (second)
 import Control.Monad.Writer
-import Data.List (partition, sortBy, splitAt)
+import Data.List ((\\), partition, sortBy, splitAt)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isNothing)
 import Data.Ord (Down(Down), comparing)
@@ -22,16 +21,32 @@ generateRooms plan =
         , (s', exams') <- slots'
         , s == s'
         ]
-      slotsWithRooms = map (second (uncurry setRoomsOnSlot)) roomsAndSlots
-  in sortWith addRoomAnCode $ concatMap snd slotsWithRooms
+      slotsWithRooms =
+        foldr
+          (\(slot'@(_, s), roomAndSlot) roomsAndSlots' ->
+             if null roomsAndSlots'
+               then [(slot', setRoomsOnSlot [] roomAndSlot)]
+               else if s == 0
+                      then (slot', setRoomsOnSlot [] roomAndSlot) :
+                           roomsAndSlots'
+                      else ( slot'
+                           , setRoomsOnSlot
+                               (snd $ snd $ head roomsAndSlots')
+                               roomAndSlot) :
+                           roomsAndSlots')
+          []
+          roomsAndSlots
+  in sortWith addRoomAnCode $ concatMap (fst . snd) slotsWithRooms
 
 setRoomsOnSlot ::
-     ([AvailableRoom], [AvailableRoom]) -> [Exam] -> [AddRoomToExam]
-setRoomsOnSlot (n, h) e =
-  snd $
+     [AvailableRoom]
+  -> (([AvailableRoom], [AvailableRoom]), [Exam])
+  -> ([AddRoomToExam], [AvailableRoom])
+setRoomsOnSlot hUsed ((n, h), e) =
+  (\(r', a) -> (a, r')) $
   runWriter $ do
     _ <- setNormalRoomsOnSlot n e
-    setHandicapRoomsOnSlot h e
+    setHandicapRoomsOnSlot hUsed h e
 
 seatsMissing' :: Exam -> Integer
 seatsMissing' exam =
@@ -86,7 +101,6 @@ setRoomOnExam exam availableRoom = do
         , invigilator = Nothing
         , reserveRoom =
             length studsForRoom < fromInteger (registrations exam `div` 10)
-                                --  && registrations exam /= neededSeats
         , handicapCompensation = False
         , studentsInRoom = studsForRoom
         } :
@@ -94,12 +108,17 @@ setRoomOnExam exam availableRoom = do
     , registeredStudents = restOfStuds ++ studsWithHandicap
     }
 
-setHandicapRoomsOnSlot :: [AvailableRoom] -> [Exam] -> Writer [AddRoomToExam] ()
-setHandicapRoomsOnSlot [] _ = error "no handicap rooms left for slot"
-setHandicapRoomsOnSlot (room:rooms') exams'
-  | not (any withHandicaps exams') = return ()
+setHandicapRoomsOnSlot ::
+     [AvailableRoom]
+  -> [AvailableRoom]
+  -> [Exam]
+  -> Writer [AddRoomToExam] [AvailableRoom]
+setHandicapRoomsOnSlot _ [] _ = error "no handicap rooms left for slot"
+setHandicapRoomsOnSlot roomsUsedSlotBefore rooms'' exams'
+  | not (any withHandicaps exams') = return []
   | otherwise = do
-    let examsWithHandicaps = filter withHandicaps exams'
+    let (room:rooms') = rooms'' \\ roomsUsedSlotBefore
+        examsWithHandicaps = filter withHandicaps exams'
         (studentsOwnRoom, otherStudents) =
           partition (handicapNeedsRoomAlone . fromJust . studentHandicap) $
           concatMap handicapStudents examsWithHandicaps
@@ -115,7 +134,11 @@ setHandicapRoomsOnSlot (room:rooms') exams'
                   else head rooms')
                exams'
         else error "more than one students needs room for its own"
-    return ()
+    return $
+      room :
+      (if not (null studentsOwnRoom) && not (null otherStudents)
+         then take 1 rooms'
+         else [])
 
 setHandicapRoomOnAllExams ::
      AvailableRoom -> [Exam] -> Writer [AddRoomToExam] ()

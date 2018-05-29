@@ -18,7 +18,6 @@ module Plexams.Types.Plan
   , studentsOverlaps
   ) where
 
-import Control.Arrow ((***))
 import Data.Aeson
        (ToJSON, defaultOptions, genericToEncoding, toEncoding)
 import Data.List ((\\), partition, sortBy)
@@ -38,8 +37,7 @@ import Plexams.Types.Slots
 data Plan = Plan
   { semesterConfig :: SemesterConfig
   , slots :: Slots
-  , unscheduledExams :: M.Map Ancode Exam -- ^ Liste der Prüfungen die noch keinem Slot zugeordnet sind
-                                              -- Ancode -> Exam
+  , unscheduledExams :: M.Map Ancode Exam
   , persons :: Persons
   , constraints :: Constraints
   , students :: Students -- TODO: remove field
@@ -89,21 +87,10 @@ mkAvailableRooms plan rooms' =
         sortBy (comparing (Down . availableRoomMaxSeats)) normalOwnRooms
       handicapCompensationRooms =
         sortBy (comparing availableRoomMaxSeats) handicapCompensationRooms'
-      (handicapCompensationRoomOdd, handicapCompensationRoomEven) =
-        (map snd *** map snd) $
-        partition fst $
-        zip (concat $ repeat [True, False]) handicapCompensationRooms
       roomSlots' = roomSlots $ constraints plan
-      -- normalRoomsAlways =
-      --  filter (not . (`elem` M.keys roomSlots') . availableRoomName) normalRooms
       allAvailableRooms =
         M.fromList $
-        zip slots' $
-        concat $
-        repeat
-          [ (normalRooms, handicapCompensationRoomOdd)
-          , (normalRooms, handicapCompensationRoomEven)
-          ]
+        zip slots' $ concat $ repeat [(normalRooms, handicapCompensationRooms)]
       filterNotRoomID roomID' = filter ((/= roomID') . availableRoomName)
       removeRoomFromAllOtherSlots ::
            RoomID -> [(DayIndex, SlotIndex)] -> AvailableRooms -> AvailableRooms
