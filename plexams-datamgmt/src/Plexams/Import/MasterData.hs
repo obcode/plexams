@@ -84,6 +84,8 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
       , registeredGroups = []
       , conflictingAncodes = M.empty
       , handicapStudents = []
+      , sameRoom = []
+      , sameSlot = []
       }
 
 -- }}}

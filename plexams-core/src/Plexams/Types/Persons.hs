@@ -11,6 +11,7 @@ module Plexams.Types.Persons
   , StudentsExams
   , StudentsWithRegs
   , StudentWithRegs(..)
+  , studentName
   , Handicap(..)
   , Invigilator(..)
   , Invigilators
@@ -57,7 +58,7 @@ instance FromJSON Person where
 
 instance ToJSON Person
 
-type MtkNr = Integer
+type MtkNr = Text
 
 type StudentName = Text
 
@@ -68,12 +69,16 @@ type StudentsExams = M.Map MtkNr (StudentName, S.Set Ancode)
 type StudentsWithRegs = M.Map MtkNr StudentWithRegs
 
 data StudentWithRegs = StudentWithRegs
-  { studentMtknr :: Integer
-  , studentName :: Text
+  { studentMtknr :: Text
+  , studentFamilyname :: Text
+  , studentFirstname :: Text
   , studentGroup :: Text
   , studentAncodes :: [Ancode]
   , studentHandicap :: Maybe Handicap
   } deriving (Eq, Generic)
+
+studentName :: StudentWithRegs -> Text
+studentName s = studentFamilyname s `mappend` ", " `mappend` studentFirstname s
 
 instance FromJSON StudentWithRegs
 
@@ -81,7 +86,7 @@ instance ToJSON StudentWithRegs
 
 data Handicap = Handicap
   { handicapStudentname :: Text
-  , handicapMtknr :: Integer
+  , handicapMtknr :: Text
   , handicapCompensationText :: Text
   , handicapDeltaDurationPercent :: Integer
   , handicapNotForExams :: [Ancode]

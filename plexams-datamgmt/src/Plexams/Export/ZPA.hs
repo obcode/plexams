@@ -3,11 +3,13 @@
 module Plexams.Export.ZPA
   ( planToZPA
   , planForStudents
+  , studentRegsToZPA
   ) where
 
 import Data.Aeson.Encode.Pretty
 import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.ByteString.Lazy.Internal as BS
+import Data.List (nub)
 import qualified Data.Map as M
 import GHC.Exts (sortWith)
 
@@ -101,4 +103,26 @@ planForStudents = encodePretty' config . planForStudentsExams
       defConfig
       { confCompare =
           keyOrder ["anCode", "name", "lecturerName", "date", "time"]
+      }
+
+-------------------------------------------------------------------------------
+-- Students for ZPA
+-------------------------------------------------------------------------------
+studentRegsToZPA :: Plan -> String
+studentRegsToZPA =
+  unpack .
+  encodePretty' config .
+  sortWith studentMtknr . nub . concatMap registeredStudents . allExams
+  where
+    config =
+      defConfig
+      { confCompare =
+          keyOrder
+            [ "studentMtknr"
+            , "studentFirstname"
+            , "studentFamilyname"
+            , "studentGroup"
+            , "studentAncodes"
+            , "studentHandicap"
+            ]
       }

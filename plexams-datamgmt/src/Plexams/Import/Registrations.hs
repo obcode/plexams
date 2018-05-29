@@ -90,29 +90,38 @@ instance Y.FromJSON ImportStudentRegs where
   parseJSON _ = empty
 
 data ImportStudentReg =
-  ImportStudentReg Integer
+  ImportStudentReg Text
+                   Text
                    Text
                    Text
                    Integer
 
 instance Y.FromJSON ImportStudentReg where
   parseJSON (Y.Object v) =
-    ImportStudentReg <$> v Y..: "mtknr" <*> v Y..: "name" <*> v Y..: "stg" <*>
+    ImportStudentReg <$> v Y..: "mtknr" <*> v Y..: "familyname" <*>
+    v Y..: "firstname" <*>
+    v Y..: "stg" <*>
     v Y..: "ancode"
   parseJSON _ = empty
 
 importStudentRegsToStudentsWithRegs :: [ImportStudentReg] -> StudentsWithRegs
 importStudentRegsToStudentsWithRegs = foldr insertStudent M.empty
   where
-    insertStudent (ImportStudentReg mtkNr name' stg ancode) =
+    insertStudent (ImportStudentReg mtkNr familyname' firstname' stg ancode) =
       M.alter
         (Just .
          maybe
-           (StudentWithRegs mtkNr name' stg [ancode] Nothing)
+           (StudentWithRegs mtkNr familyname' firstname' stg [ancode] Nothing)
            (addAncode ancode))
         mtkNr
-    addAncode ancode (StudentWithRegs mktNr name' stg ancodes maybeHandicap) =
-      StudentWithRegs mktNr name' stg (ancode : ancodes) maybeHandicap
+    addAncode ancode (StudentWithRegs mktNr familyname' firstname' stg ancodes maybeHandicap) =
+      StudentWithRegs
+        mktNr
+        familyname'
+        firstname'
+        stg
+        (ancode : ancodes)
+        maybeHandicap
 
 importStudentGroups :: SemesterConfig -> [ImportStudentRegs] -> StudentsWithRegs
 importStudentGroups config importStudentRegs =
@@ -121,7 +130,7 @@ importStudentGroups config importStudentRegs =
       removeGoOtherExams (ImportStudentRegs "GO" students') =
         filter ((`notElem` goOtherExams config) . ancode') students'
       removeGoOtherExams (ImportStudentRegs _ students') = students'
-      ancode' (ImportStudentReg _ _ _ a) = a
+      ancode' (ImportStudentReg _ _ _ _ a) = a
   in importStudentRegsToStudentsWithRegs allRegs
 
 importStudentsWithRegsFromYAMLFile ::

@@ -5,6 +5,7 @@ module Plexams.PlanManip.Room
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Text (Text)
 
 import Plexams.Types
 
@@ -15,7 +16,7 @@ applyAddRoomToExamListToPlan = foldr applyPlanManipToPlan
     applyPlanManipToPlan (AddRoomToExam a n s dd) = addRoomToExam a n s dd
 
 -- TODO: Reserve nach oben eingeplant?
-addRoomToExam :: Integer -> String -> [Integer] -> Maybe Integer -> Plan -> Plan
+addRoomToExam :: Integer -> String -> [Text] -> Maybe Integer -> Plan -> Plan
 addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration plan =
   if ancode `M.member` unscheduledExams plan
     then plan -- a room cannot be added to an unscheduled exam

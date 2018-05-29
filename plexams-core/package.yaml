@@ -1,5 +1,5 @@
 name: plexams-core
-version: '1.0.0.0'
+version: '1.0.1.0'
 synopsis: Core modules for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3

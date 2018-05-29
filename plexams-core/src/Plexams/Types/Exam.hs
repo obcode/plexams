@@ -38,6 +38,8 @@ data Exam = Exam
   , registeredGroups :: [RegisteredGroup]
   , conflictingAncodes :: M.Map Ancode Integer -- ^ Ancode maps to number of students with this conflict
   , handicapStudents :: [StudentWithRegs]
+  , sameRoom :: [Ancode]
+  , sameSlot :: [Ancode]
   } deriving (Eq, Generic)
 
 instance FromJSON Exam

@@ -10,8 +10,10 @@ module Plexams.Types.PlanManip
 
 import Control.Applicative (empty)
 import Data.Aeson
+import Data.Text (Text)
 import qualified Data.Yaml as Y
 import GHC.Generics
+
 import Plexams.Types.Common
 
 data AddExamToSlot = AddExamToSlot
@@ -27,7 +29,7 @@ instance FromJSON AddExamToSlot
 data AddRoomToExam = AddRoomToExam
   { addRoomAnCode :: Integer
   , addRoomRoomName :: String
-  , addRoomStudentsInRoom :: [Integer]
+  , addRoomStudentsInRoom :: [Text]
   , addRoomDeltaDuration :: Maybe Integer
   } deriving (Show)
 

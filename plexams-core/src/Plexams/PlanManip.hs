@@ -2,7 +2,6 @@
 
 module Plexams.PlanManip
   ( makePlan
-  , addConstraints
   , updateExamByAncodeWith
   -- , module Plexams.PlanManip.Exam
   , applyAddExamToSlotListToPlan
@@ -13,7 +12,7 @@ module Plexams.PlanManip
   ) where
 
 import Control.Arrow (second)
-import Data.List (partition)
+import Data.List (nub, partition)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as S
@@ -25,10 +24,16 @@ import Plexams.PlanManip.StudentRegs
 import Plexams.Types
 
 makePlan ::
-     [Exam] -> SemesterConfig -> Persons -> Maybe Students -> [Handicap] -> Plan
+     [Exam]
+  -> SemesterConfig
+  -> Persons
+  -> Maybe Students
+  -> [Handicap]
+  -> Constraints
+  -> Plan
 -- makePlan exams sc = addUnscheduledExams exams . makeEmptyPlan sc
 -- makePlan :: SemesterConfig -> Maybe Persons -> Plan
-makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
+makePlan exams'' semesterConfig' pers maybeStudents handicaps' constraints' =
   foldr
     addExamFromListToSlot
     Plan
@@ -36,7 +41,7 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
     , slots = slots'
     , unscheduledExams = unscheduledExams''
     , persons = pers
-    , constraints = noConstraints
+    , constraints = constraints'
     , students = fromMaybe M.empty maybeStudents -- TODO: remove this one
     , studentsExams = mkStudentsExams maybeStudents -- TODO: remove this one
     , handicaps = handicaps' -- TODO: remove this one
@@ -46,7 +51,14 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
     }
     (importedExams semesterConfig')
   where
-    exams' = map (setPerson pers) exams''
+    exams' = map (addConstraints . setPerson pers) exams''
+    addConstraints exam =
+      let ancode = anCode exam
+          onlyOtherAncodes a as =
+            filter (/= a) $ nub $ concat $ filter (a `elem`) as
+          sameRoom' = onlyOtherAncodes ancode $ inSameRoom constraints'
+          sameSlot' = onlyOtherAncodes ancode $ inSameSlot constraints'
+      in exam {sameRoom = sameRoom', sameSlot = sameSlot'}
     slots' =
       M.fromList $
       zip
@@ -91,9 +103,6 @@ makePlan exams'' semesterConfig' pers maybeStudents handicaps' =
              "person " ++
              show (personID pExam) ++
              " unknown (exam " ++ show (anCode exam) ++ ")"
-
-addConstraints :: Constraints -> Plan -> Plan
-addConstraints c p = p {constraints = c}
 
 updateExamByAncodeWith :: Plan -> Ancode -> (Exam -> Exam) -> Plan
 updateExamByAncodeWith plan ancode f

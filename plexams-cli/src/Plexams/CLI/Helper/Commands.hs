@@ -61,12 +61,17 @@ runCommand config@(Config PrepareStudents g iPath _) = do
     "# group: " ++ g ++ "\n" ++ intercalate "\n" students ++ "\n"
   where
     get fieldname = snd . head . filter (isSuffixOf fieldname . fst)
+    getName studentTupel =
+      let (family, first) = span (/= ',') $ get "NAME" studentTupel
+      in (family, dropWhile (== ' ') $ tail first)
     mkStudentsYaml studentTupel =
       "- mtknr: " ++
       get "MTKNR" studentTupel ++
       "\n" ++
-      "  name: " ++
-      get "NAME" studentTupel ++
+      "  familyname: " ++
+      fst (getName studentTupel) ++
+      "  firstname: " ++
+      snd (getName studentTupel) ++
       "\n" ++ "  ancode: " ++ get "ANCODE" studentTupel ++ "\n"
 runCommand config@(Config PrepareStudentRegs g iPath _) = do
   contents <- getContents' iPath
@@ -79,16 +84,19 @@ runCommand config@(Config PrepareStudentRegs g iPath _) = do
     "- group: " ++ g ++ "\n  students:\n" ++ intercalate "\n" students ++ "\n"
   where
     get fieldname = snd . head . filter (isSuffixOf fieldname . fst)
+    getName studentTupel =
+      let (family, first) = span (/= ',') $ get "NAME" studentTupel
+      in (family, dropWhile (== ' ') $ tail first)
     mkStudentsYaml studentTupel =
-      "  - mtknr: " ++
+      "  - mtknr: '" ++
       get "MTKNR" studentTupel ++
-      "\n" ++
-      "    name: " ++
-      get "NAME" studentTupel ++
-      "\n" ++
-      "    stg: " ++
+      "'\n    familyname: " ++
+      fst (getName studentTupel) ++
+      "\n    firstname: " ++
+      snd (getName studentTupel) ++
+      "\n    stg: " ++
       get "STG" studentTupel ++
-      "\n" ++ "    ancode: " ++ get "ANCODE" studentTupel ++ "\n"
+      "\n    ancode: " ++ get "ANCODE" studentTupel ++ "\n"
 runCommand config@(Config PrepareAncodes _ iPath _) = do
   contents <- getContents' iPath
   let examLines =

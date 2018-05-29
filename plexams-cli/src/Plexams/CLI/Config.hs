@@ -123,10 +123,18 @@ validateOpts =
 
 exportOpts :: Parser Command
 exportOpts =
-  Export <$> (zpaExport <|> handicapsExport <|> planForStudentsExport)
+  Export <$>
+  (zpaExport <|> handicapsExport <|> planForStudentsExport <|>
+   studentsForZPAExport)
 
 zpaExport :: Parser ExportWhat
 zpaExport = flag' ZPA (long "zpa" <> short 'z' <> help "export for ZPA")
+
+studentsForZPAExport :: Parser ExportWhat
+studentsForZPAExport =
+  flag'
+    StudentsForZPA
+    (long "students" <> short 's' <> help "export students for ZPA")
 
 handicapsExport :: Parser ExportWhat
 handicapsExport =

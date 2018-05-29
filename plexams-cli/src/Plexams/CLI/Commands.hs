@@ -109,6 +109,7 @@ export config plan =
           print valRes
     Export Handicaps -> stdoutOrFile config $ exportHandicaps plan
     Export PlanForStudents -> stdoutOrFileBS config $ planForStudents plan
+    Export StudentsForZPA -> stdoutOrFile config $ studentRegsToZPA plan
       -- TODO: Validate
     _ -> error "unsupported command"
 

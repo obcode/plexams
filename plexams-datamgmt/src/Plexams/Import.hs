@@ -70,14 +70,21 @@ importPlan' semesterConfig' = do
   let maybeStudents = Nothing -- TODO: still needed?
       handicaps'' = []
   -- make the initial plan
-      plan' = makePlan exams' semesterConfig' persons' maybeStudents handicaps''
   -- add constraints
   constraints' <-
     maybe
       (tell ["constraints file not readable"] >> return noConstraints)
       (importFromFilePath importConstraintsFromYAMLFile noConstraints) $
     constraintsFile files'
-  let planWithConstraints = addConstraints constraints' plan'
+  -- let planWithConstraints = addConstraints constraints' plan'
+  let plan' =
+        makePlan
+          exams'
+          semesterConfig'
+          persons'
+          maybeStudents
+          handicaps''
+          constraints'
   -- add students registrations
   studentWithRegs' <-
     maybe
@@ -93,8 +100,7 @@ importPlan' semesterConfig' = do
       (importFromFilePath importHandicapsFromYAMLFile []) $
     handicapsFile files'
   let studentWithRegs'' = addHandicaps studentWithRegs' handicaps'
-      planWithRegs =
-        addStudentRegistrationsToPlan studentWithRegs'' planWithConstraints
+      planWithRegs = addStudentRegistrationsToPlan studentWithRegs'' plan'
   -- let planWithHandicaps = addHandicaps handicaps' planWithRegs
   -- add PlanManip ExamToSlot
   addExamsToSlots <-
