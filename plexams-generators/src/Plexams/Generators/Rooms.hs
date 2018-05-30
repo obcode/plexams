@@ -60,7 +60,11 @@ setNormalRoomsOnSlot rooms' exams' = do
   case exams'' of
     [] -> return exams'
     (nextExam:sortedExams) ->
-      let seatsMissing'' = seatsMissing' nextExam
+      let seatsMissing'' =
+            seatsMissing' nextExam +
+            sum (map seatsMissing' otherExamsInSameRoom)
+          (otherExamsInSameRoom, otherExams) =
+            partition ((`elem` sameRoom nextExam) . anCode) sortedExams
           nextOwnRoomAtFront = dropWhile availableRoomNeedsRequest rooms'
           (room:rooms'') =
             if null nextOwnRoomAtFront
@@ -70,10 +74,11 @@ setNormalRoomsOnSlot rooms' exams' = do
                         then nextOwnRoomAtFront
                         else rooms'
       in if seatsMissing'' <= 0
-           then return sortedExams
+           then return otherExams
            else do
-             exam' <- setRoomOnExam nextExam room
-             setNormalRoomsOnSlot rooms'' (exam' : sortedExams)
+             examsWithRoom <-
+               mapM (`setRoomOnExam` room) $ nextExam : otherExamsInSameRoom
+             setNormalRoomsOnSlot rooms'' $ examsWithRoom ++ otherExams
 
 setRoomOnExam :: Exam -> AvailableRoom -> Writer [AddRoomToExam] Exam
 setRoomOnExam exam availableRoom = do
