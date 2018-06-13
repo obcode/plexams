@@ -46,8 +46,9 @@ setRoomsOnSlot ::
 setRoomsOnSlot usedInSlotBefore ((n, nR, h), e) =
   (\(r', a) -> (a, r')) $
   runWriter $ do
-    _ <- setNormalRoomsOnSlot n nR e
-    setHandicapRoomsOnSlot usedInSlotBefore h e
+    (_, doNotUseInNextSlot) <- setNormalRoomsOnSlot usedInSlotBefore [] n nR e
+    usedInThisSlot <- setHandicapRoomsOnSlot usedInSlotBefore h e
+    return $ doNotUseInNextSlot ++ usedInThisSlot
 
 handicapInNormalRoom :: Exam -> Bool
 handicapInNormalRoom _ = False
@@ -68,35 +69,41 @@ seatsMissing' exam =
 setNormalRoomsOnSlot ::
      [AvailableRoom]
   -> [AvailableRoom]
+  -> [AvailableRoom]
+  -> [AvailableRoom]
   -> [Exam]
-  -> Writer [AddRoomToExam] [Exam]
-setNormalRoomsOnSlot [] [] e =
+  -> Writer [AddRoomToExam] ([Exam], [AvailableRoom])
+setNormalRoomsOnSlot _ _ [] [] e =
   error $ "no normal rooms left for slot\n" ++ show e
-setNormalRoomsOnSlot ownRooms requestRooms exams' = do
-  let exams'' = sortBy (comparing (Down . seatsMissing')) exams'
-  case exams'' of
-    [] -> return exams'
-    (nextExam:sortedExams) ->
-      let seatsMissing'' =
-            seatsMissing' nextExam +
-            sum (map seatsMissing' otherExamsInSameRoom)
-          (otherExamsInSameRoom, otherExams) =
-            partition ((`elem` sameRoom nextExam) . anCode) sortedExams
-          (room, ownRooms', requestRooms') =
-            if null ownRooms
-              then error $ "no own rooms left for slot\n" ++ show nextExam
-              else let room' = head ownRooms
-                   in if seatsMissing'' <= availableRoomMaxSeats room' ||
-                         null requestRooms
-                        then (room', tail ownRooms, requestRooms)
-                        else (head requestRooms, ownRooms, tail requestRooms)
-      in if seatsMissing'' <= 0
-           then return otherExams
-           else do
-             examsWithRoom <-
-               mapM (`setRoomOnExam` room) $ nextExam : otherExamsInSameRoom
-             setNormalRoomsOnSlot ownRooms' requestRooms' $
-               examsWithRoom ++ otherExams
+setNormalRoomsOnSlot _ usedInThisSlot _ _ [] = return ([], usedInThisSlot)
+setNormalRoomsOnSlot usedInSlotBefore usedInThisSlot ownRooms'' requestRooms'' exams' = do
+  let (nextExam:sortedExams) = sortBy (comparing (Down . seatsMissing')) exams'
+      ownRooms = ownRooms'' \\ usedInSlotBefore
+      requestRooms = requestRooms'' \\ usedInSlotBefore
+      seatsMissing'' =
+        seatsMissing' nextExam + sum (map seatsMissing' otherExamsInSameRoom)
+      (otherExamsInSameRoom, otherExams) =
+        partition ((`elem` sameRoom nextExam) . anCode) sortedExams
+      (room, ownRooms', requestRooms') =
+        if null ownRooms
+          then error $ "no own rooms left for slot\n" ++ show nextExam
+          else let room' = head ownRooms
+               in if seatsMissing'' <= availableRoomMaxSeats room' ||
+                     null requestRooms
+                    then (room', tail ownRooms, requestRooms)
+                    else (head requestRooms, ownRooms, tail requestRooms)
+      usedInThisSlot' = usedInThisSlot
+  if seatsMissing'' <= 0
+    then return (otherExams, usedInThisSlot')
+    else do
+      examsWithRoom <-
+        mapM (`setRoomOnExam` room) $ nextExam : otherExamsInSameRoom
+      setNormalRoomsOnSlot
+        usedInSlotBefore
+        usedInThisSlot'
+        ownRooms'
+        requestRooms' $
+        examsWithRoom ++ otherExams
 
 setRoomOnExam :: Exam -> AvailableRoom -> Writer [AddRoomToExam] Exam
 setRoomOnExam exam availableRoom = do
