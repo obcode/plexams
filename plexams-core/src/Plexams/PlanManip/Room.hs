@@ -9,15 +9,16 @@ import Data.Text (Text)
 
 import Plexams.Types
 
--- TODO: check: Add room NOT before the exam schedule is frozen
 applyAddRoomToExamListToPlan :: Plan -> [AddRoomToExam] -> Plan
 applyAddRoomToExamListToPlan = foldr applyPlanManipToPlan
   where
-    applyPlanManipToPlan (AddRoomToExam a n s dd) = addRoomToExam a n s dd
+    applyPlanManipToPlan (AddRoomToExam a n s dd nta) =
+      addRoomToExam a n s dd nta
 
 -- TODO: Reserve nach oben eingeplant?
-addRoomToExam :: Integer -> String -> [Text] -> Maybe Integer -> Plan -> Plan
-addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration plan =
+addRoomToExam ::
+     Integer -> String -> [Text] -> Maybe Integer -> Bool -> Plan -> Plan
+addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration nta plan =
   if ancode `M.member` unscheduledExams plan
     then plan -- a room cannot be added to an unscheduled exam
        -- exam is scheduled (or unknown)
@@ -41,9 +42,10 @@ addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration plan =
                , deltaDuration = fromMaybe 0 maybeDeltaDuration
                , invigilator = Nothing
                , reserveRoom =
-                   not (availableRoomHandicap availableRoom) &&
+                   not nta &&
                    (toInteger (length studsInRoom) < registrations exam `div` 5)
-               , handicapCompensation = availableRoomHandicap availableRoom
+               , handicapCompensation =
+                   availableRoomHandicap availableRoom || nta
                , studentsInRoom = studsInRoom
                }
     -- step 3: add room to exam and put new exam into correct slot
