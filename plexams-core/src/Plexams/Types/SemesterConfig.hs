@@ -178,4 +178,4 @@ type AvailableRooms
    = M.Map (DayIndex, SlotIndex)
                             -- ( Normale Räume (absteigend sortiert nach Größe)
                             -- , Handicap Räume)
-      ([AvailableRoom], [AvailableRoom])
+      ([AvailableRoom], [AvailableRoom], [AvailableRoom])

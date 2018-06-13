@@ -74,17 +74,21 @@ mkAvailableRooms plan rooms' =
   let slots' = M.keys $ slots plan
       (handicapCompensationRooms', normalRooms') =
         partition availableRoomHandicap rooms'
-      (normalRoomsNeedRequest, normalOwnRooms) =
+      (normalRoomsNeedRequest', normalOwnRooms') =
         partition availableRoomNeedsRequest normalRooms'
-      normalRooms =
-        sortBy (comparing availableRoomMaxSeats) normalRoomsNeedRequest ++
-        sortBy (comparing (Down . availableRoomMaxSeats)) normalOwnRooms
+      normalRoomsNeedRequest =
+        sortBy (comparing availableRoomMaxSeats) normalRoomsNeedRequest'
+      normalOwnRooms =
+        sortBy (comparing (Down . availableRoomMaxSeats)) normalOwnRooms'
       handicapCompensationRooms =
         sortBy (comparing availableRoomMaxSeats) handicapCompensationRooms'
       roomSlots' = roomSlots $ constraints plan
       allAvailableRooms =
         M.fromList $
-        zip slots' $ concat $ repeat [(normalRooms, handicapCompensationRooms)]
+        zip slots' $
+        concat $
+        repeat
+          [(normalOwnRooms, normalRoomsNeedRequest, handicapCompensationRooms)]
       filterNotRoomID roomID' = filter ((/= roomID') . availableRoomName)
       removeRoomFromAllOtherSlots ::
            RoomID -> [(DayIndex, SlotIndex)] -> AvailableRooms -> AvailableRooms
@@ -93,8 +97,11 @@ mkAvailableRooms plan rooms' =
           (M.alter
              (maybe
                 Nothing
-                (\(nr, hr) ->
-                   Just (filterNotRoomID roomID' nr, filterNotRoomID roomID' hr))))
+                (\(nr, nrR, hr) ->
+                   Just
+                     ( filterNotRoomID roomID' nr
+                     , nrR
+                     , filterNotRoomID roomID' hr))))
           allRooms $
         slots' \\ slots''
   in foldr

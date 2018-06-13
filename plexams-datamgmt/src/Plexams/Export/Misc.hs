@@ -13,7 +13,6 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import Data.List (intercalate)
 import GHC.Exts (sortWith)
 
--- import           Plexams.PlanManip          (setHandicapsOnScheduledExams)
 import Plexams.Types
 
 --------------------------------------------------------------------------------
@@ -39,7 +38,7 @@ exportAddRoomToExams :: [AddRoomToExam] -> String
 exportAddRoomToExams = intercalate "\n" . map exportAddRoomToExam
 
 exportAddRoomToExam :: AddRoomToExam -> String
-exportAddRoomToExam (AddRoomToExam a r s d) =
+exportAddRoomToExam (AddRoomToExam a r s d nta) =
   "- ancode: " ++
   show a ++
   "\n  room: " ++
@@ -48,7 +47,11 @@ exportAddRoomToExam (AddRoomToExam a r s d) =
   show s ++
   (case d of
      Nothing -> ""
-     Just dd -> "\n  deltaDuration: " ++ show dd)
+     Just dd -> "\n  deltaDuration: " ++ show dd) ++
+  "\n  nta: " ++
+  if nta
+    then "true"
+    else "false"
 
 --------------------------------------------------------------------------------
 -- Export AddRoomToExam to Yaml

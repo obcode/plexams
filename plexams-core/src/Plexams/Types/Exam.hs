@@ -35,6 +35,7 @@ data Exam = Exam
   , examType :: ExamType -- ^ Typ der Prüfung aus ZPA
   , slot :: Maybe (Int, Int) -- ^ (Tag, Slot)
   , registeredStudents :: [StudentWithRegs]
+  , registeredStudentsCount :: Integer
   , registeredGroups :: [RegisteredGroup]
   , conflictingAncodes :: M.Map Ancode Integer -- ^ Ancode maps to number of students with this conflict
   , handicapStudents :: [StudentWithRegs]

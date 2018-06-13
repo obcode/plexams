@@ -31,13 +31,15 @@ data AddRoomToExam = AddRoomToExam
   , addRoomRoomName :: String
   , addRoomStudentsInRoom :: [Text]
   , addRoomDeltaDuration :: Maybe Integer
+  , addRoomNTA :: Bool
   } deriving (Show)
 
 instance Y.FromJSON AddRoomToExam where
   parseJSON (Y.Object v) =
     AddRoomToExam <$> v Y..: "ancode" <*> v Y..: "room" <*>
     v Y..: "studentsInRoom" <*>
-    v Y..:? "deltaDuration" Y..!= Nothing
+    v Y..:? "deltaDuration" Y..!= Nothing <*>
+    v Y..:? "nta" Y..!= False
   parseJSON _ = empty
 
 data AddInvigilatorToRoomOrSlot = AddInvigilatorToRoomOrSlot
