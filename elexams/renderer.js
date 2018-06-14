@@ -103,6 +103,8 @@ let _fetchExams = function () {
         <th class="examList">Dauer</th>
         <th class="examList">Wiederholungsklausur</th>
         <th class="examList">Tag</th>
+        <th class="examList">Anmeldungen</th>
+        <th class="examList">NTA</th>
         <th class="examList">Gruppen</th>
      </tr>
      </thead>
@@ -117,7 +119,14 @@ let _fetchExams = function () {
              <td class="examList">${exam.duration}</td>
              <td class="examList">${exam.reExam}</td>
              <td class="examList">${exam.slot ? exam.slot : '-'}</td>
-             <td class="examList">`
+             <td class="examList">${exam.registeredStudentsCount}</td>`
+      if (exam.handicapStudents.length > 0) {
+        const l = exam.handicapStudents.length
+        output += `<td class="examList">${l}</td>`
+      } else {
+        output += `<td class="examList"></td>`
+      }
+      output += `<td class="examList">`
       for (let g in exam.registeredGroups) {
         let group = exam.registeredGroups[g]
         output += `${group.registeredGroupDegree}(${group.registeredGroupStudents}), `
@@ -326,7 +335,7 @@ let _fetchExamDays = function () {
                              onclick="viewDetails(event, ${exam.anCode})"
                              title="${exam.anCode}"
                              onmouseover="">
-                             ${exam.anCode}. `
+                             ${exam.anCode}. (${exam.registeredStudentsCount})`
                   for (let g in exam.registeredGroups) {
                     const group = exam.registeredGroups[g]
                     output += `<span class="${group.registeredGroupDegree}">

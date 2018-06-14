@@ -50,6 +50,7 @@ addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
          fmap $ \e ->
            e
            { registeredStudents = studentWithReg' : registeredStudents e
+           , registeredStudentsCount = 1 + registeredStudentsCount e
            , registeredGroups =
                RegisteredGroup (studentGroup studentWithReg) 1 :
                registeredGroups e

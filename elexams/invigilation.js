@@ -92,7 +92,7 @@ const openInvigilationContent = (dayIndex) => {
                     invigilator = room.invigilator
                     output += ' hasInvigilator'
                   }
-                  output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}')"
+                  output += `" onclick="openModal('modal-${exam.anCode}-${room.roomID}-${room.studentsInRoom.length}')"
                                 ondrop="dropInvigilator(event, ${exam.slot}, '${room.roomID}')" ondragover="allowDrop(event)">
                                 ${exam.anCode}. ${exam.name}<br>
                                 Prüfer: ${exam.lecturer.personShortName}<br>
@@ -107,9 +107,9 @@ const openInvigilationContent = (dayIndex) => {
                     output += ` <span class="NTA">(NTA)</span>`
                   }
                   output += `</div></td>`
-                  modalOutput += `<div id="modal-${exam.anCode}-${room.roomID}" class="modal">
+                  modalOutput += `<div id="modal-${exam.anCode}-${room.roomID}-${room.studentsInRoom.length}" class="modal">
                                     <div class="modal-content">
-                                      <span id="modal-${exam.anCode}-${room.roomID}-close">&times;</span>
+                                      <span id="modal-${exam.anCode}-${room.roomID}-${room.studentsInRoom.length}-close">&times;</span>
                                       <h2>${room.roomID}: ${exam.anCode}. ${exam.name}, ${exam.lecturer.personShortName}`
                   if (room.reserveRoom) {
                     modalOutput += ` <span class="Reserve">(Reserve)</span>`
@@ -128,7 +128,7 @@ const openInvigilationContent = (dayIndex) => {
                   modalOutput += `<ol class="studentList">`
                   for (let s in room.studentsInRoom) {
                     const student = room.studentsInRoom[s]
-                    modalOutput += `<li> ${student.studentName}`
+                    modalOutput += `<li> ${student.studentFamilyname}, ${student.studentFirstname}`
                     if (student.studentHandicap !== null) {
                       modalOutput += ` (${student.studentHandicap.handicapCompensationText})`
                     }
