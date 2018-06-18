@@ -13,13 +13,20 @@ import Plexams.Types
 applyAddRoomToExamListToPlan :: Plan -> [AddRoomToExam] -> Plan
 applyAddRoomToExamListToPlan = foldr applyPlanManipToPlan
   where
-    applyPlanManipToPlan (AddRoomToExam a n s dd nta) =
-      addRoomToExam a n s dd nta
+    applyPlanManipToPlan (AddRoomToExam a n s dd nta r) =
+      addRoomToExam a n s dd nta r
 
 -- TODO: Reserve nach oben eingeplant?
 addRoomToExam ::
-     Integer -> String -> [Text] -> Maybe Integer -> Bool -> Plan -> Plan
-addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration nta plan =
+     Integer
+  -> String
+  -> [Text]
+  -> Maybe Integer
+  -> Bool
+  -> Bool
+  -> Plan
+  -> Plan
+addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration nta reserve plan =
   if ancode `M.member` unscheduledExams plan
     then plan -- a room cannot be added to an unscheduled exam
        -- exam is scheduled (or unknown)
@@ -43,6 +50,7 @@ addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration nta plan =
                , deltaDuration = fromMaybe 0 maybeDeltaDuration
                , invigilator = Nothing
                , reserveRoom =
+                   reserve ||
                    not nta &&
                    (toInteger (length studsInRoom) < registrations exam `div` 5)
                , handicapCompensation =
