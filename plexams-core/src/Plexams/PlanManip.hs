@@ -43,7 +43,11 @@ makePlan exams'' semesterConfig' pers constraints' =
             filter (/= a) $ nub $ concat $ filter (a `elem`) as
           sameRoom' = onlyOtherAncodes ancode $ inSameRoom constraints'
           sameSlot' = onlyOtherAncodes ancode $ inSameSlot constraints'
-      in exam {sameRoom = sameRoom', sameSlot = sameSlot'}
+      in exam
+         { sameRoom = sameRoom'
+         , sameSlot = sameSlot'
+         , shareRoom = ancode `notElem` doNotShareRoom constraints'
+         }
     slots' =
       M.fromList $
       zip

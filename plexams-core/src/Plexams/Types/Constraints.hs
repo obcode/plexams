@@ -16,21 +16,24 @@ data Constraints = Constraints
   { overlaps :: [Overlaps]
   , notOnSameDay :: [[Ancode]]
   , inSameSlot :: [[Ancode]]
-  , inSameRoom :: [[Ancode]]
   , onOneOfTheseDays :: [(Ancode, [Int])]
   , fixedSlot :: [(Ancode, (Int, Int))]
+  -- room constraints
+  , inSameRoom :: [[Ancode]]
+  , roomSlots :: M.Map RoomID [(DayIndex, SlotIndex)]
+  , doNotShareRoom :: [Ancode]
+  -- invigilation constraints
   , noInvigilations :: [PersonID]
   , noInvigilationDays :: [(PersonID, [DayIndex])]
   , invigilatesExam :: [(Ancode, PersonID)]
   , impossibleInvigilationSlots :: [(PersonID, [(Int, Int)])]
-  , roomSlots :: M.Map RoomID [(DayIndex, SlotIndex)]
   } deriving (Show, Eq, Generic)
 
 instance ToJSON Constraints where
   toEncoding = genericToEncoding defaultOptions
 
 noConstraints :: Constraints
-noConstraints = Constraints [] [] [] [] [] [] [] [] [] [] M.empty
+noConstraints = Constraints [] [] [] [] [] [] M.empty [] [] [] [] []
 
 data Overlaps = Overlaps
   { olGroup :: Group

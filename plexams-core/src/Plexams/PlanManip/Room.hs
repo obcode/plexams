@@ -6,6 +6,7 @@ import Data.List (partition)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
+import GHC.Exts (sortWith)
 
 import Plexams.Types
 
@@ -46,7 +47,7 @@ addRoomToExam ancode roomName studentsInRoom' maybeDeltaDuration nta plan =
                    (toInteger (length studsInRoom) < registrations exam `div` 5)
                , handicapCompensation =
                    availableRoomHandicap availableRoom || nta
-               , studentsInRoom = studsInRoom
+               , studentsInRoom = sortWith studentFamilyname studsInRoom
                }
     -- step 3: add room to exam and put new exam into correct slot
          in plan

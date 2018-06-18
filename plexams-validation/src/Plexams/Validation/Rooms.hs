@@ -23,6 +23,7 @@ validate plan = do
   stillReserveForExams <- validationStillReserveForExams plan
   differentRoomsInSlot <- validateDifferentRoomsInSlots plan
   noStudentLeftOutsideRoom <- validateNoStudentLeftOutsideRoom plan
+  -- TODO: roomSlots eingehalten, inSameRoom eingehalten?
   return $
     validationResult
       [ enoughRoomsForExams
@@ -104,7 +105,7 @@ validationStillReserveForExam exam = do
       return SoftConstraintsBroken
     else return EverythingOk
 
--- TODO: nochmal überarbeiten
+-- TODO: sameRoom, ntainnormalroom
 validateDifferentRoomsInSlots ::
      Plan -> Writer [ValidationRecord] ValidationResult
 validateDifferentRoomsInSlots plan = do
