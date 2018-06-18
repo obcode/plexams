@@ -87,6 +87,7 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
       , handicapStudents = []
       , sameRoom = []
       , sameSlot = []
+      , shareRoom = True
       }
 
 -- }}}
@@ -102,6 +103,7 @@ data ImportConstraints =
                     (Maybe [[Integer]])
                     (Maybe [ImpossibleInvigilation])
                     (Maybe [RoomOnlyForSlots])
+                    (Maybe [Ancode])
 
 instance Y.FromJSON ImportConstraints where
   parseJSON (Y.Object v) =
@@ -113,7 +115,8 @@ instance Y.FromJSON ImportConstraints where
     v Y..:? "noInvigilationDays" <*>
     v Y..:? "invigilatesExam" <*>
     v Y..:? "impossibleInvigilationSlots" <*>
-    v Y..:? "roomOnlyForSlots"
+    v Y..:? "roomOnlyForSlots" <*>
+    v Y..:? "doNotShareRoom"
   parseJSON _ = empty
 
 data ImpossibleInvigilation =
@@ -139,7 +142,7 @@ instance Y.FromJSON RoomOnlyForSlots where
   parseJSON _ = empty
 
 importConstraintsToConstraints :: ImportConstraints -> Constraints
-importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots) =
+importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots icDoNotShareRoom) =
   Constraints
   { overlaps = []
   , notOnSameDay = fromMaybe [] iCNotOnSameDay
@@ -166,6 +169,7 @@ importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iC
         M.empty
         (M.fromList . map roomOnlyForSlotsToTuple)
         iCRoomOnlyForSlots
+  , doNotShareRoom = fromMaybe [] icDoNotShareRoom
   }
 
 iIToSlots :: ImpossibleInvigilation -> (PersonID, [(Int, Int)])

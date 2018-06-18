@@ -41,6 +41,7 @@ data Exam = Exam
   , handicapStudents :: [StudentWithRegs]
   , sameRoom :: [Ancode]
   , sameSlot :: [Ancode]
+  , shareRoom :: Bool
   } deriving (Eq, Generic)
 
 instance FromJSON Exam
