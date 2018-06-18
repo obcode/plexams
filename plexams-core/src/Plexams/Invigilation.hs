@@ -6,7 +6,6 @@ module Plexams.Invigilation
   , sumPercentInvigilator
   , sumPercentAllInvigilators
   , hundertPercentInMinutes
-  , removeInvigilatorsWithEnough
   , invigilatorsWithMinutesPlanned
   , invigilatorAddMinutes
   , addInvigilatorsPerDay
@@ -119,20 +118,19 @@ hundertPercentInMinutes plan =
       sumPercentInvigilators = sumPercentAllInvigilators plan
   in overallSum * 100 `div` sumPercentInvigilators
 
-removeInvigilatorsWithEnough :: Plan -> Plan
-removeInvigilatorsWithEnough plan =
-  let hundertPercentInMinutes' = hundertPercentInMinutes plan
-  in plan
-     { invigilators =
-         M.filter
-           (\invigilator' ->
-              invigilatorOralExams invigilator' + invigilatorMaster invigilator' +
-              invigilatorLiveCoding invigilator' <
-              sumPercentInvigilator invigilator' * hundertPercentInMinutes' `div`
-              100) $
-         invigilators plan
-     }
-
+-- removeInvigilatorsWithEnough :: Plan -> Plan
+-- removeInvigilatorsWithEnough plan =
+--   let hundertPercentInMinutes' = hundertPercentInMinutes plan
+--   in plan
+--      { invigilators =
+--          M.filter
+--            (\invigilator' ->
+--               invigilatorOralExams invigilator' + invigilatorMaster invigilator' +
+--               invigilatorLiveCoding invigilator' <
+--               sumPercentInvigilator invigilator' * hundertPercentInMinutes' `div`
+--               100) $
+--          invigilators plan
+--      }
 invigilatorsWithMinutesPlanned :: Plan -> M.Map PersonID Integer
 invigilatorsWithMinutesPlanned plan =
   let reserves :: [(PersonID, Integer)]
@@ -166,9 +164,10 @@ invigilatorsWithMinutesPlanned plan =
      groupWith fst $ reserves ++ examsDurations
 
 invigilatorAddMinutes :: Plan -> Plan
-invigilatorAddMinutes plan =
-  let plan' = removeInvigilatorsWithEnough plan
-      invigilatorsWithMinutesPlanned' = invigilatorsWithMinutesPlanned plan
+invigilatorAddMinutes plan
+      -- plan' = removeInvigilatorsWithEnough plan
+ =
+  let invigilatorsWithMinutesPlanned' = invigilatorsWithMinutesPlanned plan
       hundertPercentInMinutes' = hundertPercentInMinutes plan
       invigilatorsWithMinutes =
         M.map
@@ -186,8 +185,8 @@ invigilatorAddMinutes plan =
                    (invigilatorID invigilator')
                    invigilatorsWithMinutesPlanned'
              }) $
-        invigilators plan'
-  in plan' {invigilators = invigilatorsWithMinutes}
+        invigilators plan
+  in plan {invigilators = invigilatorsWithMinutes}
 
 invigilatorsPlanned :: Plan -> [PersonID]
 invigilatorsPlanned plan =
