@@ -46,8 +46,7 @@ instance ToJSON Plan where
   toEncoding = genericToEncoding defaultOptions
 
 scheduledExams :: Plan -> [Exam]
-scheduledExams plan =
-  concatMap (M.elems . examsInSlot . snd) $ M.toList $ slots plan
+scheduledExams plan = concatMap (M.elems . examsInSlot) $ M.elems $ slots plan
 
 allExams :: Plan -> [Exam]
 allExams plan =
