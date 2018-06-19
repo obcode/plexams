@@ -299,10 +299,10 @@ let fetchInvigilators = () => {
              <td class="invigilatorList">${i}</td>
              <td class="invigilatorList">${invigilator.invigilatorID}</td>
              <td class="invigilatorList">${invigilator.invigilatorName}</td>
-             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorExamDays}">${invigilator.invigilatorExamDays}</td>
-             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorWantDays}">${invigilator.invigilatorWantDays}</td>
-             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorCanDays}">${invigilator.invigilatorCanDays}</td>
-             <td class="invigilatorList invigilatorListContent${invigilator.invigilatorExcludedDays}">${invigilator.invigilatorExcludedDays}</td>
+             <td class="invigilatorList">${invigilator.invigilatorExamDays}</td>
+             <td class="invigilatorList">${invigilator.invigilatorWantDays}</td>
+             <td class="invigilatorList">${invigilator.invigilatorCanDays}</td>
+             <td class="invigilatorList">${invigilator.invigilatorExcludedDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorInvigilationDays}">${invigilator.invigilatorInvigilationDays}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorMinutesTodo}">${invigilator.invigilatorMinutesTodo}</td>
              <td class="invigilatorList invigilatorListContent${invigilator.invigilatorsMinutesPlanned}">${invigilator.invigilatorsMinutesPlanned}</td>`
