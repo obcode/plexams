@@ -16,7 +16,7 @@ module Plexams.Invigilation
   ) where
 
 import Control.Arrow ((&&&), (***))
-import Data.List ((\\), elemIndex, nub)
+import Data.List ((\\), elemIndex, nub, partition)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.Text (Text, append, unpack)
@@ -41,8 +41,24 @@ mkInvigilations plan =
   let sumExams =
         sum $
         concatMap
-          (\exam -> map ((+ duration exam) . deltaDuration) $ rooms exam) $
-        scheduledExams plan
+          (map snd .
+           removeDoubleRooms .
+           concatMap
+             (\exam ->
+                map (\room -> (roomID room, duration exam + deltaDuration room)) $
+                rooms exam) .
+           M.elems . examsInSlot) $
+        M.elems $ slots plan
+        -- scheduledExams plan
+      removeDoubleRooms :: [(RoomID, Duration)] -> [(RoomID, Duration)]
+      removeDoubleRooms =
+        foldr
+          (\room@(r, d) rWithD ->
+             let (roomsAlreadyIn, otherRooms) = partition ((== r) . fst) rWithD
+             in if null roomsAlreadyIn || snd (head roomsAlreadyIn) < d
+                  then room : otherRooms
+                  else rWithD)
+          []
       sumReserve =
         sum $
         map
