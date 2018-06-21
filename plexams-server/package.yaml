@@ -1,5 +1,5 @@
 name: plexams-server
-version: '1.0.3.0'
+version: '1.0.4.0'
 synopsis: Server for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3

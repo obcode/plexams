@@ -1,5 +1,5 @@
 name: plexams-cli
-version: '1.0.3.0'
+version: '1.0.4.0'
 synopsis: Command line interface for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3
