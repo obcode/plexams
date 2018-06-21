@@ -4,17 +4,18 @@ module Plexams.Validation.Invigilation
   ( validate
   ) where
 
-import Control.Arrow ((&&&), second)
+import Control.Arrow ((&&&), (***), first, second)
 import Control.Monad.Writer
 import Data.List ((\\), intersect, nub)
 import qualified Data.Map as M
-import Data.Maybe (catMaybes, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, isNothing, mapMaybe)
 import Data.Text (append, pack)
 import GHC.Exts (groupWith, sortWith)
 
 import TextShow (showt)
 
 import Plexams.Invigilation
+import Plexams.Query (queryByLecturerID)
 import Plexams.Types
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
@@ -90,16 +91,62 @@ validateInvigilator plan' = do
   validationResult <$>
     mapM
       (\invigID ->
-         validateInvigilator' plan invigID (invigilationsOfPerson invigID))
+         validateInvigilator'
+           plan
+           invigID
+           (invigilationsOfPerson invigID)
+           (examsThatShareRooms plan))
       (nub (reserveInvigilatorIds ++ invigilatorInRoomIds ++ invigilatorIds))
+
+examsShareRoom :: Exam -> Exam -> Bool
+examsShareRoom e1 e2 =
+  let roomIDs = map roomID . rooms
+  in not $ null $ roomIDs e1 `intersect` roomIDs e2
+
+examsWithSharedRoom :: [Exam] -> [Exam]
+examsWithSharedRoom es =
+  nub $ concat [[e1, e2] | e1 <- es, e2 <- es, e1 /= e2, examsShareRoom e1 e2]
+
+mkSharedRoomsMap :: [[Exam]] -> M.Map (Ancode, RoomID) [Exam]
+mkSharedRoomsMap =
+  foldr
+    (\exams sharedRoomsMap ->
+       foldr
+         (\exam sharedRoomsMap' ->
+            let ac = anCode exam
+                otherExams = exams \\ [exam]
+            in foldr
+                 ((\roomID' sharedRoomsMap'' ->
+                     let otherExamsWithSameRoom =
+                           filter
+                             ((roomID' `elem`) . map roomID . rooms)
+                             otherExams
+                     in if null otherExamsWithSameRoom
+                          then sharedRoomsMap'
+                          else M.insert
+                                 (ac, roomID')
+                                 otherExamsWithSameRoom
+                                 sharedRoomsMap'') .
+                  roomID)
+                 sharedRoomsMap' $
+               rooms exam)
+         sharedRoomsMap
+         exams)
+    M.empty
+
+examsThatShareRooms :: Plan -> M.Map (Ancode, RoomID) [Exam]
+examsThatShareRooms =
+  mkSharedRoomsMap .
+  map (examsWithSharedRoom . M.elems . examsInSlot) . M.elems . slots
 
 validateInvigilator' ::
      Plan
   -> PersonID
   -> [Invigilation]
+  -> M.Map (Ancode, RoomID) [Exam]
   -> Writer [ValidationRecord] ValidationResult
-validateInvigilator' _ _ [] = return EverythingOk -- ?
-validateInvigilator' plan invigilatorID' invigilations' = do
+validateInvigilator' _ _ [] _ = return EverythingOk -- ?
+validateInvigilator' plan invigilatorID' invigilations' examsThatShareRoomsMap = do
   let maybeInvigilator = M.lookup invigilatorID' $ invigilators plan
   case maybeInvigilator of
     Nothing -> do
@@ -111,107 +158,18 @@ validateInvigilator' plan invigilatorID' invigilations' = do
       return SoftConstraintsBroken
     Just invigilator' -> do
       let invigilationDays = nub $ map invigilationDay invigilations'
-          maxThreeDays =
-            if length invigilationDays <= 3
-              then EverythingOk
-              else SoftConstraintsBroken
-      unless (maxThreeDays == EverythingOk) $
-        tell
-          [ SoftConstraintBroken $
-            "- " `append` invigilatorName invigilator' `append`
-            " invigilations on more than three days: " `append`
-            showt invigilationDays
-          ]
-      let daysOk
-            | null (invigilationDays \\ invigilatorWantDays invigilator') =
-              EverythingOk
-            | null
-               ((invigilationDays \\ invigilatorWantDays invigilator') \\
-                invigilatorCanDays invigilator') = SoftConstraintsBroken
-            | otherwise = HardConstraintsBroken
-      when (daysOk == HardConstraintsBroken) $
-        tell
-          [ HardConstraintBroken $
-            "- " `append` invigilatorName invigilator' `append`
-            " invigilations on wrong days: " `append`
-            showt invigilationDays
-          ]
-      when (daysOk == SoftConstraintsBroken) $
-        tell
-          [ SoftConstraintBroken $
-            "- " `append` invigilatorName invigilator' `append`
-            " invigilations on can days: " `append`
-            showt invigilationDays
-          ]
-      let minutesLeft =
-            invigilatorMinutesTodo invigilator' -
-            invigilatorsMinutesPlanned invigilator'
-          numberOfMinutesOk
-            | minutesLeft > -90 = EverythingOk
-            | otherwise = SoftConstraintsBroken
-      unless (numberOfMinutesOk == EverythingOk) $
-        tell
-          [ SoftConstraintBroken $
-            "- " `append` invigilatorName invigilator' `append`
-            " has too much invigilations " `append`
-            showt minutesLeft
-          ]
-      let notMoreThanOnceInSlot =
-            filter ((> 1) . length) $
-            map
-              (nub .
-               map
-                 (\i ->
-                    (invigilationDay i, invigilationSlot i, invigilationRoom i))) $
-            groupWith (invigilationDay &&& invigilationSlot) invigilations'
-          notMoreThanOnceInSlotOk
-            | null notMoreThanOnceInSlot = EverythingOk
-            | otherwise = HardConstraintsBroken
-      unless (notMoreThanOnceInSlotOk == EverythingOk) $
-        tell
-          [ HardConstraintBroken $
-            "- " `append` invigilatorName invigilator' `append`
-            " has been scheduled more then once in slot  " `append`
-            showt notMoreThanOnceInSlot
-          ]
-      let ownReserveSlots =
-            map fst $
-            filter ((== Just True) . snd) $
-            map
-              (second
-                 (fmap ((== invigilatorID') . invigilatorID) .
-                  reserveInvigilator)) $
-            M.toList $ slots plan
-          ownExamSlots =
-            mapMaybe slot $
-            filter ((== invigilatorID') . personID . lecturer) $
-            scheduledExams plan
-          ownInvigilatorSlots =
-            mapMaybe slot $
-            filter
-              (\e ->
-                 not
-                   (personID (lecturer e) == invigilatorID' &&
-                    length (rooms e) == 1)) $
-            filter
-              (elem (Just invigilatorID') .
-               map (fmap invigilatorID . invigilator) . rooms) $
-            scheduledExams plan
-          notReserveOrInvigilatorIfExamInSlotOk =
-            if null (ownExamSlots `intersect` ownReserveSlots) &&
-               -- null (ownExamSlots `intersect` ownInvigilatorSlots) &&
-               null (ownReserveSlots `intersect` ownInvigilatorSlots)
-              then EverythingOk
-              else HardConstraintsBroken
-      unless (notReserveOrInvigilatorIfExamInSlotOk == EverythingOk) $
-        tell
-          [ HardConstraintBroken $
-            "- " `append` invigilatorName invigilator' `append`
-            " has been scheduled as a reserve and invigilator" `append`
-            " during the same time, or reserve during own exams" `append`
-            " (exam, invig, reserve)" `append`
-            showt (ownExamSlots, ownInvigilatorSlots, ownReserveSlots)
-          ]
+      maxThreeDays <- validateMaxThreeDays invigilator' invigilationDays
+      daysOk <- validateDaysOk invigilator' invigilationDays
+      numberOfMinutesOk <- validateNumberOfMinutesOk invigilator'
+      notMoreThanOnceInSlotOk <-
+        validateNotMoreThanOnceInSlotOk invigilator' invigilations'
+      notReserveOrInvigilatorIfExamInSlotOk <-
+        validateNotReserveOrInvigilatorIfExamInSlotOk
+          plan
+          invigilatorID'
+          invigilator'
+      allOwnSelfOk <-
+        validateAllOwnSelfOk plan invigilator' examsThatShareRoomsMap
       return $
         validationResult
           [ maxThreeDays
@@ -219,7 +177,202 @@ validateInvigilator' plan invigilatorID' invigilations' = do
           , numberOfMinutesOk
           , notMoreThanOnceInSlotOk
           , notReserveOrInvigilatorIfExamInSlotOk
+          , allOwnSelfOk
           ]
+
+validateMaxThreeDays ::
+     Invigilator -> [Int] -> Writer [ValidationRecord] ValidationResult
+validateMaxThreeDays invigilator' invigilationDays = do
+  let maxThreeDays =
+        if length invigilationDays <= 3
+          then EverythingOk
+          else SoftConstraintsBroken
+  unless (maxThreeDays == EverythingOk) $
+    tell
+      [ SoftConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " invigilations on more than three days: " `append`
+        showt invigilationDays
+      ]
+  return maxThreeDays
+
+validateDaysOk ::
+     Invigilator -> [Int] -> Writer [ValidationRecord] ValidationResult
+validateDaysOk invigilator' invigilationDays = do
+  let daysOk
+        | null (invigilationDays \\ invigilatorWantDays invigilator') =
+          EverythingOk
+        | null
+           ((invigilationDays \\ invigilatorWantDays invigilator') \\
+            invigilatorCanDays invigilator') = SoftConstraintsBroken
+        | otherwise = HardConstraintsBroken
+  when (daysOk == HardConstraintsBroken) $
+    tell
+      [ HardConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " invigilations on wrong days: " `append`
+        showt invigilationDays
+      ]
+  when (daysOk == SoftConstraintsBroken) $
+    tell
+      [ SoftConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " invigilations on can days: " `append`
+        showt invigilationDays
+      ]
+  return daysOk
+
+validateNumberOfMinutesOk ::
+     Invigilator -> Writer [ValidationRecord] ValidationResult
+validateNumberOfMinutesOk invigilator' = do
+  let minutesLeft =
+        invigilatorMinutesTodo invigilator' -
+        invigilatorsMinutesPlanned invigilator'
+      numberOfMinutesOk
+        | minutesLeft > -90 = EverythingOk
+        | otherwise = SoftConstraintsBroken
+  unless (numberOfMinutesOk == EverythingOk) $
+    tell
+      [ SoftConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " has too much invigilations " `append`
+        showt minutesLeft
+      ]
+  return numberOfMinutesOk
+
+validateNotMoreThanOnceInSlotOk ::
+     Invigilator -> [Invigilation] -> Writer [ValidationRecord] ValidationResult
+validateNotMoreThanOnceInSlotOk invigilator' invigilations' = do
+  let notMoreThanOnceInSlot =
+        filter ((> 1) . length) $
+        map
+          (nub .
+           map
+             (\i -> (invigilationDay i, invigilationSlot i, invigilationRoom i))) $
+        groupWith (invigilationDay &&& invigilationSlot) invigilations'
+      notMoreThanOnceInSlotOk
+        | null notMoreThanOnceInSlot = EverythingOk
+        | otherwise = HardConstraintsBroken
+  unless (notMoreThanOnceInSlotOk == EverythingOk) $
+    tell
+      [ HardConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " has been scheduled more then once in slot  " `append`
+        showt notMoreThanOnceInSlot
+      ]
+  return notMoreThanOnceInSlotOk
+
+validateNotReserveOrInvigilatorIfExamInSlotOk ::
+     Plan
+  -> PersonID
+  -> Invigilator
+  -> Writer [ValidationRecord] ValidationResult
+validateNotReserveOrInvigilatorIfExamInSlotOk plan invigilatorID' invigilator' = do
+  let ownReserveSlots =
+        map fst $
+        filter ((== Just True) . snd) $
+        map
+          (second
+             (fmap ((== invigilatorID') . invigilatorID) . reserveInvigilator)) $
+        M.toList $ slots plan
+      ownExamSlots =
+        mapMaybe slot $
+        filter ((== invigilatorID') . personID . lecturer) $ scheduledExams plan
+      ownInvigilatorSlots =
+        mapMaybe slot $
+        filter
+          (\e ->
+             not
+               (personID (lecturer e) == invigilatorID' && length (rooms e) == 1)) $
+        filter
+          (elem (Just invigilatorID') .
+           map (fmap invigilatorID . invigilator) . rooms) $
+        scheduledExams plan
+      notReserveOrInvigilatorIfExamInSlotOk =
+        if null (ownExamSlots `intersect` ownReserveSlots) &&
+               -- null (ownExamSlots `intersect` ownInvigilatorSlots) &&
+           null (ownReserveSlots `intersect` ownInvigilatorSlots)
+          then EverythingOk
+          else HardConstraintsBroken
+  unless (notReserveOrInvigilatorIfExamInSlotOk == EverythingOk) $
+    tell
+      [ HardConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " has been scheduled as a reserve and invigilator" `append`
+        " during the same time, or reserve during own exams" `append`
+        " (exam, invig, reserve)" `append`
+        showt (ownExamSlots, ownInvigilatorSlots, ownReserveSlots)
+      ]
+  return notReserveOrInvigilatorIfExamInSlotOk
+
+validateAllOwnSelfOk ::
+     Plan
+  -> Invigilator
+  -> M.Map (Ancode, RoomID) [Exam]
+  -> Writer [ValidationRecord] ValidationResult
+validateAllOwnSelfOk plan invigilator' examsThatShareRoomsMap = do
+  let invigID = invigilatorID invigilator'
+      roomsOfOwnExamsWithOneRoom :: [[[(Room, (Maybe (Int, Int), Exam))]]]
+      roomsOfOwnExamsWithOneRoom =
+        filter ((== 1) . length) $
+        map
+          (\exam ->
+             groupWith (roomID . fst) $
+             map (\r -> (r, (slot exam, exam))) $ rooms exam) $
+        queryByLecturerID invigID plan
+      roomsOfOwnExamsWithOneRoomOtherInvig =
+        concat $
+        filter
+          (\rs ->
+             let maybeInvig = invigilator $ fst $ head $ map head rs
+             in case maybeInvig of
+                  Nothing -> False
+                  Just invig' -> invigilatorID invig' /= invigID)
+          roomsOfOwnExamsWithOneRoom
+      roomsOfOwnExamsWithOneRoomOtherInvigWithoutExcludedDays ::
+           [(Room, ((Int, Int), Exam))]
+      roomsOfOwnExamsWithOneRoomOtherInvigWithoutExcludedDays =
+        filter
+          ((`notElem` invigilatorExcludedDays invigilator') . fst . fst . snd) $
+        map (second (first fromJust)) $
+        concat roomsOfOwnExamsWithOneRoomOtherInvig
+      roomIsSharedAndOtherInvigsOwnExam :: (Room, ((Int, Int), Exam)) -> Bool
+      roomIsSharedAndOtherInvigsOwnExam (r, (_, e)) =
+        case M.lookup (anCode e, roomID r) examsThatShareRoomsMap of
+          Nothing -> False
+          Just [] -> False
+          Just es ->
+            any (\e' -> length (rooms e') == 1 && lecturerIsInvigilator e') $
+            filter ((/= lecturer e) . lecturer) es
+            where lecturerIsInvigilator exam =
+                    case invigilator $ head $ rooms exam of
+                      Nothing -> False
+                      Just invig ->
+                        personID (lecturer exam) == invigilatorID invig
+      roomIsSharedAndOtherExamOfSameLecturerHasMoreRooms (r, (_, e)) =
+        case M.lookup (anCode e, roomID r) examsThatShareRoomsMap of
+          Nothing -> False
+          Just [] -> False
+          Just es ->
+            any (\e' -> length (rooms e') > 1) $
+            filter ((== lecturer e) . lecturer) es
+      removeShareRooms =
+        filter (not . roomIsSharedAndOtherExamOfSameLecturerHasMoreRooms) $
+        filter
+          (not . roomIsSharedAndOtherInvigsOwnExam)
+          roomsOfOwnExamsWithOneRoomOtherInvigWithoutExcludedDays
+      allOwnSelfOk =
+        if null removeShareRooms
+          then EverythingOk
+          else HardConstraintsBroken
+  unless (allOwnSelfOk == EverythingOk) $
+    tell
+      [ HardConstraintBroken $
+        "- " `append` invigilatorName invigilator' `append`
+        " is not invigilator of his own exam" `append`
+        showt (map (roomID *** second anCode) removeShareRooms)
+      ]
+  return allOwnSelfOk
 
 validateHandicapsInvigilator ::
      Plan -> Writer [ValidationRecord] ValidationResult
