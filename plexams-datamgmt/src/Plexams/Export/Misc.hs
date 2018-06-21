@@ -38,7 +38,7 @@ exportAddRoomToExams :: [AddRoomToExam] -> String
 exportAddRoomToExams = intercalate "\n" . map exportAddRoomToExam
 
 exportAddRoomToExam :: AddRoomToExam -> String
-exportAddRoomToExam (AddRoomToExam a r s d nta) =
+exportAddRoomToExam (AddRoomToExam a r s d nta _) =
   "- ancode: " ++
   show a ++
   "\n  room: " ++
@@ -51,7 +51,7 @@ exportAddRoomToExam (AddRoomToExam a r s d nta) =
   "\n  nta: " ++
   if nta
     then "true"
-    else "false"
+    else "false" ++ "\n  reserve: false"
 
 --------------------------------------------------------------------------------
 -- Export AddRoomToExam to Yaml

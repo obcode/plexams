@@ -6,7 +6,6 @@ module Plexams.Invigilation
   , sumPercentInvigilator
   , sumPercentAllInvigilators
   , hundertPercentInMinutes
-  , removeInvigilatorsWithEnough
   , invigilatorsWithMinutesPlanned
   , invigilatorAddMinutes
   , addInvigilatorsPerDay
@@ -17,7 +16,7 @@ module Plexams.Invigilation
   ) where
 
 import Control.Arrow ((&&&), (***))
-import Data.List ((\\), elemIndex, nub)
+import Data.List ((\\), elemIndex, nub, partition)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.Text (Text, append, unpack)
@@ -42,8 +41,24 @@ mkInvigilations plan =
   let sumExams =
         sum $
         concatMap
-          (\exam -> map ((+ duration exam) . deltaDuration) $ rooms exam) $
-        scheduledExams plan
+          (map snd .
+           removeDoubleRooms .
+           concatMap
+             (\exam ->
+                map (\room -> (roomID room, duration exam + deltaDuration room)) $
+                rooms exam) .
+           M.elems . examsInSlot) $
+        M.elems $ slots plan
+        -- scheduledExams plan
+      removeDoubleRooms :: [(RoomID, Duration)] -> [(RoomID, Duration)]
+      removeDoubleRooms =
+        foldr
+          (\room@(r, d) rWithD ->
+             let (roomsAlreadyIn, otherRooms) = partition ((== r) . fst) rWithD
+             in if null roomsAlreadyIn || snd (head roomsAlreadyIn) < d
+                  then room : otherRooms
+                  else rWithD)
+          []
       sumReserve =
         sum $
         map
@@ -119,20 +134,19 @@ hundertPercentInMinutes plan =
       sumPercentInvigilators = sumPercentAllInvigilators plan
   in overallSum * 100 `div` sumPercentInvigilators
 
-removeInvigilatorsWithEnough :: Plan -> Plan
-removeInvigilatorsWithEnough plan =
-  let hundertPercentInMinutes' = hundertPercentInMinutes plan
-  in plan
-     { invigilators =
-         M.filter
-           (\invigilator' ->
-              invigilatorOralExams invigilator' + invigilatorMaster invigilator' +
-              invigilatorLiveCoding invigilator' <
-              sumPercentInvigilator invigilator' * hundertPercentInMinutes' `div`
-              100) $
-         invigilators plan
-     }
-
+-- removeInvigilatorsWithEnough :: Plan -> Plan
+-- removeInvigilatorsWithEnough plan =
+--   let hundertPercentInMinutes' = hundertPercentInMinutes plan
+--   in plan
+--      { invigilators =
+--          M.filter
+--            (\invigilator' ->
+--               invigilatorOralExams invigilator' + invigilatorMaster invigilator' +
+--               invigilatorLiveCoding invigilator' <
+--               sumPercentInvigilator invigilator' * hundertPercentInMinutes' `div`
+--               100) $
+--          invigilators plan
+--      }
 invigilatorsWithMinutesPlanned :: Plan -> M.Map PersonID Integer
 invigilatorsWithMinutesPlanned plan =
   let reserves :: [(PersonID, Integer)]
@@ -166,9 +180,10 @@ invigilatorsWithMinutesPlanned plan =
      groupWith fst $ reserves ++ examsDurations
 
 invigilatorAddMinutes :: Plan -> Plan
-invigilatorAddMinutes plan =
-  let plan' = removeInvigilatorsWithEnough plan
-      invigilatorsWithMinutesPlanned' = invigilatorsWithMinutesPlanned plan
+invigilatorAddMinutes plan
+      -- plan' = removeInvigilatorsWithEnough plan
+ =
+  let invigilatorsWithMinutesPlanned' = invigilatorsWithMinutesPlanned plan
       hundertPercentInMinutes' = hundertPercentInMinutes plan
       invigilatorsWithMinutes =
         M.map
@@ -186,8 +201,8 @@ invigilatorAddMinutes plan =
                    (invigilatorID invigilator')
                    invigilatorsWithMinutesPlanned'
              }) $
-        invigilators plan'
-  in plan' {invigilators = invigilatorsWithMinutes}
+        invigilators plan
+  in plan {invigilators = invigilatorsWithMinutes}
 
 invigilatorsPlanned :: Plan -> [PersonID]
 invigilatorsPlanned plan =

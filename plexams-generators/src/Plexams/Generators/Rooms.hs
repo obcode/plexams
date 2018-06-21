@@ -175,6 +175,7 @@ setRoomOnExam (exam, maxUsableSeats) availableRoom = do
           (map studentMtknr studsForRoom)
           Nothing
           False
+          False
       ]
   when (handicapInNormalRoom' && not (null studentsWithHandicapsNotRoomAlone)) $
     tell
@@ -184,6 +185,7 @@ setRoomOnExam (exam, maxUsableSeats) availableRoom = do
           (map studentMtknr studentsWithHandicapsNotRoomAlone)
           (Just deltaDuration')
           True
+          False
       ]
   return
     ( exam
@@ -277,6 +279,7 @@ setHandicapRoomOnAllExams room = fmap or . mapM (setHandicapRoomOnExam room)
                 (map studentMtknr studentsWithHandicaps')
                 (Just deltaDuration')
                 True
+                False
             ]
           return True
         else return False
@@ -301,5 +304,6 @@ setHandicapsRoomAlone stud availableRoom exams' = do
         [studentMtknr stud]
         (Just deltaDuration')
         True
+        False
     ]
   return ()
