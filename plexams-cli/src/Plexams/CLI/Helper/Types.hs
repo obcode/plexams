@@ -10,10 +10,11 @@ data Command
   = PrepareStudentRegs
   | PrepareAncodes
   | CheckAncodes
+  | GetStudsForAncode Integer
 
 data Config = Config
   { optCommand :: Command
-  , group :: String
+  , group :: Maybe String
   , infile :: FilePath
   , outfile :: Maybe FilePath
   }

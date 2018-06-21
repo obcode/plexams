@@ -18,16 +18,28 @@ configP =
      command
        "exams"
        (info (pure PrepareAncodes) (progDesc "prepare an exams file")) <>
-     command "check" (info (pure CheckAncodes) (progDesc "check an exams file"))) <*>
-  strOption
-    (long "group" <> short 'g' <> metavar "GROUP" <>
-     help "student group (one of IB, IC, IF, IG, IN, IS, GO, ALL)") <*>
+     command "check" (info (pure CheckAncodes) (progDesc "check an exams file")) <>
+     command
+       "getstudents"
+       (info getStudsForAncodeOpts (progDesc "get student list for an ancode"))) <*>
+  optional
+    (strOption
+       (long "group" <> short 'g' <> metavar "GROUP" <>
+        help "student group (one of IB, IC, IF, IG, IN, IS, GO, ALL)")) <*>
   strOption
     (long "infile" <> short 'i' <> metavar "INFILE" <> help "input from file") <*>
   optional
     (strOption
        (long "outfile" <> short 'o' <> metavar "OUTFILE" <>
         help "write to file (instead of stdout)"))
+
+getStudsForAncodeOpts :: Parser Command
+getStudsForAncodeOpts =
+  GetStudsForAncode <$>
+  option
+    auto
+    (long "ancode" <> short 'a' <> metavar "EXAMID" <>
+     help "get students for this ancode")
 
 configmain :: (Config -> IO ()) -> IO ()
 configmain main' = main' =<< execParser opts

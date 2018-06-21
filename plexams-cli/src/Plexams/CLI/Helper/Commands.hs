@@ -7,11 +7,12 @@ import Data.List (intercalate, isSuffixOf)
 import Data.Text (unpack)
 import qualified Data.Yaml as Y
 import GHC.Exts (groupWith)
+import Plexams.CLI.Helper.StudentRegs
 import Plexams.CLI.Helper.Types
 import System.IO
 
 runCommand :: Config -> IO ()
-runCommand config@(Config PrepareStudentRegs g iPath _) = do
+runCommand config@(Config PrepareStudentRegs (Just g) iPath _) = do
   contents <- getContents' iPath
   let (header:studentLines) = map (split ';') $ lines contents
       studentTupels =
@@ -73,6 +74,9 @@ runCommand config@(Config CheckAncodes _ iPath _) = do
     showExam (Exam _ _ titel' stg' pruefer') =
       "  # " ++
       unpack stg' ++ ": " ++ unpack titel' ++ " (" ++ unpack pruefer' ++ ")"
+runCommand (Config (GetStudsForAncode ac) _ iPath (Just ofp)) =
+  getStudentsByAncodeJSON ofp iPath ac
+runCommand _ = putStrLn "unknown config"
 
 importExamsFromYAMLFile :: FilePath -> IO (Maybe [Exam])
 importExamsFromYAMLFile = fmap Y.decode . BSI.readFile
