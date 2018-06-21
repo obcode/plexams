@@ -2,6 +2,7 @@ module Plexams.Query
   ( queryByAnCode
   , queryByName
   , queryByLecturer
+  , queryByLecturerID
   , queryByGroup
   , queryByRegisteredGroup
   , querySlot
@@ -32,6 +33,10 @@ queryByName str = filter (isInfixOf str . name) . allExams
 queryByLecturer :: String -> Plan -> [Exam]
 queryByLecturer str =
   filter (isInfixOf str . unpack . personShortName . lecturer) . allExams
+
+queryByLecturerID :: PersonID -> Plan -> [Exam]
+queryByLecturerID personID' =
+  filter ((== personID') . personID . lecturer) . allExams
 
 allOrUnscheduledExams :: Bool -> Plan -> [Exam]
 allOrUnscheduledExams unscheduledOnly =
