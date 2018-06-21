@@ -64,7 +64,7 @@ const openInvigilationContent = (dayIndex) => {
                 `
           for (let i in slotsPerDay) {
             let reserveInvigilator = _fetchReserve(dayIndex, i, slots)
-            const examData = _fetchExamsData(dayIndex, i, slots)
+            const examData = _fetchExamsData(dayIndex, i, slots, true)
             if (examData.length > 0) {
               output += `<tr>
                 <td><div id="invigilation-slot-${dayIndex}-${i}" class="invigilation`

@@ -228,7 +228,7 @@ let _fetchReserve = function (inDay, inTime, slots) {
 }
 
 
-let _fetchExamsData = function (inDay, inTime, slots) {
+let _fetchExamsData = function (inDay, inTime, slots, onlyPlannedByMe) {
   for (var i in slots) {
     let slot = slots[i]
     let timeSlot = slot[0]
@@ -253,7 +253,9 @@ let _fetchExamsData = function (inDay, inTime, slots) {
           }
         }
 //        arr.push(anCode + reExam + `</br>` + name + `</br>`)
-        arr.push(exam)
+        if (exam.plannedByMe || !onlyPlannedByMe) {
+          arr.push(exam)
+        }
         //   {
         //   anCode: exam.anCode,
         //   reExam: exam.reExam,
