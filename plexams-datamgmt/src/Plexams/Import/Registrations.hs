@@ -3,15 +3,19 @@
 module Plexams.Import.Registrations
   ( importStudentsWithRegsFromYAMLFile
   , importHandicapsFromYAMLFile
-  ) where
+  )
+where
 
-import Control.Applicative ((<$>), (<*>), empty)
-import qualified Data.ByteString as BSI
-import qualified Data.Map as M
-import Data.Text (Text)
-import qualified Data.Yaml as Y
+import           Control.Applicative            ( (<$>)
+                                                , (<*>)
+                                                , empty
+                                                )
+import qualified Data.ByteString               as BSI
+import qualified Data.Map                      as M
+import           Data.Text                      ( Text )
+import qualified Data.Yaml                     as Y
 
-import Plexams.Types
+import           Plexams.Types
 
 --------------------------------------------------------------------------------
 -- StudentsRegistrations from YAML file
@@ -42,22 +46,21 @@ instance Y.FromJSON ImportStudentReg where
 
 importStudentRegsToStudentsWithRegs :: [ImportStudentReg] -> StudentsWithRegs
 importStudentRegsToStudentsWithRegs = foldr insertStudent M.empty
-  where
-    insertStudent (ImportStudentReg mtkNr familyname' firstname' stg ancode) =
-      M.alter
-        (Just .
-         maybe
-           (StudentWithRegs mtkNr familyname' firstname' stg [ancode] Nothing)
-           (addAncode ancode))
-        mtkNr
-    addAncode ancode (StudentWithRegs mktNr familyname' firstname' stg ancodes maybeHandicap) =
-      StudentWithRegs
-        mktNr
-        familyname'
-        firstname'
-        stg
-        (ancode : ancodes)
-        maybeHandicap
+ where
+  insertStudent (ImportStudentReg mtkNr familyname' firstname' stg ancode) =
+    M.alter
+      (Just . maybe
+        (StudentWithRegs mtkNr familyname' firstname' stg [ancode] Nothing)
+        (addAncode ancode)
+      )
+      mtkNr
+  addAncode ancode (StudentWithRegs mktNr familyname' firstname' stg ancodes maybeHandicap)
+    = StudentWithRegs mktNr
+                      familyname'
+                      firstname'
+                      stg
+                      (ancode : ancodes)
+                      maybeHandicap
 
 importStudentGroups :: SemesterConfig -> [ImportStudentRegs] -> StudentsWithRegs
 importStudentGroups config importStudentRegs =
@@ -67,15 +70,15 @@ importStudentGroups config importStudentRegs =
         filter ((`notElem` goOtherExams config) . ancode') students'
       removeGoOtherExams (ImportStudentRegs _ students') = students'
       ancode' (ImportStudentReg _ _ _ _ a) = a
-  in importStudentRegsToStudentsWithRegs allRegs
+  in  importStudentRegsToStudentsWithRegs allRegs
 
-importStudentsWithRegsFromYAMLFile ::
-     SemesterConfig -> FilePath -> IO (Maybe StudentsWithRegs)
+importStudentsWithRegsFromYAMLFile
+  :: SemesterConfig -> FilePath -> IO (Maybe StudentsWithRegs)
 importStudentsWithRegsFromYAMLFile config =
-  fmap (fmap (importStudentGroups config) . Y.decode) . BSI.readFile
+  fmap (fmap (importStudentGroups config) . Y.decodeThrow) . BSI.readFile
 
 --------------------------------------------------------------------------------
 -- Handicaps from YAML file
 --------------------------------------------------------------------------------
 importHandicapsFromYAMLFile :: FilePath -> IO (Maybe [Handicap])
-importHandicapsFromYAMLFile = fmap Y.decode . BSI.readFile
+importHandicapsFromYAMLFile = fmap Y.decodeThrow . BSI.readFile

@@ -15,21 +15,30 @@ module Plexams.Types.Plan
   , examSlotAsString
   , setSlotsOnExams
   , dateString
-  ) where
+  )
+where
 
-import Data.Aeson
-       (ToJSON, defaultOptions, genericToEncoding, toEncoding)
-import Data.List ((\\), partition, sortBy)
-import qualified Data.Map as M
-import Data.Ord (Down(Down), comparing)
-import Data.Time.Calendar
-import GHC.Generics
-import Plexams.Types.Common
-import Plexams.Types.Constraints
-import Plexams.Types.Exam
-import Plexams.Types.Persons
-import Plexams.Types.SemesterConfig
-import Plexams.Types.Slots
+import           Data.Aeson                     ( ToJSON
+                                                , defaultOptions
+                                                , genericToEncoding
+                                                , toEncoding
+                                                )
+import           Data.List                      ( (\\)
+                                                , partition
+                                                , sortBy
+                                                )
+import qualified Data.Map                      as M
+import           Data.Ord                       ( Down(Down)
+                                                , comparing
+                                                )
+import           Data.Time.Calendar
+import           GHC.Generics
+import           Plexams.Types.Common
+import           Plexams.Types.Constraints
+import           Plexams.Types.Exam
+import           Plexams.Types.Persons
+import           Plexams.Types.SemesterConfig
+import           Plexams.Types.Slots
 
 data Plan = Plan
   { semesterConfig :: SemesterConfig
@@ -51,7 +60,7 @@ scheduledExams plan = concatMap (M.elems . examsInSlot) $ M.elems $ slots plan
 allExams :: Plan -> [Exam]
 allExams plan =
   let plan' = setSlotsOnExams plan
-  in M.elems (unscheduledExams plan') ++ scheduledExams plan'
+  in  M.elems (unscheduledExams plan') ++ scheduledExams plan'
 
 allExamsPlannedByMe :: Plan -> [Exam]
 allExamsPlannedByMe = filter plannedByMe . allExams
@@ -81,32 +90,32 @@ mkAvailableRooms plan rooms' =
         sortBy (comparing (Down . availableRoomMaxSeats)) normalOwnRooms'
       handicapCompensationRooms =
         sortBy (comparing availableRoomMaxSeats) handicapCompensationRooms'
-      roomSlots' = roomSlots $ constraints plan
-      allAvailableRooms =
-        M.fromList $
-        zip slots' $
-        concat $
-        repeat
-          [(normalOwnRooms, normalRoomsNeedRequest, handicapCompensationRooms)]
+      roomSlots'        = roomSlots $ constraints plan
+      allAvailableRooms = M.fromList $ zip slots' $ concat $ repeat
+        [(normalOwnRooms, normalRoomsNeedRequest, handicapCompensationRooms)]
       filterNotRoomID roomID' = filter ((/= roomID') . availableRoomName)
-      removeRoomFromAllOtherSlots ::
-           RoomID -> [(DayIndex, SlotIndex)] -> AvailableRooms -> AvailableRooms
+      removeRoomFromAllOtherSlots
+        :: RoomID -> [(DayIndex, SlotIndex)] -> AvailableRooms -> AvailableRooms
       removeRoomFromAllOtherSlots roomID' slots'' allRooms =
         foldr -- \s ->
-          (M.alter
-             (maybe
+            (M.alter
+              (maybe
                 Nothing
                 (\(nr, nrR, hr) ->
-                   Just
-                     ( filterNotRoomID roomID' nr
-                     , nrR
-                     , filterNotRoomID roomID' hr))))
-          allRooms $
-        slots' \\ slots''
-  in foldr
-       (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
-       allAvailableRooms $
-     M.toList roomSlots'
+                  Just
+                    ( filterNotRoomID roomID' nr
+                    , nrR
+                    , filterNotRoomID roomID' hr
+                    )
+                )
+              )
+            )
+            allRooms
+          $  slots'
+          \\ slots''
+  in  foldr (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
+            allAvailableRooms
+        $ M.toList roomSlots'
 
 maxDayIndex :: Plan -> DayIndex
 maxDayIndex = (\x -> x - 1) . length . examDays . semesterConfig
@@ -125,22 +134,18 @@ examSlotAsString exam plan =
 dateString :: Day -> String
 dateString day =
   let (y, m, d) = toGregorian day
-      showWith0 n =
-        let s = show n
-        in if n < 10
-             then "0" ++ s
-             else s
-  in showWith0 d ++ "." ++ showWith0 m ++ "." ++ show y
+      showWith0 n = let s = show n in if n < 10 then "0" ++ s else s
+  in  showWith0 d ++ "." ++ showWith0 m ++ "." ++ show y
 
 setSlotsOnExams :: Plan -> Plan
-setSlotsOnExams plan =
-  plan
-  { slots = M.mapWithKey addSlotKeyToExam $ slots plan
-  , unscheduledExams = M.map (\e -> e {slot = Nothing}) $ unscheduledExams plan
+setSlotsOnExams plan = plan
+  { slots            = M.mapWithKey addSlotKeyToExam $ slots plan
+  , unscheduledExams = M.map (\e -> e { slot = Nothing })
+                         $ unscheduledExams plan
   }
 
 addSlotKeyToExam :: (DayIndex, SlotIndex) -> Slot -> Slot
-addSlotKeyToExam k slot' =
-  slot' {examsInSlot = M.map (addSlotKey k) $ examsInSlot slot'}
-  where
-    addSlotKey k' exam = exam {slot = Just k'}
+addSlotKeyToExam k slot' = slot'
+  { examsInSlot = M.map (addSlotKey k) $ examsInSlot slot'
+  }
+  where addSlotKey k' exam = exam { slot = Just k' }

@@ -3,19 +3,28 @@
 
 module Plexams.CLI.Helper.StudentRegs
   ( getStudentsByAncodeJSON
-  ) where
+  )
+where
 
-import Control.Applicative ((<$>), (<*>), empty)
-import Data.Aeson (ToJSON, (.=), object, parseJSON, toJSON)
-import Data.Aeson.Encode.Pretty
-import qualified Data.ByteString as BSI
-import qualified Data.ByteString.Lazy as BSL
-import GHC.Exts (sortWith)
+import           Control.Applicative            ( (<$>)
+                                                , (<*>)
+                                                , empty
+                                                )
+import           Data.Aeson                     ( ToJSON
+                                                , (.=)
+                                                , object
+                                                , parseJSON
+                                                , toJSON
+                                                )
+import           Data.Aeson.Encode.Pretty
+import qualified Data.ByteString               as BSI
+import qualified Data.ByteString.Lazy          as BSL
+import           GHC.Exts                       ( sortWith )
 
 --import Data.ByteString.Lazy.Char8 (unpack)
-import Data.Text (Text)
-import qualified Data.Yaml as Y
-import GHC.Generics
+import           Data.Text                      ( Text )
+import qualified Data.Yaml                     as Y
+import           GHC.Generics
 
 data StudentGroupRegs =
   StudentGroupRegs Text
@@ -55,26 +64,25 @@ instance ToJSON StudentReg where
       ]
 
 importStudentRegsFromFile :: FilePath -> IO (Maybe [StudentGroupRegs])
-importStudentRegsFromFile = fmap Y.decode . BSI.readFile
+importStudentRegsFromFile = fmap Y.decodeThrow . BSI.readFile
 
 getStudentsByAncode :: FilePath -> Integer -> IO [StudentReg]
 getStudentsByAncode fp ancode' = do
   maybeStudentRegsWithGroups <- importStudentRegsFromFile fp
-  return $
-    case maybeStudentRegsWithGroups of
-      Nothing -> error $ "cannot parse " ++ fp
-      Just srWg ->
-        sortWith familyname $
-        filter ((== ancode') . ancode) $ concatMap students srWg
+  return $ case maybeStudentRegsWithGroups of
+    Nothing -> error $ "cannot parse " ++ fp
+    Just srWg ->
+      sortWith familyname $ filter ((== ancode') . ancode) $ concatMap
+        students
+        srWg
 
 getStudentsByAncodeJSON :: FilePath -> FilePath -> Integer -> IO ()
 getStudentsByAncodeJSON ofp fp ac = do
   sr <- getStudentsByAncode fp ac
   BSL.writeFile ofp $ encodePretty' config sr
   return ()
-  where
-    config =
-      defConfig
-      { confCompare =
-          keyOrder ["mtknr", "familyname", "firstname", "group", "ancode"]
-      }
+ where
+  config = defConfig
+    { confCompare = keyOrder
+                      ["mtknr", "familyname", "firstname", "group", "ancode"]
+    }

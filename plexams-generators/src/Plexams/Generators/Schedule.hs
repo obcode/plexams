@@ -36,4 +36,4 @@ scheduleExamsWithSameName plan =
           unscheduled
       makePlanManips _ = error "the impossible happened"
       planManips = concatMap makePlanManips exams
-  in (applyAddExamToSlotListToPlan plan planManips, planManips)
+   in (applyAddExamToSlotListToPlan plan planManips, planManips)

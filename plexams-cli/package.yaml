@@ -7,7 +7,7 @@ github: obcode/plexams
 maintainer: Oliver Braun <ob@obraun.net>
 category: Plexams
 
-ghc-options: -Wall -Werror
+ghc-options: -Wall
 
 dependencies:
   - base  >= 4.7 && < 5

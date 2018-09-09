@@ -79,7 +79,7 @@ runCommand (Config (GetStudsForAncode ac) _ iPath (Just ofp)) =
 runCommand _ = putStrLn "unknown config"
 
 importExamsFromYAMLFile :: FilePath -> IO (Maybe [Exam])
-importExamsFromYAMLFile = fmap Y.decode . BSI.readFile
+importExamsFromYAMLFile = fmap Y.decodeThrow . BSI.readFile
 
 getContents' :: FilePath -> IO String
 getContents' iPath = do
