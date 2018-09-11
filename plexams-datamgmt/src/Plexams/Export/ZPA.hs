@@ -9,7 +9,8 @@ module Plexams.Export.ZPA
 import Data.Aeson.Encode.Pretty
 import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.ByteString.Lazy.Internal as BS
-import Data.List (nub)
+
+-- import Data.List (nub)
 import qualified Data.Map as M
 import GHC.Exts (sortWith)
 
@@ -109,20 +110,20 @@ planForStudents = encodePretty' config . planForStudentsExams
 -- Students for ZPA
 -------------------------------------------------------------------------------
 studentRegsToZPA :: Plan -> String
-studentRegsToZPA =
-  unpack .
-  encodePretty' config .
-  sortWith studentMtknr . nub . concatMap registeredStudents . allExams
-  where
-    config =
-      defConfig
-      { confCompare =
-          keyOrder
-            [ "studentMtknr"
-            , "studentFirstname"
-            , "studentFamilyname"
-            , "studentGroup"
-            , "studentAncodes"
-            , "studentHandicap"
-            ]
-      }
+studentRegsToZPA = error "FIXME: utf8!!!"
+  -- unpack .
+  -- encodePretty' config .
+  -- sortWith studentMtknr . nub . concatMap registeredStudents . allExams
+  -- where
+  --   config =
+  --     defConfig
+  --     { confCompare =
+  --         keyOrder
+  --           [ "studentMtknr"
+  --           , "studentFirstname"
+  --           , "studentFamilyname"
+  --           , "studentGroup"
+  --           , "studentAncodes"
+  --           , "studentHandicap"
+  --           ]
+  --     }

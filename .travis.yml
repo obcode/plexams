@@ -43,6 +43,7 @@ before_install:
   then
     brew update && brew install stack;
   fi
+  sed -i -e '/docker/d' stack.yaml
 
 install:
 # Build dependencies

@@ -1,4 +1,4 @@
-resolver: lts-9.21
+resolver: lts-12.9
 packages:
     - ./plexams-core
     - ./plexams-datamgmt
@@ -6,4 +6,3 @@ packages:
     - ./plexams-cli
     - ./plexams-generators
     - ./plexams-server
-# local-bin-path: ./elexams/resources

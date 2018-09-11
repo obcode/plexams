@@ -6,25 +6,35 @@ module Plexams.Import.MasterData
   , importPersonsFromJSONFile
   , importConstraintsFromYAMLFile
   , importInvigilatorsFromJSONFile
-  ) where
+  )
+where
 
 -- {{{ Imports
-import Control.Applicative ((<$>), (<*>), empty)
-import Data.Aeson
-       (FromJSON, Value(Object), (.:), decode, parseJSON)
-import qualified Data.ByteString as BSI
-import qualified Data.ByteString.Lazy as BS
-import qualified Data.Map as M
-import Data.Maybe (fromMaybe, maybe)
-import Data.Text (pack)
-import qualified Data.Yaml as Y
+import           Control.Applicative            ( (<$>)
+                                                , (<*>)
+                                                , empty
+                                                )
+import           Data.Aeson                     ( FromJSON
+                                                , Value(Object)
+                                                , (.:)
+                                                , decode
+                                                , parseJSON
+                                                )
+import qualified Data.ByteString               as BSI
+import qualified Data.ByteString.Lazy          as BS
+import qualified Data.Map                      as M
+import           Data.Maybe                     ( fromMaybe
+                                                , maybe
+                                                )
+import           Data.Text                      ( pack )
+import qualified Data.Yaml                     as Y
 
-import Plexams.Types
+import           Plexams.Types
 
 -- }}}
 -- {{{ Semesterconfig from YAML File
 importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
-importSemesterConfigFromYAMLFile = fmap Y.decode . BSI.readFile
+importSemesterConfigFromYAMLFile = fmap Y.decodeThrow . BSI.readFile
 
 -- }}}
 -- {{{ Persons from JSON File
@@ -33,9 +43,9 @@ importPersonsFromJSONFile = fmap decodePersonsFromJSON . BS.readFile
 
 decodePersonsFromJSON :: BS.ByteString -> Maybe Persons
 decodePersonsFromJSON = fmap personsListToPersons . decode
-  where
-    personsListToPersons :: [Person] -> Persons
-    personsListToPersons = M.fromList . map (\p -> (personID p, p))
+ where
+  personsListToPersons :: [Person] -> Persons
+  personsListToPersons = M.fromList . map (\p -> (personID p, p))
 
 -- }}}
 -- {{{ Exams from JSON File
@@ -65,30 +75,33 @@ importExamsFromJSONFile = fmap decodeExamsFromJSON . BS.readFile
 
 decodeExamsFromJSON :: BS.ByteString -> Maybe [Exam]
 decodeExamsFromJSON = fmap (map importExamToExam) . decode
-  where
-    importExamToExam :: ImportExam -> Exam
-    importExamToExam ie =
-      Exam
-      { anCode = ieAnCode ie
-      , name = ieModule ie
-      , lecturer =
-          Person (ieMainExamerId ie) (pack (ieMainExamer ie)) "" "" "" True
-      , duration = ieDuration ie
-      , rooms = []
-      , plannedByMe = True
-      , reExam = ieIsRepeaterExam ie
-      , groups = map read $ ieGroups ie
-      , examType = ieExamType ie
-      , slot = Nothing
-      , registeredStudents = []
-      , registeredStudentsCount = 0
-      , registeredGroups = []
-      , conflictingAncodes = M.empty
-      , handicapStudents = []
-      , sameRoom = []
-      , sameSlot = []
-      , shareRoom = True
-      }
+ where
+  importExamToExam :: ImportExam -> Exam
+  importExamToExam ie = Exam
+    { anCode                  = ieAnCode ie
+    , name                    = ieModule ie
+    , lecturer                = Person (ieMainExamerId ie)
+                                       (pack (ieMainExamer ie))
+                                       ""
+                                       ""
+                                       ""
+                                       True
+    , duration                = ieDuration ie
+    , rooms                   = []
+    , plannedByMe             = True
+    , reExam                  = ieIsRepeaterExam ie
+    , groups                  = map read $ ieGroups ie
+    , examType                = ieExamType ie
+    , slot                    = Nothing
+    , registeredStudents      = []
+    , registeredStudentsCount = 0
+    , registeredGroups        = []
+    , conflictingAncodes      = M.empty
+    , handicapStudents        = []
+    , sameRoom                = []
+    , sameSlot                = []
+    , shareRoom               = True
+    }
 
 -- }}}
 -- {{{ Constraints from YAML file
@@ -142,42 +155,41 @@ instance Y.FromJSON RoomOnlyForSlots where
   parseJSON _ = empty
 
 importConstraintsToConstraints :: ImportConstraints -> Constraints
-importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots icDoNotShareRoom) =
-  Constraints
-  { overlaps = []
-  , notOnSameDay = fromMaybe [] iCNotOnSameDay
-  , inSameSlot = fromMaybe [] iCInSameSlot
-  , inSameRoom = fromMaybe [] iCInSameRoom
-  , onOneOfTheseDays =
-      maybe [] (map (\(x:xs) -> (toInteger x, xs))) iCOnOneOfTheseDays
-  , fixedSlot = maybe [] (map (\[a, d, s] -> (toInteger a, (d, s)))) iCFixedSlot
-  , noInvigilations = fromMaybe [] icNoInvigilations
-  , noInvigilationDays =
-      maybe
-        []
-        (concatMap
-           (\xs ->
-              if null xs
-                then []
-                else [(toInteger (head xs), tail xs)]))
-        icNoInvigilationDays
-  , invigilatesExam = maybe [] (map (\[a, p] -> (a, p))) iCInvigilatesExam
-  , impossibleInvigilationSlots =
-      maybe [] (map iIToSlots) iCImpossibleInvigilationSlots
-  , roomSlots =
-      maybe
-        M.empty
-        (M.fromList . map roomOnlyForSlotsToTuple)
-        iCRoomOnlyForSlots
-  , doNotShareRoom = fromMaybe [] icDoNotShareRoom
-  }
+importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots icDoNotShareRoom)
+  = Constraints
+    { overlaps                    = []
+    , notOnSameDay                = fromMaybe [] iCNotOnSameDay
+    , inSameSlot                  = fromMaybe [] iCInSameSlot
+    , inSameRoom                  = fromMaybe [] iCInSameRoom
+    , onOneOfTheseDays            = maybe []
+                                          (map (\(x : xs) -> (toInteger x, xs)))
+                                          iCOnOneOfTheseDays
+    , fixedSlot = maybe []
+                        (map (\[a, d, s] -> (toInteger a, (d, s))))
+                        iCFixedSlot
+    , noInvigilations             = fromMaybe [] icNoInvigilations
+    , noInvigilationDays          = maybe
+      []
+      (concatMap
+        (\xs -> if null xs then [] else [(toInteger (head xs), tail xs)])
+      )
+      icNoInvigilationDays
+    , invigilatesExam = maybe [] (map (\[a, p] -> (a, p))) iCInvigilatesExam
+    , impossibleInvigilationSlots = maybe []
+                                          (map iIToSlots)
+                                          iCImpossibleInvigilationSlots
+    , roomSlots = maybe M.empty
+                        (M.fromList . map roomOnlyForSlotsToTuple)
+                        iCRoomOnlyForSlots
+    , doNotShareRoom              = fromMaybe [] icDoNotShareRoom
+    }
 
 iIToSlots :: ImpossibleInvigilation -> (PersonID, [(Int, Int)])
 iIToSlots (ImpossibleInvigilation p ss) = (p, map (\[d, s] -> (d, s)) ss)
 
 importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
 importConstraintsFromYAMLFile =
-  fmap (fmap importConstraintsToConstraints . Y.decode) . BSI.readFile
+  fmap (fmap importConstraintsToConstraints . Y.decodeThrow) . BSI.readFile
 
 -- }}}
 -- {{{ Invigilator from JSON File

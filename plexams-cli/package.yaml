@@ -1,5 +1,5 @@
 name: plexams-cli
-version: '1.0.4.0'
+version: '1.0.5.0'
 synopsis: Command line interface for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3
@@ -7,7 +7,7 @@ github: obcode/plexams
 maintainer: Oliver Braun <ob@obraun.net>
 category: Plexams
 
-ghc-options: -Wall -Werror
+ghc-options: -Wall
 
 dependencies:
   - base  >= 4.7 && < 5
@@ -15,6 +15,8 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+    - aeson
+    - aeson-pretty
     - bytestring
     - containers
     - directory
@@ -27,6 +29,7 @@ library:
     - text
     - time
     - yaml
+    - word8
 
 executables:
   plexams:
