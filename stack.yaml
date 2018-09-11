@@ -1,3 +1,5 @@
+docker:
+    enable: true # docker
 resolver: lts-12.9
 packages:
     - ./plexams-core
@@ -6,4 +8,3 @@ packages:
     - ./plexams-cli
     - ./plexams-generators
     - ./plexams-server
-# local-bin-path: ./elexams/resources
