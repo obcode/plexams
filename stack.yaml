@@ -1,5 +1,3 @@
-docker:
-    enable: true # docker
 resolver: lts-12.9
 packages:
     - ./plexams-core
