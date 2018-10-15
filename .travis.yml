@@ -20,8 +20,8 @@ cache:
   - $HOME/.stack
 
 os:
-  # - linux
-  # - osx
+  - linux
+  - osx
   - windows
 
 before_install:
