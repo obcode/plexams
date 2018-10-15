@@ -17,19 +17,12 @@ language: generic
 # Caching so the next build will be fast too.
 cache:
   directories:
-  - $HOME/.ghc
-  - $HOME/.cabal
   - $HOME/.stack
 
 os:
-  - linux
-  - osx
-
-# Ensure necessary system libraries are present
-addons:
-  apt:
-    packages:
-      - libgmp-dev
+  # - linux
+  # - osx
+  - windows
 
 before_install:
 - |
@@ -43,7 +36,11 @@ before_install:
   then
     brew update && brew install stack;
   fi
-  sed -i -e '/docker/d' stack.yaml
+  elif [[ "$TRAVIS_OS_NAME" == "windows" ]]
+  then
+    curl -sS -ostack.zip -L --insecure https://get.haskellstack.org/stable/windows-x86_64.zip
+    7z x windows-x86_64.zip stack.exe
+  fi
 
 install:
 # Build dependencies
