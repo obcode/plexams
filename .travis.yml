@@ -17,7 +17,7 @@ language: generic
 # Caching so the next build will be fast too.
 cache:
   directories:
-  - $HOME/.stack
+    - $HOME/.stack
 
 os:
   - linux
@@ -25,30 +25,30 @@ os:
   - windows
 
 before_install:
-- |
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]]
-  then
-    mkdir -p ~/.local/bin
-    export PATH=$HOME/.local/bin:$PATH
-    travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | \
-        tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]
-  then
-    brew update && brew install stack;
-  elif [[ "$TRAVIS_OS_NAME" == "windows" ]]
-  then
-    curl -sS -ostack.zip -L --insecure https://get.haskellstack.org/stable/windows-x86_64.zip
-    7z x windows-x86_64.zip stack.exe
-  fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]
+    then
+      mkdir -p ~/.local/bin
+      export PATH=$HOME/.local/bin:$PATH
+      travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | \
+          tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]
+    then
+      brew update && brew install stack;
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]
+    then
+      curl -sS -ostack.zip -L --insecure https://get.haskellstack.org/stable/windows-x86_64.zip
+      7z x windows-x86_64.zip stack.exe
+    fi
 
 install:
-# Build dependencies
-- stack --no-terminal --install-ghc test --only-dependencies
+  # Build dependencies
+  - stack --no-terminal --install-ghc test --only-dependencies
 
 script:
-# Build the package, its tests, and its docs and run the tests
-# - stack --no-terminal test --haddock --no-haddock-deps
-- stack --no-terminal test # --haddock --no-haddock-deps
+  # Build the package, its tests, and its docs and run the tests
+  # - stack --no-terminal test --haddock --no-haddock-deps
+  - stack --no-terminal test # --haddock --no-haddock-deps
 
 notifications:
   email:
