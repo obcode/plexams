@@ -40,4 +40,5 @@ data ExportWhat
   | Handicaps
   | PlanForStudents
   | StudentsForZPA
+  | Exports
   deriving (Eq)
