@@ -9,6 +9,25 @@ import Plexams.PlanManip
 import Plexams.Query
 import Plexams.Types
 
+{- 
+Schritte:
+- Metrik: e1 >= e2 <=> Anzahl Anmeldungen e1 >= Anzahl Anmeldungen e2
+    - größere Prüfungen weiter vorne?
+- bereits feststehende Slots respektieren
+- Trennen: GO und nicht-GO
+- zuerst GO, größte in die Vormittagsslots um 08:30
+- jetzt sind GO festgelegt
+- Rest in Cluster einteilen
+    - Cluster getrennt planen
+- nur Tage festlegen, max 3 Slots pro Tag
+- haben zwei Prüfungen ...?
+
+andere Idee: für jeden Studierenden einen eigenen Plan in dem die Prüfungen
+immer in der gleichen Reihenfolge sind. => vermutlich nicht zielführend
+
+- vielleicht Optimierung eines bestehenden Planes.
+-}
+
 generateSchedule :: Plan -> (Plan, [AddExamToSlot])
 generateSchedule _ = undefined
 
