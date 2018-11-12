@@ -15,6 +15,7 @@ dependencies:
   - servant-server
   - text
   - wai
+  - wai-cors
   - warp
   - optparse-applicative
   - mtl

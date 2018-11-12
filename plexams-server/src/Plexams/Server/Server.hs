@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings   #-}
+
 
 module Plexams.Server.Server
   ( startApp
@@ -25,6 +27,8 @@ import           GHC.Exts                       ( sortWith )
 
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.Cors
+
 import           Servant
 
 import           Plexams.Import
@@ -94,7 +98,11 @@ getPlan = do
     Nothing    -> return $ error "no plan"
 
 app :: State -> Application
-app = serve api . server
+app = cors (const . Just $ corsPolicy) . serve api . server
+ where
+  corsPolicy = simpleCorsResourcePolicy
+    { corsRequestHeaders = ["authorization", "content-type"]
+    }
 
 api :: Proxy API
 api = Proxy
