@@ -29,7 +29,7 @@ setPlexamsDirectory :: IO ()
 setPlexamsDirectory = do
   homedir <- getHomeDirectory
   dir <- fmap (head . lines) $ readFile $ homedir ++ "/" ++ plexamsrc
-  putStrLn $ "-> setting working directory to: " ++ dir ++ "<-"
+  putStrLn $ "info: setting working directory to: " ++ dir
   setCurrentDirectory dir
 
 semesterConfigFile :: FilePath
