@@ -2,9 +2,12 @@
 
 module Plexams.CLI.Helper.Types where
 
-import Control.Applicative ((<$>), (<*>), empty)
-import Data.Text (Text)
-import qualified Data.Yaml as Y
+import           Control.Applicative            ( (<$>)
+                                                , (<*>)
+                                                , empty
+                                                )
+import           Data.Text                      ( Text )
+import qualified Data.Yaml                     as Y
 
 data Command
   = PrepareStudentRegs
@@ -21,7 +24,6 @@ data Config = Config
 
 data Exam = Exam
   { ancode :: Integer
-  , codenr :: Integer
   , titel :: Text
   , stg :: Text
   , pruefer :: Text
@@ -29,7 +31,7 @@ data Exam = Exam
 
 instance Y.FromJSON Exam where
   parseJSON (Y.Object v) =
-    Exam <$> v Y..: "ancode" <*> v Y..: "codenr" <*> v Y..: "titel" <*>
+    Exam <$> v Y..: "ancode"  <*> v Y..: "titel" <*>
     v Y..: "stg" <*>
     v Y..: "pruefer"
   parseJSON _ = empty

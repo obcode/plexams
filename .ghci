@@ -1,2 +1,4 @@
-:set -fwarn-unused-binds -fwarn-unused-imports
+:set -fwarn-unused-imports
+:unset -fwarn-unused-top-binds
+:unset -fwarn-unused-local-binds
 :set -isrc

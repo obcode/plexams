@@ -40,6 +40,7 @@ executables:
       - plexams-core
       - plexams-datamgmt
       - text
+      - directory
   plexams-helper:
     main: Plexams-Helper.hs
     source-dirs: app/plexams-helper

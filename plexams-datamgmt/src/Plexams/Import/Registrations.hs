@@ -6,6 +6,7 @@ module Plexams.Import.Registrations
   )
 where
 
+import           Data.Aeson.Types               ( typeMismatch )
 import           Control.Applicative            ( (<$>)
                                                 , (<*>)
                                                 , empty
@@ -42,7 +43,7 @@ instance Y.FromJSON ImportStudentReg where
     v Y..: "firstname" <*>
     v Y..: "stg" <*>
     v Y..: "ancode"
-  parseJSON _ = empty
+  parseJSON invalid = typeMismatch "ImportStudentReg" invalid
 
 importStudentRegsToStudentsWithRegs :: [ImportStudentReg] -> StudentsWithRegs
 importStudentRegsToStudentsWithRegs = foldr insertStudent M.empty
@@ -74,8 +75,15 @@ importStudentGroups config importStudentRegs =
 
 importStudentsWithRegsFromYAMLFile
   :: SemesterConfig -> FilePath -> IO (Maybe StudentsWithRegs)
-importStudentsWithRegsFromYAMLFile config =
-  fmap (fmap (importStudentGroups config) . Y.decodeThrow) . BSI.readFile
+importStudentsWithRegsFromYAMLFile config fp = do
+  -- fmap (fmap (importStudentGroups config) . Y.decodeThrow) . BSI.readFile
+  contents <- BSI.readFile fp
+  case Y.decodeEither' contents of
+    Left parseError -> do
+      print parseError
+      return Nothing
+    Right importStudentregs ->
+      return $ Just $ importStudentGroups config importStudentregs
 
 --------------------------------------------------------------------------------
 -- Handicaps from YAML file

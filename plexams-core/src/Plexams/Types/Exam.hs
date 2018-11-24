@@ -1,26 +1,29 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Plexams.Types.Exam
   ( Exam(..)
   , registrations
   , isScheduled
   , isUnscheduled
+  , isGOExam
   , withHandicaps
   , notPlannedByMe
   , seatsMissing
-  ) where
+  )
+where
 
-import Data.Aeson
-import Data.List (intercalate)
-import qualified Data.Map as M
-import Data.Maybe (isJust)
-import Data.Text (unpack)
-import GHC.Generics
+import           Data.Aeson
+import           Data.List                      ( intercalate )
+import qualified Data.Map                      as M
+import           Data.Maybe                     ( isJust )
+import           Data.Text                      ( unpack )
+import           GHC.Generics
 
-import Plexams.Types.Common
-import Plexams.Types.Groups
-import Plexams.Types.Persons
-import Plexams.Types.Rooms
+import           Plexams.Types.Common
+import           Plexams.Types.Groups
+import           Plexams.Types.Persons
+import           Plexams.Types.Rooms
 
 data Exam = Exam
   { anCode :: Ancode -- ^ Anmeldecode Prüfungsamt
@@ -48,6 +51,11 @@ instance FromJSON Exam
 
 instance ToJSON Exam
 
+isGOExam :: Exam -> Bool
+isGOExam exam = if not $ null $ registeredGroups exam
+  then "GO" `elem` map registeredGroupDegree (registeredGroups exam)
+  else GO `elem` map groupDegree (groups exam)
+
 isScheduled :: Exam -> Bool
 isScheduled = isJust . slot
 
@@ -58,12 +66,13 @@ withHandicaps :: Exam -> Bool
 withHandicaps = not . null . handicapStudents
 
 registrations :: Exam -> Integer
-registrations -- sum . mapMaybe groupRegistrations . groups
+registrations =
+  sum . map registeredGroupStudents . registeredGroups -- sum . mapMaybe groupRegistrations . groups
                 -- fromIntegral . length . registeredStudents
- = sum . map registeredGroupStudents . registeredGroups
 
 notPlannedByMe :: [Ancode] -> Exam -> Exam
-notPlannedByMe ancodes exam = exam {plannedByMe = anCode exam `notElem` ancodes}
+notPlannedByMe ancodes exam =
+  exam { plannedByMe = anCode exam `notElem` ancodes }
 
 instance Show Exam where
   show exam =
