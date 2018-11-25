@@ -69,6 +69,8 @@ importStudentGroups config importStudentRegs =
       removeGoOtherExams :: ImportStudentRegs -> [ImportStudentReg]
       removeGoOtherExams (ImportStudentRegs "GO" students') =
         filter ((`notElem` goOtherExams config) . ancode') students'
+      removeGoOtherExams (ImportStudentRegs "GN" students') =
+        filter ((`notElem` goOtherExams config) . ancode') students'
       removeGoOtherExams (ImportStudentRegs _ students') = students'
       ancode' (ImportStudentReg _ _ _ _ a) = a
   in  importStudentRegsToStudentsWithRegs allRegs
