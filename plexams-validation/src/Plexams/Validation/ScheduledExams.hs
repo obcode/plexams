@@ -82,6 +82,7 @@ validateSameNameSameSlot plan = do
           $ groupWith name
           $ filter
               (not . (`elem` concat (notOnSameDay $ constraints plan)) . anCode)
+          $ filter plannedByMe
           $ allExams plan
       ok = null examsGroupedByNameWithDifferentSlots
   tell [Info "### Checking exams with same name in same slot (hard)"]
