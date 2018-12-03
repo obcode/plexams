@@ -2,29 +2,42 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Plexams.Types.SemesterConfig
-      -- * Config
   ( SemesterConfig(..)
   , SemesterConfigFiles(..)
   , examDaysAsStrings
   , slotsAsStringsForRoom
   , AvailableRoom(..)
   , AvailableRooms
-  ) where
+      -- * Config
+  , showSlot
+  )
+where
 
-import Control.Applicative ((<$>), (<*>), empty)
-import Data.Aeson (ToJSON, defaultOptions, genericToEncoding)
-import Data.List (elemIndex)
-import qualified Data.Map as M
-import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Text (Text)
-import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate (toWeekDate)
-import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
-import Data.Time.LocalTime (TimeOfDay(TimeOfDay))
-import qualified Data.Yaml as Y
-import GHC.Generics
+import           Control.Applicative            ( (<$>)
+                                                , (<*>)
+                                                , empty
+                                                )
+import           Data.Aeson                     ( ToJSON
+                                                , defaultOptions
+                                                , genericToEncoding
+                                                )
+import           Data.List                      ( elemIndex )
+import qualified Data.Map                      as M
+import           Data.Maybe                     ( fromMaybe
+                                                , mapMaybe
+                                                )
+import           Data.Text                      ( Text )
+import           Data.Time.Calendar
+import           Data.Time.Calendar.WeekDate    ( toWeekDate )
+import           Data.Time.Format               ( defaultTimeLocale
+                                                , formatTime
+                                                , parseTimeM
+                                                )
+import           Data.Time.LocalTime            ( TimeOfDay(TimeOfDay) )
+import qualified Data.Yaml                     as Y
+import           GHC.Generics
 
-import Plexams.Types.Common
+import           Plexams.Types.Common
 
 data SemesterConfigFiles = SemesterConfigFiles
   { initialPlanFile :: Maybe FilePath -- ^ Datei in der die Prüfungen für das Semester vom ZPA stehen
@@ -67,24 +80,34 @@ data SemesterConfig = SemesterConfig
   , scheduleFrozen :: Bool
   } deriving (Eq, Show, Generic)
 
+showSlot :: SemesterConfig -> Maybe (DayIndex, SlotIndex) -> String
+showSlot _ Nothing = ""
+showSlot semesterConfig (Just (dayIdx, slotIdx)) =
+  formatTime defaultTimeLocale "%d.%m.%y" (examDays semesterConfig !! dayIdx)
+    ++ ", "
+    ++ (slotsPerDay semesterConfig !! slotIdx)
+    ++ " Uhr"
+
+showExamDay :: Day -> String
+showExamDay = formatTime defaultTimeLocale "%a, %d.%m.%y"
+
 examDaysAsStrings :: SemesterConfig -> [String]
-examDaysAsStrings = map (formatTime defaultTimeLocale "%a, %d.%m.%y") . examDays
+examDaysAsStrings = map showExamDay . examDays
 
 slotsAsStringsForRoom :: SemesterConfig -> [String]
 slotsAsStringsForRoom =
-  map showSlotForRoom .
-  mapMaybe (parseTimeM True defaultTimeLocale "%R") . slotsPerDay
-  where
-    showSlotForRoom (TimeOfDay h m _) =
-      if m >= 15
-        then showSlotForRoom' h (m - 15)
-        else showSlotForRoom' (h - 1) (m + 45)
-    showSlotForRoom' h m =
-      show2d h ++ ":" ++ show2d m ++ " - " ++ show2d (h + 2) ++ ":" ++ show2d m
-    show2d :: Int -> String
-    show2d n
-      | n <= 9 = "0" ++ show n
-      | otherwise = show n
+  map showSlotForRoom
+    . mapMaybe (parseTimeM True defaultTimeLocale "%R")
+    . slotsPerDay
+ where
+  showSlotForRoom (TimeOfDay h m _) = if m >= 15
+    then showSlotForRoom' h (m - 15)
+    else showSlotForRoom' (h - 1) (m + 45)
+  showSlotForRoom' h m =
+    show2d h ++ ":" ++ show2d m ++ " - " ++ show2d (h + 2) ++ ":" ++ show2d m
+  show2d :: Int -> String
+  show2d n | n <= 9    = "0" ++ show n
+           | otherwise = show n
 
 instance Y.FromJSON SemesterConfig where
   parseJSON (Y.Object v) =
@@ -102,8 +125,8 @@ instance Y.FromJSON SemesterConfig where
 instance ToJSON SemesterConfig where
   toEncoding = genericToEncoding defaultOptions
 
-makeSemesterConfig ::
-     Text
+makeSemesterConfig
+  :: Text
   -> String
   -> String
   -> String
@@ -114,48 +137,49 @@ makeSemesterConfig ::
   -> [Ancode]
   -> Bool
   -> SemesterConfig
-makeSemesterConfig s f l goDay0 =
-  SemesterConfig s firstDay' lastDay' realExamDays goSlots'
-  where
-    makeDay :: String -> Day
-    makeDay str =
-      fromMaybe
-        (error $ "cannot parse date: " ++ str)
-        (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
-    firstDay' = makeDay f
-    lastDay' = makeDay l
-    realExamDays = filter (notWeekend . toWeekDate) [firstDay' .. lastDay']
-    notWeekend (_, _, weekday) = weekday <= 5
-    goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays -- BUG
-    goSlots' =
-      filter ((>= 0) . fst) $ map (\(d, t) -> (d + goDay0Index, t)) rawGOSlots
-    rawGOSlots =
-      [ (-3, 0)
-      , (-3, 1)
-      , (-1, 3)
-      , (-1, 4)
-      , (-1, 5)
-      , (0, 0)
-      , (0, 1)
-      , (1, 3)
-      , (1, 4)
-      , (1, 5)
-      , (2, 0)
-      , (2, 1)
-      , (3, 3)
-      , (3, 4)
-      , (3, 5)
-      , (4, 0)
-      , (4, 1)
-      , (5, 3)
-      , (5, 4)
-      , (5, 5)
-      , (6, 0)
-      , (6, 1)
-      , (9, 3)
-      , (9, 4)
-      , (9, 5)
-      ]
+makeSemesterConfig s f l goDay0 = SemesterConfig s
+                                                 firstDay'
+                                                 lastDay'
+                                                 realExamDays
+                                                 goSlots'
+ where
+  makeDay :: String -> Day
+  makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
+                          (parseTimeM True defaultTimeLocale "%d.%m.%Y" str)
+  firstDay'    = makeDay f
+  lastDay'     = makeDay l
+  realExamDays = filter (notWeekend . toWeekDate) [firstDay' .. lastDay']
+  notWeekend (_, _, weekday) = weekday <= 5
+  goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays -- BUG
+  goSlots' =
+    filter ((>= 0) . fst) $ map (\(d, t) -> (d + goDay0Index, t)) rawGOSlots
+  rawGOSlots =
+    [ (-3, 0)
+    , (-3, 1)
+    , (-1, 3)
+    , (-1, 4)
+    , (-1, 5)
+    , (0 , 0)
+    , (0 , 1)
+    , (1 , 3)
+    , (1 , 4)
+    , (1 , 5)
+    , (2 , 0)
+    , (2 , 1)
+    , (3 , 3)
+    , (3 , 4)
+    , (3 , 5)
+    , (4 , 0)
+    , (4 , 1)
+    , (5 , 3)
+    , (5 , 4)
+    , (5 , 5)
+    , (6 , 0)
+    , (6 , 1)
+    , (9 , 3)
+    , (9 , 4)
+    , (9 , 5)
+    ]
 
 data AvailableRoom = AvailableRoom
   { availableRoomName :: String

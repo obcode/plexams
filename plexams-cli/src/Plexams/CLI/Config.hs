@@ -72,6 +72,8 @@ queryOpts =
         )
     <*> switch
           (long "unscheduled-only" <> short 'u' <> help "show only unscheduled")
+    <*> switch
+          (long "minimal-output" <> short 'm' <> help "show only minimal info")
 
 queryByAncode :: Parser QueryWhat
 queryByAncode = ByAncode <$> option

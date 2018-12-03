@@ -10,6 +10,7 @@ module Plexams.Types.Exam
   , withHandicaps
   , notPlannedByMe
   , seatsMissing
+  , showMinimal
   )
 where
 
@@ -66,8 +67,7 @@ withHandicaps :: Exam -> Bool
 withHandicaps = not . null . handicapStudents
 
 registrations :: Exam -> Integer
-registrations =
-  sum . map registeredGroupStudents . registeredGroups -- sum . mapMaybe groupRegistrations . groups
+registrations = sum . map registeredGroupStudents . registeredGroups -- sum . mapMaybe groupRegistrations . groups
                 -- fromIntegral . length . registeredStudents
 
 notPlannedByMe :: [Ancode] -> Exam -> Exam
@@ -76,11 +76,7 @@ notPlannedByMe ancodes exam =
 
 instance Show Exam where
   show exam =
-    show (anCode exam) ++
-    ". " ++
-    name exam ++
-    ", " ++
-    unpack (personShortName (lecturer exam)) ++
+    showMinimal exam ++
     (if reExam exam
        then ", W "
        else ", E ") ++
@@ -98,6 +94,10 @@ instance Show Exam where
     (if null $ rooms exam
        then ""
        else "\n        - " ++ intercalate "\n        - " (map show (rooms exam)))
+
+showMinimal :: Exam -> String
+showMinimal exam = show (anCode exam) ++ ". " ++ name exam ++ ", " ++ unpack
+  (personShortName (lecturer exam))
 
 seatsMissing :: Exam -> Integer
 seatsMissing = toInteger . length . registeredStudents
