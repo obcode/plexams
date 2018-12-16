@@ -8,6 +8,8 @@ module Plexams.Types.Exam
   , isUnscheduled
   , isGOExam
   , withHandicaps
+  , handicapStudentsNeedsRoomAlone
+  , withHandicapsNeedsRoomAlone
   , notPlannedByMe
   , seatsMissing
   , showMinimal
@@ -65,6 +67,14 @@ isUnscheduled = not . isScheduled
 
 withHandicaps :: Exam -> Bool
 withHandicaps = not . null . handicapStudents
+
+handicapStudentsNeedsRoomAlone :: Exam -> [StudentWithRegs]
+handicapStudentsNeedsRoomAlone =
+  filter (maybe False handicapNeedsRoomAlone . studentHandicap)
+    . handicapStudents
+
+withHandicapsNeedsRoomAlone :: Exam -> Bool
+withHandicapsNeedsRoomAlone = not . null . handicapStudentsNeedsRoomAlone
 
 registrations :: Exam -> Integer
 registrations = sum . map registeredGroupStudents . registeredGroups -- sum . mapMaybe groupRegistrations . groups
