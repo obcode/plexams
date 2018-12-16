@@ -1,4 +1,4 @@
-resolver: lts-12.21
+resolver: lts-12.23
 packages:
   - ./plexams-core
   - ./plexams-datamgmt
