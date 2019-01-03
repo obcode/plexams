@@ -1,15 +1,16 @@
 pipeline {
-    agent any
-
+    agent none
     stages {
         stage('Build') {
-            steps {
-                sh 'echo stack --no-terminal --install-ghc test --only-dependencies'
+            agent {
+                docker {
+                    image 'haskell:8.4.4'
+                    args '-v /home/jenkins/.stack:/home/jenkins/.stack'
+                }
             }
-        }
-        stage('Test') {
             steps {
-                sh 'echo stack --no-terminal test --haddock --no-haddock-deps'
+                sh 'stack --no-terminal test --only-dependencies'
+                sh 'stack --no-terminal test'
             }
         }
     }
