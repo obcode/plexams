@@ -4,7 +4,7 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                    image 'haskell:8.4.4'
+                    image 'obraun/fun-jenkins'
                     args '-v /home/jenkins/.stack:/home/jenkins/.stack'
                 }
             }
