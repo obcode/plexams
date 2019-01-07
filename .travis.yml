@@ -48,7 +48,7 @@ install:
 script:
   # Build the package, its tests, and its docs and run the tests
   - stack --no-terminal test --haddock --no-haddock-deps
-  - ln -s ‘stack path –local-doc-root‘ docs
+  - mv ‘stack path –local-doc-root‘ docs
 
 deploy:
   provider: pages
