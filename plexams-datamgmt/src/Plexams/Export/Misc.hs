@@ -6,14 +6,15 @@ module Plexams.Export.Misc
   , exportAddRoomToExams
   , exportAddInvigilatorToRoomOrSlot
   , exportHandicaps
-  ) where
+  )
+where
 
-import Data.Aeson.Encode.Pretty
-import Data.ByteString.Lazy.Char8 (unpack)
-import Data.List (intercalate)
-import GHC.Exts (sortWith)
+import           Data.Aeson.Encode.Pretty
+import           Data.ByteString.Lazy.Char8     ( unpack )
+import           Data.List                      ( intercalate )
+import           GHC.Exts                       ( sortWith )
 
-import Plexams.Types
+import           Plexams.Types
 
 --------------------------------------------------------------------------------
 -- Print SemesterConfig
@@ -39,19 +40,18 @@ exportAddRoomToExams = intercalate "\n" . map exportAddRoomToExam
 
 exportAddRoomToExam :: AddRoomToExam -> String
 exportAddRoomToExam (AddRoomToExam a r s d nta _) =
-  "- ancode: " ++
-  show a ++
-  "\n  room: " ++
-  r ++
-  "\n  studentsInRoom: " ++
-  show s ++
-  (case d of
-     Nothing -> ""
-     Just dd -> "\n  deltaDuration: " ++ show dd) ++
-  "\n  nta: " ++
-  if nta
-    then "true"
-    else "false" ++ "\n  reserve: false"
+  "- ancode: "
+    ++ show a
+    ++ "\n  room: "
+    ++ r
+    ++ "\n  studentsInRoom: "
+    ++ show s
+    ++ (case d of
+         Nothing -> ""
+         Just dd -> "\n  deltaDuration: " ++ show dd
+       )
+    ++ "\n  nta: "
+    ++ if nta then "true" else "false" ++ "\n  reserve: false"
 
 --------------------------------------------------------------------------------
 -- Export AddRoomToExam to Yaml
@@ -62,24 +62,25 @@ exportAddInvigilatorToRoomOrSlot =
 
 exportAddInvigilatorToRoomOrSlot' :: AddInvigilatorToRoomOrSlot -> String
 exportAddInvigilatorToRoomOrSlot' (AddInvigilatorToRoomOrSlot i (d, s) mR) =
-  "- id: " ++
-  show i ++
-  "\n  slot: [" ++
-  show d ++
-  "," ++
-  show s ++
-  "]" ++
-  (case mR of
-     Nothing -> ""
-     Just r -> "\n  room: " ++ r)
+  "- id: "
+    ++ show i
+    ++ "\n  slot: ["
+    ++ show d
+    ++ ","
+    ++ show s
+    ++ "]"
+    ++ (case mR of
+         Nothing -> ""
+         Just r  -> "\n  room: " ++ r
+       )
 
 --------------------------------------------------------------------------------
 -- Export Handicaps for Lecturers
 --------------------------------------------------------------------------------
 exportHandicaps :: Plan -> String
 exportHandicaps plan =
-  intercalate "\n" $
-  map show $
-  sortWith lecturer $
-  filter (not . null . handicapStudents) $ scheduledExams plan
-  -- $ setHandicapsOnScheduledExams plan
+  intercalate "\n"
+    $ map show
+    $ sortWith lecturer
+    $ filter (not . null . handicapStudents)
+    $ scheduledExams plan
