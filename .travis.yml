@@ -50,9 +50,9 @@ script:
   - stack --no-terminal test --haddock --no-haddock-deps
   - mkdir docs
   - ls
-  - stack path –local-doc-root
-  - ls `stack path –local-doc-root`
-  - mv ‘stack path –local-doc-root‘ docs/haddock
+  - stack path --local-doc-root
+  - ls `stack path --local-doc-root`
+  - mv ‘stack path --local-doc-root‘ docs/haddock
 
 deploy:
   provider: pages
