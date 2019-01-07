@@ -52,7 +52,7 @@ script:
   - ls
   - stack path --local-doc-root
   - ls `stack path --local-doc-root`
-  - mv ‘stack path --local-doc-root‘ docs/haddock
+  - mv `stack path --local-doc-root` docs/haddock
 
 deploy:
   provider: pages
