@@ -48,7 +48,8 @@ install:
 script:
   # Build the package, its tests, and its docs and run the tests
   - stack --no-terminal test --haddock --no-haddock-deps
-  - mv ‘stack path –local-doc-root‘ docs
+  - mkdir docs
+  - mv ‘stack path –local-doc-root‘ docs/haddock
 
 deploy:
   provider: pages
@@ -56,7 +57,7 @@ deploy:
   github_token: $GITHUB_TOKEN
   on:
     all_branches: true
-  local_dir: docs
+  local_dir: docs/haddock
 
 notifications:
   email:
