@@ -54,13 +54,18 @@ script:
   - ls `stack path --local-doc-root`
   - mv `stack path --local-doc-root` docs/haddock
 
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  on:
-    all_branches: true
-  local_dir: docs/haddock
+jobs:
+  include:
+    - stage: Deploy Haddock
+      os: linux
+      script: echo "deploying haddock to gh-pages"
+      deploy:
+        provider: pages
+        skip_cleanup: true
+        github_token: $GITHUB_TOKEN
+        on:
+          all_branches: true
+        local_dir: docs/haddock
 
 notifications:
   email:
