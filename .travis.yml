@@ -60,7 +60,7 @@ deploy:
   github_token: $GITHUB_TOKEN
   on:
     all_branches: true
-  local_dir: `stack path –local-doc-root`
+  local_dir: docs/haddock
 
 notifications:
   email:
