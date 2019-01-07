@@ -332,30 +332,35 @@ setHandicapsRoomAlone stud availableRoom exams =
   --   ++ show exams
                                                  do
   let (examOfStud, exams') = partition (elem stud . registeredStudents) exams
-      exam                 = case examOfStud of
-        [e] -> e
-        _ ->
-          error
-            $  ">>> Stud: "
-            ++ show stud
-            ++ "\n>>> Exam of Stud: "
-            ++ show examOfStud
-            ++ "\n>>> Other Exams: "
-            ++ show exams'
-      roomName = availableRoomName availableRoom
-      deltaDuration' =
-        ( duration exam
-          * handicapDeltaDurationPercent (fromJust $ studentHandicap stud)
-          )
-          `div` 100
-  tell
-    [ AddRoomToExam (anCode exam)
-                    roomName
-                    [studentMtknr stud]
-                    (Just deltaDuration')
-                    True
-                    False
-    ]
-  return
-    $ exam { registeredStudents = filter (/= stud) $ registeredStudents exam }
-    : exams'
+  if null examOfStud
+    then return exams'
+    else do
+      let
+        exam = case examOfStud of
+          [e] -> e
+          _ ->
+            error
+              $  ">>> Stud: "
+              ++ show stud
+              ++ "\n>>> Exam of Stud: "
+              ++ show examOfStud
+              ++ "\n>>> Other Exams: "
+              ++ show exams'
+        roomName = availableRoomName availableRoom
+        deltaDuration' =
+          ( duration exam
+            * handicapDeltaDurationPercent (fromJust $ studentHandicap stud)
+            )
+            `div` 100
+      tell
+        [ AddRoomToExam (anCode exam)
+                        roomName
+                        [studentMtknr stud]
+                        (Just deltaDuration')
+                        True
+                        False
+        ]
+      return
+        $ exam { registeredStudents = filter (/= stud) $ registeredStudents exam
+               }
+        : exams'
