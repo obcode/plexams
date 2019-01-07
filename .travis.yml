@@ -67,14 +67,6 @@ jobs:
           all_branches: true
         local_dir: docs/haddock
 
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  on:
-    all_branches: true
-  local_dir: docs/haddock
-
 notifications:
   email:
     recipients:
