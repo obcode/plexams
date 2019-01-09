@@ -135,7 +135,9 @@ instance Show Handicap where
 type InvigilatorID = Integer
 
 data Invigilator = Invigilator
-  { invigilatorExcludedDays :: [Int]
+  {
+      invigilatorHasConstraints :: Bool
+  , invigilatorExcludedDays :: [Int]
   , invigilatorExamDays :: [Int]
   , invigilatorWantDays :: [Int]
   , invigilatorCanDays :: [Int]
@@ -157,7 +159,7 @@ data Invigilator = Invigilator
 
 instance FromJSON Invigilator where
   parseJSON (Object v) =
-    Invigilator [] [] [] [] [] Nothing 0 0 <$> v .: "invigilator" <*>
+    Invigilator True [] [] [] [] [] Nothing 0 0 <$> v .: "invigilator" <*>
     v .: "inviligator_id" <*>
     v .: "excluded_dates" <*>
     v .: "part_time" <*>
