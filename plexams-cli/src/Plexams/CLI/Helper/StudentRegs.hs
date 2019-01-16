@@ -78,6 +78,8 @@ getStudentsByAncode fp ancode' = do
 
 getStudentsByAncodeJSON :: FilePath -> FilePath -> Integer -> IO ()
 getStudentsByAncodeJSON ofp fp ac = do
+  putStrLn
+    "Achtung: Falsche Ancodes (anderer Studiengang) werden nicht herausgefiltert!!!"
   sr <- getStudentsByAncode fp ac
   BSL.writeFile ofp $ encodePretty' config sr
   return ()
