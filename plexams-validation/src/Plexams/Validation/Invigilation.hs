@@ -41,6 +41,7 @@ validate plan = do
   invigilatorOk            <- validateInvigilator plan
   handicapsOk              <- validateHandicapsInvigilator plan
   allSlotsHaveReserves     <- validateAllSlotsHaveReserves plan
+  -- TODO: Reserve nicht im nächsten Slot, wenn ein (langer) NTA mit im Slot ist
   allRoomsHaveInvigilators <- validateAllRoomsHaveInvigilators plan
   return $ validationResult
     [allSlotsHaveReserves, allRoomsHaveInvigilators, invigilatorOk, handicapsOk]
