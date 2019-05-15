@@ -3,16 +3,18 @@ module Plexams.CLI.Helper.Commands
   )
 where
 
-import qualified Data.ByteString               as BSI
 import           Data.List                      ( intercalate
                                                 , isSuffixOf
                                                 )
 import           Data.Text                      ( unpack )
 import qualified Data.Yaml                     as Y
 import           GHC.Exts                       ( groupWith )
+import           System.IO
+import           System.Exit                    ( exitFailure )
+
 import           Plexams.CLI.Helper.StudentRegs
 import           Plexams.CLI.Helper.Types
-import           System.IO
+
 
 runCommand :: Config -> IO ()
 runCommand config@(Config PrepareStudentRegs (Just g) iPath _) = do
@@ -67,15 +69,12 @@ runCommand config@(Config PrepareAncodes _ iPath _) = do
           $ lines contents
   stdoutOrFile config $ intercalate "\n" (filter (not . null) examLines) ++ "\n"
 runCommand config@(Config CheckAncodes _ iPath _) = do
-  maybeExams <- importExamsFromYAMLFile iPath
-  case maybeExams of
-    Nothing    -> putStrLn "error: cannot read in exams"
-    Just exams -> do
-      let examGroups = filter differences $ groupWith ancode exams
-      stdoutOrFile config
-        $  "goOtherExams:\n"
-        ++ intercalate "\n" (map show' examGroups)
-        ++ "\n"
+  exams <- importExamsFromYAMLFile iPath
+  let examGroups = filter differences $ groupWith ancode exams
+  stdoutOrFile config
+    $  "goOtherExams:\n"
+    ++ intercalate "\n" (map show' examGroups)
+    ++ "\n"
  where
   differences :: [Exam] -> Bool
   differences []  = False
@@ -101,8 +100,16 @@ runCommand (Config (GetStudsForAncode ac) _ iPath (Just ofp)) =
   getStudentsByAncodeJSON ofp iPath ac
 runCommand _ = putStrLn "unknown config"
 
-importExamsFromYAMLFile :: FilePath -> IO (Maybe [Exam])
-importExamsFromYAMLFile = fmap Y.decodeThrow . BSI.readFile
+importExamsFromYAMLFile :: FilePath -> IO [Exam]
+importExamsFromYAMLFile fp = do
+  res <- Y.decodeFileWithWarnings fp
+  case res of
+    Left parseEx -> do
+      putStrLn $ Y.prettyPrintParseException parseEx
+      exitFailure
+    Right (warnings, exams') -> do
+      mapM_ print warnings
+      return exams' -- = fmap Y.decodeThrow . BSI.readFile
 
 getContents' :: FilePath -> IO String
 getContents' iPath = do

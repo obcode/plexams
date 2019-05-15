@@ -55,10 +55,10 @@ instance Y.FromJSON SemesterConfigFiles where
   parseJSON (Y.Object v) =
     SemesterConfigFiles <$> v Y..: "initialPlan" <*> v Y..: "persons" <*>
     v Y..:? "planManip" <*>
-    v Y..: "handicaps" <*>
-    v Y..: "studentregs" <*>
+    v Y..:? "handicaps" <*>
+    v Y..:? "studentregs" <*>
     v Y..:? "rooms" <*>
-    v Y..: "constraints" <*>
+    v Y..:? "constraints" <*>
     v Y..:? "invigilators" <*>
     v Y..:? "invigilations"
   parseJSON _ = empty
@@ -114,6 +114,7 @@ instance Y.FromJSON SemesterConfig where
     makeSemesterConfig <$> v Y..: "semester" <*> v Y..: "firstDay" <*>
     v Y..: "lastDay" <*>
     v Y..: "goDay0" <*>
+    v Y..:? "goNotOnDays" Y..!= [] <*>
     v Y..: "slotsPerDay" <*>
     v Y..: "files" <*>
     v Y..: "rooms" <*>
@@ -130,6 +131,7 @@ makeSemesterConfig
   -> String
   -> String
   -> String
+  -> [Int]
   -> [String]
   -> SemesterConfigFiles
   -> [AvailableRoom]
@@ -137,11 +139,11 @@ makeSemesterConfig
   -> [Ancode]
   -> Bool
   -> SemesterConfig
-makeSemesterConfig s f l goDay0 = SemesterConfig s
-                                                 firstDay'
-                                                 lastDay'
-                                                 realExamDays
-                                                 goSlots'
+makeSemesterConfig s f l goDay0 goNotOnDays = SemesterConfig s
+                                                             firstDay'
+                                                             lastDay'
+                                                             realExamDays
+                                                             goSlots'
  where
   makeDay :: String -> Day
   makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
@@ -152,7 +154,9 @@ makeSemesterConfig s f l goDay0 = SemesterConfig s
   notWeekend (_, _, weekday) = weekday <= 5
   goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays -- BUG
   goSlots' =
-    filter ((>= 0) . fst) $ map (\(d, t) -> (d + goDay0Index, t)) rawGOSlots
+    filter ((>= 0) . fst) $ map (\(d, t) -> (d + goDay0Index, t)) $ filter
+      (not . (`elem` goNotOnDays) . fst)
+      rawGOSlots
   rawGOSlots =
     [ (-3, 0)
     , (-3, 1)

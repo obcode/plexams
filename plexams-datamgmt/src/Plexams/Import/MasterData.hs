@@ -28,13 +28,23 @@ import           Data.Maybe                     ( fromMaybe
                                                 )
 import           Data.Text                      ( pack )
 import qualified Data.Yaml                     as Y
+import           System.Exit                    ( exitFailure )
 
 import           Plexams.Types
 
 -- }}}
 -- {{{ Semesterconfig from YAML File
-importSemesterConfigFromYAMLFile :: FilePath -> IO (Maybe SemesterConfig)
-importSemesterConfigFromYAMLFile = fmap Y.decodeThrow . BSI.readFile
+importSemesterConfigFromYAMLFile :: FilePath -> IO SemesterConfig
+importSemesterConfigFromYAMLFile fp = do
+  res <- Y.decodeFileWithWarnings fp
+  case res of
+    Left parseEx -> do
+      putStrLn $ Y.prettyPrintParseException parseEx
+      exitFailure
+    Right (warnings, semesterconfig) -> do
+      mapM_ print warnings
+      return semesterconfig
+
 
 -- }}}
 -- {{{ Persons from JSON File
