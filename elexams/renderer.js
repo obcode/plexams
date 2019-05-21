@@ -1,99 +1,96 @@
 // Backend and endpoint details
-const host = 'http://127.0.0.1:8080'
-const endpoints =
-  { exams: host + '/exams',
-    examDays: host + '/examDays',
-    slots: host + '/slots',
-    slot: host + '/slot',
-    slotsPerDay: host + '/slotsPerDay',
-    slotsForDay: host + '/slotsForDay',
-    addExam: host + '/addExam',
-    overlaps: host + '/overlaps',
-    unscheduledExams: host + '/unscheduledExams',
-    notPlannedByMeExams: host + '/notPlannedByMeExams',
-    validation: host + '/validation',
-    validateWhat: host + '/validateWhat',
-    examsBySameLecturer: host + '/examsBySameLecturer',
-    goSlots: host + '/goSlots',
-    conflictingSlots: host + '/conflictingSlots',
-    lecturer: host + '/lecturer',
-    reloadPlan: host + '/reloadPlan',
-    invigilators: host + '/invigilators',
-    invigilatorsForDay: host + '/invigilatorsForDay',
-    examsWithNTA: host + '/examsWithNTA',
-    semesterConfig: host + '/semesterConfig',
-    addInvigilator: host + '/addInvigilator',
-    removeInvigilator: host + '/removeInvigilator',
-    plannedRooms: host + '/plannedRooms'
-  }
-
+const host = "http://127.0.0.1:8080";
+const endpoints = {
+  exams: host + "/exams",
+  examDays: host + "/examDays",
+  slots: host + "/slots",
+  slot: host + "/slot",
+  slotsPerDay: host + "/slotsPerDay",
+  slotsForDay: host + "/slotsForDay",
+  addExam: host + "/addExam",
+  overlaps: host + "/overlaps",
+  unscheduledExams: host + "/unscheduledExams",
+  notPlannedByMeExams: host + "/notPlannedByMeExams",
+  validation: host + "/validation",
+  validateWhat: host + "/validateWhat",
+  examsBySameLecturer: host + "/examsBySameLecturer",
+  goSlots: host + "/goSlots",
+  conflictingSlots: host + "/conflictingSlots",
+  lecturer: host + "/lecturer",
+  reloadPlan: host + "/reloadPlan",
+  invigilators: host + "/invigilators",
+  invigilatorsForDay: host + "/invigilatorsForDay",
+  examsWithNTA: host + "/examsWithNTA",
+  semesterConfig: host + "/semesterConfig",
+  addInvigilator: host + "/addInvigilator",
+  removeInvigilator: host + "/removeInvigilator",
+  plannedRooms: host + "/plannedRooms"
+};
 
 const openTab = (evt, tabname) => {
-
   // Get all elements with class="tabcontent" and hide them
-  const tabcontent = document.getElementsByClassName('tabcontent')
+  const tabcontent = document.getElementsByClassName("tabcontent");
   for (let i = 0; i < tabcontent.length; i++) {
-      tabcontent[i].style.display = 'none'
+    tabcontent[i].style.display = "none";
   }
 
   // Get all elements with class="tablinks" and remove the class "active"
-  const tablinks = document.getElementsByClassName('tablinks');
+  const tablinks = document.getElementsByClassName("tablinks");
   for (let i = 0; i < tablinks.length; i++) {
-      tablinks[i].className = tablinks[i].className.replace(' active', '')
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
   }
 
   // Show the current tab, and add an "active" class to the button that opened the tab
-  document.getElementById(tabname).style.display = 'block'
-  evt.currentTarget.className += ' active'
-  if (tabname === 'Prüfungsplanung') {
+  document.getElementById(tabname).style.display = "block";
+  evt.currentTarget.className += " active";
+  if (tabname === "Prüfungsplanung") {
     // $('#plan').html('<h1>Generating...</h1>')
-    fetchExamDays()
-    fetchUnscheduledExams()
+    fetchExamDays();
+    fetchUnscheduledExams();
     // _fetchValidateWhat()
-  } else if (tabname === 'Raumplanung') {
-    fetchRooms()
-  } else if (tabname === 'Aufsichtenplanung') {
-    fetchInvigilations()
-  } else if (tabname === 'NTA') {
+  } else if (tabname === "Raumplanung") {
+    fetchRooms();
+  } else if (tabname === "Aufsichtenplanung") {
+    fetchInvigilations();
+  } else if (tabname === "NTA") {
     // $('#validation-full').html('<h1>Validating...</h1>')
-    fetchNTA()
-  } else if (tabname === 'Validation') {
+    fetchNTA();
+  } else if (tabname === "Validation") {
     // $('#validation-full').html('<h1>Validating...</h1>')
-    fetchValidation()
-  } else if (tabname === 'Prüfungsliste') {
-    fetchExams()
-  } else if (tabname === 'ReloadPlan') {
-    reloadPlan()
+    fetchValidation();
+  } else if (tabname === "Prüfungsliste") {
+    fetchExams();
+  } else if (tabname === "ReloadPlan") {
+    reloadPlan();
   }
-}
+};
 
 const reloadPlan = () => {
-  $('#reloadedPlan').html('<h1>Loading...</h1>')
-  $.getJSON(endpoints.reloadPlan, (reloadResult) => {
-    let output = ''
+  $("#reloadedPlan").html("<h1>Loading...</h1>");
+  $.getJSON(endpoints.reloadPlan, reloadResult => {
+    let output = "";
     if (reloadResult[0]) {
-      output += '<h1>Plan neu geladen</h1>'
+      output += "<h1>Plan neu geladen</h1>";
     } else {
-      output += '<h1><span class="error">Fehler beim Plan neu laden</span></h1>'
+      output +=
+        '<h1><span class="error">Fehler beim Plan neu laden</span></h1>';
     }
-    const errorMessages = reloadResult[1]
+    const errorMessages = reloadResult[1];
     if (errorMessages.length > 0) {
-      output += '<ul>'
+      output += "<ul>";
       for (let i in errorMessages) {
-        const errorMessage = errorMessages[i]
-        output += `<li>${errorMessage}</li>`
+        const errorMessage = errorMessages[i];
+        output += `<li>${errorMessage}</li>`;
       }
-      output += '</ul>'
+      output += "</ul>";
     }
-    $('#reloadedPlan').html(output)
-  })
-}
+    $("#reloadedPlan").html(output);
+  });
+};
 
-
-let _fetchExams = function () {
-  $.getJSON(endpoints.exams, function (exams) {
-    let output =
-      `<table id="examList" class="examList" >
+let _fetchExams = function() {
+  $.getJSON(endpoints.exams, function(exams) {
+    let output = `<table id="examList" class="examList" >
       <thead>
       <tr class="examList">
         <th class="examList">lfd Nr.</th>
@@ -108,9 +105,9 @@ let _fetchExams = function () {
         <th class="examList">Gruppen</th>
      </tr>
      </thead>
-     <tbody>`
+     <tbody>`;
     for (let i in exams) {
-      const exam = exams[i]
+      const exam = exams[i];
       output += `<tr class="examList">
              <td class="examList">${i}</td>
              <td class="examList">${exam.name}</td>
@@ -118,143 +115,142 @@ let _fetchExams = function () {
              <td class="examList">${exam.anCode}</td>
              <td class="examList">${exam.duration}</td>
              <td class="examList">${exam.reExam}</td>
-             <td class="examList">${exam.slot ? exam.slot : '-'}</td>
-             <td class="examList">${exam.registeredStudentsCount}</td>`
+             <td class="examList">${exam.slot ? exam.slot : "-"}</td>
+             <td class="examList">${exam.registeredStudentsCount}</td>`;
       if (exam.handicapStudents.length > 0) {
-        const l = exam.handicapStudents.length
-        output += `<td class="examList">${l}</td>`
+        const l = exam.handicapStudents.length;
+        output += `<td class="examList">${l}</td>`;
       } else {
-        output += `<td class="examList"></td>`
+        output += `<td class="examList"></td>`;
       }
-      output += `<td class="examList">`
+      output += `<td class="examList">`;
       for (let g in exam.registeredGroups) {
-        let group = exam.registeredGroups[g]
-        output += `${group.registeredGroupDegree}(${group.registeredGroupStudents}), `
+        let group = exam.registeredGroups[g];
+        output += `${group.registeredGroupDegree}(${
+          group.registeredGroupStudents
+        }), `;
       }
-      output += `</td> </tr>`
+      output += `</td> </tr>`;
     }
     output += `</tbody>
-              </table>`
-    $('#plexams-api').html(output)
-    $('#examList').tablesorter({
-      sortList: [
-        [0, 0]
-      ]
-    })
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    $('#error').append(`Error on endpoint \\exams: `)
-    $('#error').append(jqXHR.responseText)
-    $('#error').append(`<br>`)
-    $('#error').css({
-      'border': '3px solid #e22d2d'
-    })
-  })
-}
+              </table>`;
+    $("#plexams-api").html(output);
+    $("#examList").tablesorter({
+      sortList: [[0, 0]]
+    });
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    $("#error").append(`Error on endpoint \\exams: `);
+    $("#error").append(jqXHR.responseText);
+    $("#error").append(`<br>`);
+    $("#error").css({
+      border: "3px solid #e22d2d"
+    });
+  });
+};
 
-let _fetchUnscheduledExams = function () {
-  $.getJSON(endpoints.semesterConfig, function (semesterConfig) {
-    $.getJSON(endpoints.unscheduledExams, function (uExams) {
-      let outputPlannedByMe = ``
+let _fetchUnscheduledExams = function() {
+  $.getJSON(endpoints.semesterConfig, function(semesterConfig) {
+    $.getJSON(endpoints.unscheduledExams, function(uExams) {
+      let outputPlannedByMe = ``;
       for (var i in uExams) {
-        var exam = uExams[i]
-        var draggable = !semesterConfig.scheduleFrozen
-        outputPlannedByMe +=
-          `<div id="${exam.anCode}" class="innerUnscheduled`
+        var exam = uExams[i];
+        var draggable = !semesterConfig.scheduleFrozen;
+        outputPlannedByMe += `<div id="${exam.anCode}" class="innerUnscheduled`;
         if (exam.reExam) {
-          outputPlannedByMe += ' reExam '
+          outputPlannedByMe += " reExam ";
         }
         if (exam.plannedByMe) {
-          outputPlannedByMe += `" draggable="${draggable}"`
+          outputPlannedByMe += `" draggable="${draggable}"`;
         } else {
-          outputPlannedByMe += ` notPlannedByMe" draggable="false"`
+          outputPlannedByMe += ` notPlannedByMe" draggable="false"`;
         }
         outputPlannedByMe += ` ondrop="return false;" ondragstart="dragExam(event)"
             onclick="viewDetails(event, ${exam.anCode})"
-           >${exam.anCode}</br>${exam.name}<br />`
+           >${exam.anCode}</br>${exam.name}<br />`;
         for (let g in exam.registeredGroups) {
-          const group = exam.registeredGroups[g]
+          const group = exam.registeredGroups[g];
           outputPlannedByMe += `<span class="${group.registeredGroupDegree}">
                ${group.registeredGroupDegree}(${group.registeredGroupStudents})
-               </span>,`
+               </span>,`;
         }
-        outputPlannedByMe += '</div>'
+        outputPlannedByMe += "</div>";
       }
-      $('#unscheduled').html(outputPlannedByMe)
-    }).fail(function (jqXHR, textStatus, errorThrown) {
-      $('#error').append(`Error on endpoint \\unscheduledExams: `)
-      $('#error').append(jqXHR.responseText)
-      $('#error').append(`<br>`)
-      $('#error').css({
-        'border': '3px solid #e22d2d'
-      })
-    })
-  })
-}
+      $("#unscheduled").html(outputPlannedByMe);
+      _fetchNotPlannedByMeExams();
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+      $("#error").append(`Error on endpoint \\unscheduledExams: `);
+      $("#error").append(jqXHR.responseText);
+      $("#error").append(`<br>`);
+      $("#error").css({
+        border: "3px solid #e22d2d"
+      });
+    });
+  });
+};
 
-let _fetchNotPlannedByMeExams = function () {
-  $.getJSON(endpoints.notPlannedByMeExams, function (uExams) {
-    let outputNotPlannedByMe = ``
+let _fetchNotPlannedByMeExams = function() {
+  $.getJSON(endpoints.notPlannedByMeExams, function(uExams) {
+    let outputNotPlannedByMe = ``;
     for (var i in uExams) {
-      var exam = uExams[i]
-      var draggable = false
+      var exam = uExams[i];
+      var draggable = false;
 
-      outputNotPlannedByMe +=
-        `<div id="${exam.anCode}" class="innerUnNotPbyMe" ondrop="return false;"
+      outputNotPlannedByMe += `<div id="${
+        exam.anCode
+      }" class="innerUnNotPbyMe" ondrop="return false;"
           draggable="false" onclick="viewDetails(event, ${exam.anCode})"
-          >${exam.anCode}</br>${exam.name}</div>`
+          >${exam.anCode}</br>${exam.name}</div>`;
     }
-    $('#notPlannedByMe').html(outputNotPlannedByMe)
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    $('#error').append(`Error on endpoint \\unscheduledExams: `)
-    $('#error').append(jqXHR.responseText)
-    $('#error').append(`<br>`)
-    $('#error').css({
-      'border': '3px solid #e22d2d'
-    })
-  })
-}
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    $("#error").append(`Error on endpoint \\unscheduledExams: `);
+    $("#error").append(jqXHR.responseText);
+    $("#error").append(`<br>`);
+    $("#error").css({
+      border: "3px solid #e22d2d"
+    });
+  });
+};
 
-let _fetchReserve = function (inDay, inTime, slots) {
+let _fetchReserve = function(inDay, inTime, slots) {
   for (let i in slots) {
-    const slot = slots[i]
-    const timeSlot = slot[0]
-    const slotValue = slot[1]
-    const day = timeSlot[0]
-    const time = timeSlot[1]
+    const slot = slots[i];
+    const timeSlot = slot[0];
+    const slotValue = slot[1];
+    const day = timeSlot[0];
+    const time = timeSlot[1];
     if (day == inDay && time == inTime) {
-      return slotValue.reserveInvigilator
+      return slotValue.reserveInvigilator;
     }
   }
-}
+};
 
-
-let _fetchExamsData = function (inDay, inTime, slots, onlyPlannedByMe) {
+let _fetchExamsData = function(inDay, inTime, slots, onlyPlannedByMe) {
   for (var i in slots) {
-    let slot = slots[i]
-    let timeSlot = slot[0]
-    let slotValue = slot[1]
-    let day = timeSlot[0]
-    let time = timeSlot[1]
+    let slot = slots[i];
+    let timeSlot = slot[0];
+    let slotValue = slot[1];
+    let day = timeSlot[0];
+    let time = timeSlot[1];
     if (day == inDay && time == inTime) {
-      let examsInSlot = slotValue.examsInSlot
-      var arr = []
+      let examsInSlot = slotValue.examsInSlot;
+      var arr = [];
       for (var j in Object.keys(examsInSlot)) {
-        let anCode = Object.keys(examsInSlot)[j]
-        let exam = examsInSlot[anCode]
+        let anCode = Object.keys(examsInSlot)[j];
+        let exam = examsInSlot[anCode];
         if (anCode == null) {
-          anCode = ''
+          anCode = "";
         }
-        let name = ''
-        let reExam = ''
+        let name = "";
+        let reExam = "";
         if (exam != null) {
-          name = exam.name
+          name = exam.name;
           if (exam.reExam) {
-            reExam = '(W)'
+            reExam = "(W)";
           }
         }
-//        arr.push(anCode + reExam + `</br>` + name + `</br>`)
+        //        arr.push(anCode + reExam + `</br>` + name + `</br>`)
         if (exam.plannedByMe || !onlyPlannedByMe) {
-          arr.push(exam)
+          arr.push(exam);
         }
         //   {
         //   anCode: exam.anCode,
@@ -263,106 +259,109 @@ let _fetchExamsData = function (inDay, inTime, slots, onlyPlannedByMe) {
         //   lecturer: exam.lecturer.personShortName
         // })
       }
-      return arr
+      return arr;
     }
   }
-}
-let _getAncodesForSlot = function (inDay, inTime, slots) {
+};
+let _getAncodesForSlot = function(inDay, inTime, slots) {
   for (var i in slots) {
-    let slot = slots[i]
-    let timeSlot = slot[0]
-    let exams = slot[1]
-    let day = timeSlot[0]
-    let time = timeSlot[1]
+    let slot = slots[i];
+    let timeSlot = slot[0];
+    let exams = slot[1];
+    let day = timeSlot[0];
+    let time = timeSlot[1];
     if (day == inDay && time == inTime) {
-      let examsInSlot = exams.examsInSlot
-      var arr = []
+      let examsInSlot = exams.examsInSlot;
+      var arr = [];
 
       for (var j in Object.keys(examsInSlot)) {
-        let anCode = Object.keys(examsInSlot)[j]
+        let anCode = Object.keys(examsInSlot)[j];
         if (anCode == null) {
-          anCode = ''
+          anCode = "";
         }
-        arr.push(anCode)
+        arr.push(anCode);
       }
-      return arr
+      return arr;
     }
   }
-}
-let _fetchExamDescription = function (inDay, inTime, slots) {
-  var description = 'text'
+};
+let _fetchExamDescription = function(inDay, inTime, slots) {
+  var description = "text";
 
   return description;
-}
+};
 
-let _fetchExamDays = function () {
-  $.getJSON(endpoints.semesterConfig, function (semesterConfig) {
-    $.getJSON(endpoints.examDays, function (examDays) {
-        $.getJSON(endpoints.slotsPerDay, function (slotsPerDay) {
-          $.getJSON(endpoints.slots, function (slots) {
-            // Construct the plan output
-            const draggable = !semesterConfig.scheduleFrozen
-            let output =
-              `<table>
+let _fetchExamDays = function() {
+  $.getJSON(endpoints.semesterConfig, function(semesterConfig) {
+    $.getJSON(endpoints.examDays, function(examDays) {
+      $.getJSON(endpoints.slotsPerDay, function(slotsPerDay) {
+        $.getJSON(endpoints.slots, function(slots) {
+          // Construct the plan output
+          const draggable = !semesterConfig.scheduleFrozen;
+          let output = `<table>
                       <tr>
                       <td>
                         <table>
                           <tr>
-                            <th></th>`
-            for (let i in examDays) {
-              let examDay = examDays[i]
-              output += `<th class="days">(${i}) ${examDay}</th>`
-            }
-            output += `</tr>`
+                            <th></th>`;
+          for (let i in examDays) {
+            let examDay = examDays[i];
+            output += `<th class="days">(${i}) ${examDay}</th>`;
+          }
+          output += `</tr>`;
 
-            for (let i in slotsPerDay) {
-              let slot = slotsPerDay[i]
-              output += `<tr>
-                            <td class="times">${slot} (${i})</td>`
-              for (let j in examDays) {
-                let examDay = examDays[j]
-                let examData = _fetchExamsData(j, i, slots)
-                var anCodes = _getAncodesForSlot(j, i, slots);
-                output += `<td class="exams">
+          for (let i in slotsPerDay) {
+            let slot = slotsPerDay[i];
+            output += `<tr>
+                            <td class="times">${slot} (${i})</td>`;
+            for (let j in examDays) {
+              let examDay = examDays[j];
+              let examData = _fetchExamsData(j, i, slots);
+              var anCodes = _getAncodesForSlot(j, i, slots);
+              output += `<td class="exams">
                           <div id="slot_${j}_${i}" class="outer" data-day="${j}" data-slot="${i}"
-                          ondrop="dropExam(event)" ondragover="allowDropExam(event)">`
-                for (let k in examData) {
-                  const exam = examData[k]
-                  output += `<div id="${exam.anCode}" class="inner `
-                  if (exam.reExam) {
-                    output += 'reExam'
-                  }
-                  output += `" ondrop="return false;"
+                          ondrop="dropExam(event)" ondragover="allowDropExam(event)">`;
+              for (let k in examData) {
+                const exam = examData[k];
+                output += `<div id="${exam.anCode}" class="inner `;
+                if (exam.reExam) {
+                  output += "reExam";
+                }
+                output += `" ondrop="return false;"
                              draggable="${draggable}" ondragstart="dragExam(event)"
                              onclick="viewDetails(event, ${exam.anCode})"
                              title="${exam.anCode}"
                              onmouseover="">
-                             ${exam.anCode}. (${exam.registeredStudentsCount})`
-                  for (let g in exam.registeredGroups) {
-                    const group = exam.registeredGroups[g]
-                    output += `<span class="${group.registeredGroupDegree}">
-                        ${group.registeredGroupDegree}(${group.registeredGroupStudents})
-                        </span>,`
-                  }
-                  output += `<br>
-                             <span class="examName">${exam.name}</span><br>
-                             ${exam.lecturer.personShortName}<br>`
-                  for (let r in exam.rooms) {
-                    output += `<span class="room-${exam.rooms[r].roomID}">${exam.rooms[r].roomID}</span>, `
-                  }
-                  output += '<br>'
-                  if (exam.handicapStudents.length > 0) {
-                    output += '<span class="NTA">NTA</span>'
-                  }
-                  output += `</div>`
+                             ${exam.anCode}. (${exam.registeredStudentsCount})`;
+                for (let g in exam.registeredGroups) {
+                  const group = exam.registeredGroups[g];
+                  output += `<span class="${group.registeredGroupDegree}">
+                        ${group.registeredGroupDegree}(${
+                    group.registeredGroupStudents
+                  })
+                        </span>,`;
                 }
-                output += `</div>
-                          </td>`
+                output += `<br>
+                             <span class="examName">${exam.name}</span><br>
+                             ${exam.lecturer.personShortName}<br>`;
+                for (let r in exam.rooms) {
+                  output += `<span class="room-${exam.rooms[r].roomID}">${
+                    exam.rooms[r].roomID
+                  }</span>, `;
+                }
+                output += "<br>";
+                if (exam.handicapStudents.length > 0) {
+                  output += '<span class="NTA">NTA</span>';
+                }
+                output += `</div>`;
               }
-              output += `</tr>`
+              output += `</div>
+                          </td>`;
             }
-            // Detailed description of the selected exams
-            output += `</tr>
+            output += `</tr>`;
+          }
+          // Detailed description of the selected exams
+          output += `</tr>
                   </table>
                   </td>
                   <td style="vertical-align:top; word-break: break-word; width:15em;">
@@ -372,77 +371,77 @@ let _fetchExamDays = function () {
                   </td>
                 </tr>
               </table>
-              </br>`
-            $('#plan').html(output)
-            toggleGoSlots()
-            setNotPlannedByMe()
-          })
-        })
-    })
-    .fail(function (jqXHR, textStatus, errorThrown) {
-      $('#error').append(`Error on endpoint \\examDays: `)
-      $('#error').append(jqXHR.responseText)
-      $('#error').append(`<br>`)
-      $('#error').css({
-        'border': '3px solid #e22d2d'
-      })
-    })
-  })
-}
+              </br>`;
+          $("#plan").html(output);
+          toggleGoSlots();
+          setNotPlannedByMe();
+        });
+      });
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+      $("#error").append(`Error on endpoint \\examDays: `);
+      $("#error").append(jqXHR.responseText);
+      $("#error").append(`<br>`);
+      $("#error").css({
+        border: "3px solid #e22d2d"
+      });
+    });
+  });
+};
 
-function setNotPlannedByMe () {
-  $.getJSON(endpoints.notPlannedByMeExams, function (ancodes) {
+function setNotPlannedByMe() {
+  $.getJSON(endpoints.notPlannedByMeExams, function(ancodes) {
     for (var i in ancodes) {
-      let ancode = ancodes[i]
-      $('#'.concat(ancode)).addClass('notPlannedByMe')
+      let ancode = ancodes[i];
+      $("#".concat(ancode)).addClass("notPlannedByMe");
     }
-  })
+  });
 }
 
-
-function toggleGoSlots () {
-  $.getJSON(endpoints.goSlots, (goSlots) => {
+function toggleGoSlots() {
+  $.getJSON(endpoints.goSlots, goSlots => {
     for (let i in goSlots) {
-      let goSlot = goSlots[i]
-      $(['#slot_', goSlot[0], '_', goSlot[1]].join('')).addClass('goSlot')
+      let goSlot = goSlots[i];
+      $(["#slot_", goSlot[0], "_", goSlot[1]].join("")).addClass("goSlot");
     }
-  })
+  });
 }
 
-function _fetchLecturer () {
-  $.getJSON(endpoints.lecturer, (lecturers) => {
-    let output = '<ul id="lecturerlist">'
+function _fetchLecturer() {
+  $.getJSON(endpoints.lecturer, lecturers => {
+    let output = '<ul id="lecturerlist">';
     for (let i in lecturers) {
-      const lecturer = lecturers[i]
+      const lecturer = lecturers[i];
       output += `<li>
           <span id="lecturer_${lecturer.personID}" class="lecturer"
-          onclick="viewExams(event, ${lecturer.personID})"> ${lecturer.personShortName} `
+          onclick="viewExams(event, ${lecturer.personID})"> ${
+        lecturer.personShortName
+      } `;
       if (lecturer.personIsLBA) {
-        output += '(LBA)'
+        output += "(LBA)";
       } else {
-        output += `(${lecturer.personFK})`
+        output += `(${lecturer.personFK})`;
       }
-      output += `</span></li>`
+      output += `</span></li>`;
     }
-    output += '</ul>'
-    $('#lecturer').html(output)
-  })
+    output += "</ul>";
+    $("#lecturer").html(output);
+  });
 }
 
 // Convenience function for _fetchExams
-let fetchExams = function () {
-  _fetchExams()
-}
+let fetchExams = function() {
+  _fetchExams();
+};
 
 // Convenience function for _fetchExamDays
-let fetchExamDays = function () {
-  _fetchExamDays()
-}
+let fetchExamDays = function() {
+  _fetchExamDays();
+};
 
 // Convenience function for _fetchExamDays
-let fetchUnscheduledExams = function () {
-  _fetchUnscheduledExams()
-}
+let fetchUnscheduledExams = function() {
+  _fetchUnscheduledExams();
+};
 
 // // Start to fetch the exam list
 // fetchExams()
@@ -463,5 +462,5 @@ let fetchUnscheduledExams = function () {
 
 // _fetchValidation()
 
-fetchExamDays()
-fetchUnscheduledExams()
+fetchExamDays();
+fetchUnscheduledExams();
