@@ -43,7 +43,7 @@ import           Plexams.Validation
 
 type API
    = "exams" :> Get '[ JSON] [Exam]
-      :<|> "exam" :> Capture "examid" Integer :> Get '[ JSON] (Maybe Exam)
+      :<|> "exam" :> ReqBody '[ JSON] Integer :> Post '[ JSON] (Maybe Exam)
       :<|> "examDays" :> Get '[ JSON] [String]
       :<|> "slots" :> Get '[ JSON] Slots
       :<|> "slot" :> ReqBody '[ JSON] (Int, Int) :> Post '[ JSON] [Exam]
