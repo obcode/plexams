@@ -49,8 +49,8 @@ type API
       :<|> "slot" :> ReqBody '[ JSON] (Int, Int) :> Post '[ JSON] [Exam]
       :<|> "slotsPerDay" :> Get '[ JSON] [String]
       :<|> "slotsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] Slots
-      :<|> "conflictingSlots" :> ReqBody '[ JSON] Integer :> Post '[ JSON] [( Int
-                                                                            , Int)]
+      :<|> "conflictingSlots" :> ReqBody '[ JSON] Integer :> Post '[ JSON]
+                    ([( Int , Int)], [( Int , Int)])
       :<|> "addExam" :> ReqBody '[ JSON] AddExamToSlot :> Post '[ JSON] ()
       :<|> "unscheduledExams" :> Get '[ JSON] [Exam]
       :<|> "notPlannedByMeExams" :> Get '[ JSON] [Ancode]
@@ -229,7 +229,7 @@ server state =
     plan''                 <- liftIO $ readTVarIO planT
     return $ M.filterWithKey (\k _ -> fst k == dayIndex) $ slots plan''
 
-  conflictingSlots' :: Ancode -> StateHandler [(Int, Int)]
+  conflictingSlots' :: Ancode -> StateHandler ([(Int, Int)], [(Int, Int)])
   conflictingSlots' ancode = do
     State { plan = planT } <- ask
     plan''                 <- liftIO $ readTVarIO planT

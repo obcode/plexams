@@ -144,25 +144,30 @@ queryRoomByID' roomID' plan =
   , roomID' `elem` concatMap (map roomID . rooms) (examsInSlot slot')
   ]
 
-conflictingSlotsForAncode :: Ancode -> Plan -> [(Int, Int)]
+conflictingSlotsForAncode :: Ancode -> Plan -> ([(Int, Int)], [(Int, Int)])
 conflictingSlotsForAncode ancode plan'
   = let
       exams ancode' = filter ((== ancode') . anCode) $ allExams plan'
       findSlotsForAncode ancode' = case exams ancode' of
-        [] -> []
-        (exam : _) ->
-          maybe [] (\(d, s) -> [(d, s - 1), (d, s), (d, s + 1)]) $ slot exam
+        []         -> []
+        (exam : _) -> maybe [] (\(d, s) -> [(d, s)]) $ slot exam
     in
       case exams ancode of
-        [] -> []
-        (exam : _) ->
-          sort
-            $ filter ((`elem` [0 .. maxSlotIndex plan']) . snd)
-            $ nub
-            $ (\s -> if isGOExam exam
-                then s ++ nonGOSlots (semesterConfig plan')
-                else s
-              )
-            $ concatMap findSlotsForAncode
-            $ M.keys
-            $ conflictingAncodes exam
+        [] -> ([], [])
+        (exam : _)
+          -> let
+               conflicts' =
+                 sortAndClean
+                   $ concatMap findSlotsForAncode
+                   $ M.keys
+                   $ conflictingAncodes exam
+               nextToConflicts = sortAndClean
+                 $ concatMap (\(d, s) -> [(d, s - 1), (d, s + 1)]) conflicts'
+               conflicts = if isGOExam exam
+                 then sortAndClean
+                   (conflicts' ++ nonGOSlots (semesterConfig plan'))
+                 else conflicts'
+               sortAndClean =
+                 sort . filter ((`elem` [0 .. maxSlotIndex plan']) . snd) . nub
+             in
+               (conflicts, nextToConflicts)
