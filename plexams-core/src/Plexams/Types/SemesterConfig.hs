@@ -3,6 +3,7 @@
 
 module Plexams.Types.SemesterConfig
   ( SemesterConfig(..)
+  , nonGOSlots
   , SemesterConfigFiles(..)
   , examDaysAsStrings
   , slotsAsStringsForRoom
@@ -79,6 +80,14 @@ data SemesterConfig = SemesterConfig
   , goOtherExams :: [Ancode]
   , scheduleFrozen :: Bool
   } deriving (Eq, Show, Generic)
+
+nonGOSlots :: SemesterConfig -> [(Int, Int)]
+nonGOSlots semesterConfig =
+  [ (d, s)
+  | d <- [0 .. length (examDays semesterConfig) - 1]
+  , s <- [0 .. length (slotsPerDay semesterConfig) - 1]
+  , (d, s) `notElem` goSlots semesterConfig
+  ]
 
 showSlot :: SemesterConfig -> Maybe (DayIndex, SlotIndex) -> String
 showSlot _ Nothing = ""

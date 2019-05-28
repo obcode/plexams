@@ -143,29 +143,29 @@ server state =
   plan' :: StateHandler Plan
   plan' = do
     State { plan = planT } <- ask
-    liftIO $ atomically $ readTVar planT
+    liftIO $ readTVarIO planT
 
   semesterConfig' :: StateHandler SemesterConfig
   semesterConfig' = do
     State { plan = planT } <- ask
-    liftIO $ fmap semesterConfig $ atomically $ readTVar planT
+    liftIO $ semesterConfig <$> readTVarIO planT
 
   exams' :: StateHandler [Exam]
   exams' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ allExams plan''
 
   exam' :: Integer -> StateHandler (Maybe Exam)
   exam' examid = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ listToMaybe $ filter ((== examid) . anCode) $ allExams plan''
 
   examsWithNTA' :: StateHandler [Exam]
   examsWithNTA' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return
       $ sortWith (personShortName . lecturer)
       $ filter (not . null . handicapStudents)
@@ -174,14 +174,13 @@ server state =
   invigilators' :: StateHandler (Invigilations, [Invigilator])
   invigilators' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return (mkInvigilations plan'', M.elems $ invigilators plan'')
 
   invigilatorsForDay' :: Int -> StateHandler ([Invigilator], [Invigilator])
   invigilatorsForDay' dayIndex = do
     State { plan = planT } <- ask
-    invigilators''         <-
-      liftIO $ fmap (M.elems . invigilators) $ atomically $ readTVar planT
+    invigilators'' <- liftIO $ M.elems . invigilators <$> readTVarIO planT
     let wantAndPlannedInvigs = filter
           (\i ->
             dayIndex
@@ -203,43 +202,43 @@ server state =
   examDays' :: StateHandler [String]
   examDays' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ examDaysAsStrings $ semesterConfig plan''
 
   slots' :: StateHandler Slots
   slots' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ slots plan''
 
   slot' :: (Int, Int) -> StateHandler [Exam]
   slot' s = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ maybe [] (M.elems . examsInSlot) $ M.lookup s $ slots plan''
 
   slotsPerDay' :: StateHandler [String]
   slotsPerDay' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ slotsPerDay $ semesterConfig plan''
 
   slotsForDay' :: Int -> StateHandler Slots
   slotsForDay' dayIndex = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ M.filterWithKey (\k _ -> fst k == dayIndex) $ slots plan''
 
   conflictingSlots' :: Ancode -> StateHandler [(Int, Int)]
   conflictingSlots' ancode = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ conflictingSlotsForAncode ancode plan''
 
   unscheduledExams' :: StateHandler [Exam]
   unscheduledExams' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return
       $ sortBy (\e1 e2 -> compare (registrations e2) (registrations e1))
       $ filter isUnscheduled
@@ -248,13 +247,13 @@ server state =
   notPlannedByMeExams' :: StateHandler [Ancode]
   notPlannedByMeExams' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ map head $ importedExams $ semesterConfig plan''
 
   examsBySameLecturer' :: Ancode -> StateHandler [Exam]
   examsBySameLecturer' anCode' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     let allExams'              = allExams plan''
         (thisExam, otherExams) = partition ((== anCode') . anCode) allExams'
         lecturer''             = personID $ lecturer $ head thisExam
@@ -264,7 +263,7 @@ server state =
   plannedRooms' :: StateHandler [PlannedRoomWithSlots]
   plannedRooms' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return
       $ map ((`queryRoomByID` plan'') . availableRoomName)
       $ availableRooms
@@ -273,19 +272,19 @@ server state =
   validation' :: [ValidateWhat] -> StateHandler Validation
   validation' validateWhat'' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ uncurry Validation $ validate validateWhat'' plan''
 
   goSlots' :: StateHandler [(Int, Int)]
   goSlots' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ goSlots $ semesterConfig plan''
 
   lecturer' :: StateHandler [Person]
   lecturer' = do
     State { plan = planT } <- ask
-    plan''                 <- liftIO $ atomically $ readTVar planT
+    plan''                 <- liftIO $ readTVarIO planT
     return $ sortWith personShortName $ nub $ map lecturer $ allExams plan''
 
   addExam' :: AddExamToSlot -> StateHandler ()

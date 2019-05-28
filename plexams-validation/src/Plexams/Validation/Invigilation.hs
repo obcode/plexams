@@ -354,9 +354,7 @@ validateAllOwnSelfOk plan invigilator' examsThatShareRoomsMap = do
       filter ((== 1) . length)
         $ map
             (\exam ->
-              groupWith (roomID . fst)
-                $ map (\r -> (r, (slot exam, exam)))
-                $ rooms exam
+              groupWith (roomID . fst) $ map (, (slot exam, exam)) $ rooms exam
             )
         $ queryByLecturerID invigID plan
     roomsOfOwnExamsWithOneRoomOtherInvig = concat $ filter
@@ -444,28 +442,24 @@ validateHandicapsInvigilator' ((si@(d1, s1), slot'), ((d2, s2), nextSlot)) = do
     [ HardConstraintBroken
         ">>> This should not happen. Validating handicaps on non-following slots"
     ]
-  let handicapInvigilators =
-        nub
-          $ catMaybes
-          $ concatMap
-              ( map (fmap invigilatorID . invigilator . snd)
-              . filter
-                  (\(d, r) ->
-                    handicapCompensation r && d + deltaDuration r > 100
-                  )
-              )
-          $ map (\e -> map (duration e, ) $ rooms e)
-          $ M.elems
-          $ examsInSlot slot'
-      personsInvolvedInNextSlot = nub $ catMaybes
-        ((invigilatorID <$> reserveInvigilator nextSlot) : concatMap
-          (\e -> Just (personID $ lecturer e)
-            : map (fmap invigilatorID . invigilator) (rooms e)
-          )
-          (M.elems $ examsInSlot nextSlot)
+  let
+    handicapInvigilators = nub $ catMaybes $ concatMap
+      ( (map (fmap invigilatorID . invigilator . snd) . filter
+          (\(d, r) -> handicapCompensation r && d + deltaDuration r > 100)
         )
-      handicapInvigilatorInvolvedInNextSlot =
-        any (`elem` personsInvolvedInNextSlot) handicapInvigilators
+      . (\e -> map (duration e, ) $ rooms e)
+      )
+      (M.elems $ examsInSlot slot')
+
+    personsInvolvedInNextSlot = nub $ catMaybes
+      ((invigilatorID <$> reserveInvigilator nextSlot) : concatMap
+        (\e -> Just (personID $ lecturer e)
+          : map (fmap invigilatorID . invigilator) (rooms e)
+        )
+        (M.elems $ examsInSlot nextSlot)
+      )
+    handicapInvigilatorInvolvedInNextSlot =
+      any (`elem` personsInvolvedInNextSlot) handicapInvigilators
   when handicapInvigilatorInvolvedInNextSlot $ tell
     [ HardConstraintBroken
       $        "- Handicap invigilator (slot "

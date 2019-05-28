@@ -145,18 +145,24 @@ queryRoomByID' roomID' plan =
   ]
 
 conflictingSlotsForAncode :: Ancode -> Plan -> [(Int, Int)]
-conflictingSlotsForAncode ancode plan' =
-  let exams ancode' = filter ((== ancode') . anCode) $ allExams plan'
+conflictingSlotsForAncode ancode plan'
+  = let
+      exams ancode' = filter ((== ancode') . anCode) $ allExams plan'
       findSlotsForAncode ancode' = case exams ancode' of
         [] -> []
         (exam : _) ->
           maybe [] (\(d, s) -> [(d, s - 1), (d, s), (d, s + 1)]) $ slot exam
-  in  case exams ancode of
+    in
+      case exams ancode of
         [] -> []
         (exam : _) ->
           sort
             $ filter ((`elem` [0 .. maxSlotIndex plan']) . snd)
             $ nub
+            $ (\s -> if isGOExam exam
+                then s ++ nonGOSlots (semesterConfig plan')
+                else s
+              )
             $ concatMap findSlotsForAncode
             $ M.keys
             $ conflictingAncodes exam

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Plexams.Invigilation
   ( mkInvigilations
@@ -120,10 +121,8 @@ mkInvigilatorsPerDay =
       M.empty
     . concatMap
         (\invigilator' ->
-          map (\d -> (invigilator', True, d)) (invigilatorWantDays invigilator')
-            ++ map
-                 (\d -> (invigilator', False, d))
-                 (invigilatorCanDays invigilator')
+          map (invigilator', True, ) (invigilatorWantDays invigilator')
+            ++ map (invigilator', False, ) (invigilatorCanDays invigilator')
         )
     . M.elems
     . invigilators

@@ -56,7 +56,9 @@ instance ToJSON Exam
 
 isGOExam :: Exam -> Bool
 isGOExam exam = if not $ null $ registeredGroups exam
-  then "GO" `elem` map registeredGroupDegree (registeredGroups exam)
+  then
+    let g = map registeredGroupDegree (registeredGroups exam)
+    in  "GO" `elem` g || "GN" `elem` g
   else GO `elem` map groupDegree (groups exam)
 
 isScheduled :: Exam -> Bool

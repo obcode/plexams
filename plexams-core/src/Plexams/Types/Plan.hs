@@ -25,12 +25,10 @@ import           Data.Aeson                     ( ToJSON
                                                 )
 import           Data.List                      ( (\\)
                                                 , partition
-                                                , sortBy
+                                                , sortOn
                                                 )
 import qualified Data.Map                      as M
-import           Data.Ord                       ( Down(Down)
-                                                , comparing
-                                                )
+import           Data.Ord                       ( Down(Down) )
 import           Data.Time.Calendar
 import           GHC.Generics
 import           Plexams.Types.Common
@@ -78,18 +76,18 @@ isUnknownExamAncode ancode plan =
 
 mkAvailableRooms :: Plan -> [AvailableRoom] -> AvailableRooms
 mkAvailableRooms _ [] = M.empty
-mkAvailableRooms plan rooms' =
-  let slots' = M.keys $ slots plan
+mkAvailableRooms plan rooms'
+  = let
+      slots' = M.keys $ slots plan
       (handicapCompensationRooms', normalRooms') =
         partition availableRoomHandicap rooms'
       (normalRoomsNeedRequest', normalOwnRooms') =
         partition availableRoomNeedsRequest normalRooms'
       normalRoomsNeedRequest =
-        sortBy (comparing availableRoomMaxSeats) normalRoomsNeedRequest'
-      normalOwnRooms =
-        sortBy (comparing (Down . availableRoomMaxSeats)) normalOwnRooms'
+        sortOn availableRoomMaxSeats normalRoomsNeedRequest'
+      normalOwnRooms = sortOn (Down . availableRoomMaxSeats) normalOwnRooms'
       handicapCompensationRooms =
-        sortBy (comparing availableRoomMaxSeats) handicapCompensationRooms'
+        sortOn availableRoomMaxSeats handicapCompensationRooms'
       roomSlots'        = roomSlots $ constraints plan
       allAvailableRooms = M.fromList $ zip slots' $ concat $ repeat
         [(normalOwnRooms, normalRoomsNeedRequest, handicapCompensationRooms)]
@@ -113,7 +111,8 @@ mkAvailableRooms plan rooms' =
             allRooms
           $  slots'
           \\ slots''
-  in  foldr (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
+    in
+      foldr (\(r, sl) allRooms -> removeRoomFromAllOtherSlots r sl allRooms)
             allAvailableRooms
         $ M.toList roomSlots'
 
