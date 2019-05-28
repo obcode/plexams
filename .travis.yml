@@ -40,12 +40,14 @@ before_install:
       curl -sS -ostack.zip -L --insecure https://get.haskellstack.org/stable/windows-x86_64.zip
       7z x windows-x86_64.zip stack.exe
     fi
+    stack install hlint
 
 install:
   # Build dependencies
   - stack --no-terminal --install-ghc test --only-dependencies
 
 script:
+  - hlint .
   - stack --no-terminal test
 
 jobs:
