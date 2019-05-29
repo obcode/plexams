@@ -21,6 +21,7 @@ import           Data.Text                      ( Text
                                                 )
 import           System.Directory               ( getHomeDirectory
                                                 , setCurrentDirectory
+                                                , doesFileExist
                                                 )
 
 import           Plexams.Import.MasterData
@@ -36,10 +37,14 @@ plexamsrc = ".plexamsrc"
 
 setPlexamsDirectory :: IO ()
 setPlexamsDirectory = do
-  homedir <- getHomeDirectory
-  dir     <- fmap (head . lines) $ readFile $ homedir ++ "/" ++ plexamsrc
-  putStrLn $ "INFO: setting working directory to: " ++ dir
-  setCurrentDirectory dir
+  plexamsYamlExists <- doesFileExist "plexams.yaml"
+  if plexamsYamlExists
+    then putStrLn "INFO: using config in current directory"
+    else do
+      homedir <- getHomeDirectory
+      dir     <- fmap (head . lines) $ readFile $ homedir ++ "/" ++ plexamsrc
+      putStrLn $ "INFO: setting working directory to: " ++ dir
+      setCurrentDirectory dir
 
 semesterConfigFile :: FilePath
 semesterConfigFile = "plexams.yaml"
