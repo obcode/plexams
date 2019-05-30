@@ -1,13 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Plexams.Import.Misc
   ( importZPAExamsFromJSONFile
-  ) where
+  )
+where
 
-import Data.Aeson (decode)
-import qualified Data.ByteString.Lazy as BS
+import           Data.Aeson                     ( decode )
+import qualified Data.ByteString.Lazy          as BS
 
-import Plexams.Types
+import           Plexams.Types
 
 --------------------------------------------------------------------------------
 -- ZPAExams from JSON file

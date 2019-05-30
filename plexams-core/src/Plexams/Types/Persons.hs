@@ -16,21 +16,26 @@ module Plexams.Types.Persons
   , Invigilator(..)
   , Invigilators
   , addHandicaps
-  ) where
+  )
+where
 
-import Control.Applicative (empty)
-import Data.Aeson
-import Data.List ((\\))
-import qualified Data.Map as M
-import Data.Monoid ((<>))
-import qualified Data.Set as S
-import Data.Text (Text, unpack)
-import qualified Data.Yaml as Y
-import GHC.Generics
+import           Control.Applicative            ( empty )
+import           Data.Aeson
+import           Data.List                      ( (\\) )
+import qualified Data.Map                      as M
+import           Data.Monoid                    ( (<>) )
+import qualified Data.Set                      as S
+import           Data.Text                      ( Text
+                                                , unpack
+                                                )
+import qualified Data.Yaml                     as Y
+import           GHC.Generics
 
-import TextShow (TextShow, showb)
+import           TextShow                       ( TextShow
+                                                , showb
+                                                )
 
-import Plexams.Types.Common
+import           Plexams.Types.Common
 
 type Persons = M.Map PersonID Person
 
@@ -75,7 +80,10 @@ data StudentWithRegs = StudentWithRegs
   , studentGroup :: Text
   , studentAncodes :: [Ancode]
   , studentHandicap :: Maybe Handicap
-  } deriving (Eq, Generic)
+  } deriving (Generic, Show)
+
+instance Eq StudentWithRegs where
+  StudentWithRegs m1 _ _ _ _ _ == StudentWithRegs m2 _ _ _ _ _ = m1 == m2
 
 studentName :: StudentWithRegs -> Text
 studentName s = studentFamilyname s `mappend` ", " `mappend` studentFirstname s
@@ -106,20 +114,18 @@ instance ToJSON Handicap
 
 addHandicaps :: StudentsWithRegs -> [Handicap] -> StudentsWithRegs
 addHandicaps = foldr addHandicap
-  where
-    addHandicap :: Handicap -> StudentsWithRegs -> StudentsWithRegs
-    addHandicap handicap =
-      M.alter
-        (maybe
-           Nothing
-           (\s ->
-              Just $
-              s
-              { studentHandicap = Just handicap
-              , studentAncodes =
-                  studentAncodes s \\ handicapNotForExams handicap
-              }))
-        (handicapMtknr handicap)
+ where
+  addHandicap :: Handicap -> StudentsWithRegs -> StudentsWithRegs
+  addHandicap handicap = M.alter
+    (maybe
+      Nothing
+      (\s -> Just $ s
+        { studentHandicap = Just handicap
+        , studentAncodes  = studentAncodes s \\ handicapNotForExams handicap
+        }
+      )
+    )
+    (handicapMtknr handicap)
 
 instance Show Handicap where
   show handicap =
@@ -129,7 +135,9 @@ instance Show Handicap where
 type InvigilatorID = Integer
 
 data Invigilator = Invigilator
-  { invigilatorExcludedDays :: [Int]
+  {
+      invigilatorHasConstraints :: Bool
+  , invigilatorExcludedDays :: [Int]
   , invigilatorExamDays :: [Int]
   , invigilatorWantDays :: [Int]
   , invigilatorCanDays :: [Int]
@@ -151,7 +159,7 @@ data Invigilator = Invigilator
 
 instance FromJSON Invigilator where
   parseJSON (Object v) =
-    Invigilator [] [] [] [] [] Nothing 0 0 <$> v .: "invigilator" <*>
+    Invigilator True [] [] [] [] [] Nothing 0 0 <$> v .: "invigilator" <*>
     v .: "inviligator_id" <*>
     v .: "excluded_dates" <*>
     v .: "part_time" <*>

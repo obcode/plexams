@@ -10,7 +10,8 @@ data Command
              , validateRooms :: Bool
              , validateInvigilation :: Bool }
   | Query { bywhat :: QueryWhat
-          , onlyUnscheduled :: Bool }
+          , onlyUnscheduled :: Bool
+          , minimalOutput :: Bool }
   | Export { what :: ExportWhat }
   | PrintConfig
   | Generate { scheduleSameNames :: Bool }

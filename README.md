@@ -1,23 +1,33 @@
 [![Build Status](https://travis-ci.org/obcode/plexams.svg?branch=master)](https://travis-ci.org/obcode/plexams)
 [![Build status](https://ci.appveyor.com/api/projects/status/eraclkgf9kctilm7?svg=true)](https://ci.appveyor.com/project/obcode/plexams)
 
-
 # plexams
 
-A Haskell tool for planning exams with a gui build on top of
-[Electron](https://electron.atom.io/).
-
-# Requirements
-
--   [Haskell](https://www.haskell.org/downloads)
-
--   [Electron](https://electron.atom.io/).
-
-        $ npm install electron
+A Haskell tool for planning exams. You can find a GUI build on top of
+[Electron](https://electron.atom.io/) in the
+[obcode/elexams](https://github.com/obcode/elexams) repository.
 
 # Quickstart
 
+TODO: example project with structure
+
+## Docker
+
+You can run the plexams-server as Docker container using the command
+
+```
+docker  run --rm -it -v ${path_to_config_dir}:/semester -p 8080:8080 obraun/plexams
+```
+
 ## Install
+
+### Requirements
+
+- [Haskell](https://www.haskell.org/downloads)
+
+- [Electron](https://electron.atom.io/).
+
+      $ npm install electron
 
 In the top directory do
 
@@ -113,13 +123,13 @@ Available commands:
 # Cabal Packages
 
 `plexams-core`
-:   the core library
+: the core library
 
 `plexams-cli`
-:   a command line interface
+: a command line interface
 
 `plexams-generators`
-:   automagically generate part of the plan
+: automagically generate part of the plan
 
 `plexams-server`
-:   http-server for elexams
+: http-server for elexams

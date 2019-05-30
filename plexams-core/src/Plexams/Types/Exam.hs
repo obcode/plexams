@@ -1,26 +1,32 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Plexams.Types.Exam
   ( Exam(..)
   , registrations
   , isScheduled
   , isUnscheduled
+  , isGOExam
   , withHandicaps
+  , handicapStudentsNeedsRoomAlone
+  , withHandicapsNeedsRoomAlone
   , notPlannedByMe
   , seatsMissing
-  ) where
+  , showMinimal
+  )
+where
 
-import Data.Aeson
-import Data.List (intercalate)
-import qualified Data.Map as M
-import Data.Maybe (isJust)
-import Data.Text (unpack)
-import GHC.Generics
+import           Data.Aeson
+import           Data.List                      ( intercalate )
+import qualified Data.Map                      as M
+import           Data.Maybe                     ( isJust )
+import           Data.Text                      ( unpack )
+import           GHC.Generics
 
-import Plexams.Types.Common
-import Plexams.Types.Groups
-import Plexams.Types.Persons
-import Plexams.Types.Rooms
+import           Plexams.Types.Common
+import           Plexams.Types.Groups
+import           Plexams.Types.Persons
+import           Plexams.Types.Rooms
 
 data Exam = Exam
   { anCode :: Ancode -- ^ Anmeldecode Prüfungsamt
@@ -48,6 +54,13 @@ instance FromJSON Exam
 
 instance ToJSON Exam
 
+isGOExam :: Exam -> Bool
+isGOExam exam = if not $ null $ registeredGroups exam
+  then
+    let g = map registeredGroupDegree (registeredGroups exam)
+    in  "GO" `elem` g || "GN" `elem` g
+  else GO `elem` map groupDegree (groups exam)
+
 isScheduled :: Exam -> Bool
 isScheduled = isJust . slot
 
@@ -57,21 +70,25 @@ isUnscheduled = not . isScheduled
 withHandicaps :: Exam -> Bool
 withHandicaps = not . null . handicapStudents
 
+handicapStudentsNeedsRoomAlone :: Exam -> [StudentWithRegs]
+handicapStudentsNeedsRoomAlone =
+  filter (maybe False handicapNeedsRoomAlone . studentHandicap)
+    . handicapStudents
+
+withHandicapsNeedsRoomAlone :: Exam -> Bool
+withHandicapsNeedsRoomAlone = not . null . handicapStudentsNeedsRoomAlone
+
 registrations :: Exam -> Integer
-registrations -- sum . mapMaybe groupRegistrations . groups
+registrations = sum . map registeredGroupStudents . registeredGroups -- sum . mapMaybe groupRegistrations . groups
                 -- fromIntegral . length . registeredStudents
- = sum . map registeredGroupStudents . registeredGroups
 
 notPlannedByMe :: [Ancode] -> Exam -> Exam
-notPlannedByMe ancodes exam = exam {plannedByMe = anCode exam `notElem` ancodes}
+notPlannedByMe ancodes exam =
+  exam { plannedByMe = anCode exam `notElem` ancodes }
 
 instance Show Exam where
   show exam =
-    show (anCode exam) ++
-    ". " ++
-    name exam ++
-    ", " ++
-    unpack (personShortName (lecturer exam)) ++
+    showMinimal exam ++
     (if reExam exam
        then ", W "
        else ", E ") ++
@@ -89,6 +106,10 @@ instance Show Exam where
     (if null $ rooms exam
        then ""
        else "\n        - " ++ intercalate "\n        - " (map show (rooms exam)))
+
+showMinimal :: Exam -> String
+showMinimal exam = show (anCode exam) ++ ". " ++ name exam ++ ", " ++ unpack
+  (personShortName (lecturer exam))
 
 seatsMissing :: Exam -> Integer
 seatsMissing = toInteger . length . registeredStudents

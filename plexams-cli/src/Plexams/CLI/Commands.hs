@@ -84,15 +84,19 @@ query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config $ intercalate "\n" $ query'
   (optCommand config)
  where
-  query' (Query (ByAncode   a) _) = map show $ queryByAnCode a plan
-  query' (Query (ByName     n) _) = map show $ queryByName n plan
-  query' (Query (ByLecturer l) _) = map show $ queryByLecturer l plan
-  query' (Query (ByGroup    g) u) = map show $ queryByGroup g u plan
-  query' (Query (ByRegisteredGroup g) u) =
-    map show $ queryByRegisteredGroup g u plan
-  query' (Query (BySlot        s) _) = map show $ querySlot s plan
-  query' (Query (StudentByName s) _) = map show $ queryStudentByName s plan
-  query' _                           = []
+  query' (Query (ByAncode   a) _ m) = map (show' m) $ queryByAnCode a plan
+  query' (Query (ByName     n) _ m) = map (show' m) $ queryByName n plan
+  query' (Query (ByLecturer l) _ m) = map (show' m) $ queryByLecturer l plan
+  query' (Query (ByGroup    g) u m) = map (show' m) $ queryByGroup g u plan
+  query' (Query (ByRegisteredGroup g) u m) =
+    map (show' m) $ queryByRegisteredGroup g u plan
+  query' (Query (BySlot        s) _ _) = map show $ querySlot s plan
+  query' (Query (StudentByName s) _ _) = map show $ queryStudentByName s plan
+  query' _                             = []
+  show' :: Bool -> Exam -> String
+  show' False exam = show exam
+  show' True exam =
+    showMinimal exam ++ ": " ++ showSlot (semesterConfig plan) (slot exam)
 
 export :: Config -> Plan -> IO ()
 export config plan = case optCommand config of

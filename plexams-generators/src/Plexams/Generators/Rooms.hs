@@ -4,6 +4,7 @@ module Plexams.Generators.Rooms
 where
 
 import           Control.Monad.Writer
+import           Data.Foldable                  ( foldrM )
 import           Data.List                      ( (\\)
                                                 , partition
                                                 , sortOn
@@ -21,9 +22,10 @@ import           Plexams.Types
 
 -- TODO: complete rewrite, set all rooms in one slot in one function including NTA
 generateRooms :: Plan -> [AddRoomToExam]
-generateRooms plan =
-  let availableRooms' = M.toList
-        $ mkAvailableRooms plan (availableRooms $ semesterConfig plan)
+generateRooms plan
+  = let
+      availableRooms' =
+        M.toList $ mkAvailableRooms plan (availableRooms $ semesterConfig plan)
       slots' = M.toList $ M.map (M.elems . examsInSlot) $ slots plan
       roomsAndSlots =
         [ (s, (rooms', filter plannedByMe exams'))
@@ -44,7 +46,8 @@ generateRooms plan =
         )
         []
         roomsAndSlots
-  in  sortWith addRoomAnCode $ concatMap (fst . snd) slotsWithRooms
+    in
+      sortWith addRoomAnCode $ concatMap (fst . snd) slotsWithRooms
 
 setRoomsOnSlot
   :: [AvailableRoom]
@@ -52,9 +55,17 @@ setRoomsOnSlot
   -> ([AddRoomToExam], [AvailableRoom])
 setRoomsOnSlot usedInSlotBefore ((n, nR, h), e) =
   (\(r', a) -> (a, r')) $ runWriter $ do
-    (e', doNotUseInNextSlot) <- setNormalRoomsOnSlot usedInSlotBefore [] n nR e
-    usedInThisSlot           <- setHandicapRoomsOnSlot usedInSlotBefore h e'
-    return $ doNotUseInNextSlot ++ usedInThisSlot
+    (e', doNotUseInNextSlot) <- setHandicapRoomsOnSlotNeedsRoomAlone
+      usedInSlotBefore
+      h
+      e
+    (e'', doNotUseInNextSlot') <- setNormalRoomsOnSlot usedInSlotBefore
+                                                       []
+                                                       n
+                                                       nR
+                                                       e'
+    usedInThisSlot <- setHandicapRoomsOnSlot usedInSlotBefore h e''
+    return $ doNotUseInNextSlot ++ doNotUseInNextSlot' ++ usedInThisSlot
 
 handicapInNormalRoom :: Exam -> Bool
 handicapInNormalRoom exam =
@@ -69,15 +80,16 @@ handicapInNormalRoom exam =
       && noOfRegisteredStudents
       /= noOfStudentsInSameRoom
       && noOfRegisteredStudents
-      <= 22
+      <= 23
 
 seatsMissing' :: Exam -> Integer
 seatsMissing' exam =
   seatsMissing exam
     - (if null (handicapStudents exam) || handicapInNormalRoom exam
         then 0
-        else toInteger (length (handicapStudents exam))
+        else toInteger (length $ handicapStudents exam)
       )
+    - toInteger (length $ handicapStudentsNeedsRoomAlone exam)
 
 moreExamsInSameRoom :: Exam -> ([Exam], [Exam]) -> ([Exam], [Exam])
 moreExamsInSameRoom exam exams@([], examsOtherRooms') =
@@ -230,6 +242,29 @@ setRoomOnExam (exam, maxUsableSeats) availableRoom = do
       ]
     )
 
+setHandicapRoomsOnSlotNeedsRoomAlone
+  :: [AvailableRoom]
+  -> [AvailableRoom]
+  -> [Exam]
+  -> Writer [AddRoomToExam] ([Exam], [AvailableRoom])
+setHandicapRoomsOnSlotNeedsRoomAlone _ [] _ =
+  error "no handicap rooms left for slot"
+setHandicapRoomsOnSlotNeedsRoomAlone _ _ [] = return ([], [])
+setHandicapRoomsOnSlotNeedsRoomAlone roomsUsedSlotBefore rooms'' exams'
+  | not (any withHandicapsNeedsRoomAlone exams') = return (exams', [])
+  | otherwise = do
+    let rooms'        = rooms'' \\ roomsUsedSlotBefore
+        studs         = concatMap handicapStudentsNeedsRoomAlone exams'
+        studsAndRooms = zip studs rooms'
+    exams'' <- foldrM
+      (\(stud, availableRoom) exams''' ->
+        setHandicapsRoomAlone stud availableRoom exams'''
+      )
+      exams'
+      studsAndRooms
+    return (exams'', map snd studsAndRooms)
+
+
 setHandicapRoomsOnSlot
   :: [AvailableRoom]
   -> [AvailableRoom]
@@ -249,11 +284,6 @@ setHandicapRoomsOnSlot roomsUsedSlotBefore rooms'' exams'
       if length otherStudents <= fromInteger (availableRoomMaxSeats room)
         then setHandicapRoomOnAllExams room exams'
         else error "too much handicap students, room to small"
-    unless (null studentsOwnRoom) $ if length studentsOwnRoom == 1
-      then setHandicapsRoomAlone (head studentsOwnRoom)
-                                 (if roomUsed then head rooms' else room)
-                                 exams'
-      else error "more than one students needs room for its own"
     return $ if null studentsOwnRoom && not roomUsed
       then []
       else if not (null studentsOwnRoom) && roomUsed
@@ -292,26 +322,45 @@ setHandicapRoomOnAllExams room = fmap or . mapM (setHandicapRoomOnExam room)
       else return False
 
 setHandicapsRoomAlone
-  :: StudentWithRegs -> AvailableRoom -> [Exam] -> Writer [AddRoomToExam] ()
-setHandicapsRoomAlone stud availableRoom exams' = do
-  let [exam] = filter
-        ( any handicapNeedsRoomAlone
-        . map (fromJust . studentHandicap)
-        . handicapStudents
-        )
-        exams'
-      roomName = availableRoomName availableRoom
-      deltaDuration' =
-        ( duration exam
-          * handicapDeltaDurationPercent (fromJust $ studentHandicap stud)
-          )
-          `div` 100
-  tell
-    [ AddRoomToExam (anCode exam)
-                    roomName
-                    [studentMtknr stud]
-                    (Just deltaDuration')
-                    True
-                    False
-    ]
-  return ()
+  :: StudentWithRegs -> AvailableRoom -> [Exam] -> Writer [AddRoomToExam] [Exam]
+setHandicapsRoomAlone stud availableRoom exams =
+  -- error
+  --   $  show (studentName stud)
+  --   ++ "\n"
+  --   ++ show availableRoom
+  --   ++ "\n"
+  --   ++ show exams
+                                                 do
+  let (examOfStud, exams') = partition (elem stud . registeredStudents) exams
+  if null examOfStud
+    then return exams'
+    else do
+      let
+        exam = case examOfStud of
+          [e] -> e
+          _ ->
+            error
+              $  ">>> Stud: "
+              ++ show stud
+              ++ "\n>>> Exam of Stud: "
+              ++ show examOfStud
+              ++ "\n>>> Other Exams: "
+              ++ show exams'
+        roomName = availableRoomName availableRoom
+        deltaDuration' =
+          ( duration exam
+            * handicapDeltaDurationPercent (fromJust $ studentHandicap stud)
+            )
+            `div` 100
+      tell
+        [ AddRoomToExam (anCode exam)
+                        roomName
+                        [studentMtknr stud]
+                        (Just deltaDuration')
+                        True
+                        False
+        ]
+      return
+        $ exam { registeredStudents = filter (/= stud) $ registeredStudents exam
+               }
+        : exams'

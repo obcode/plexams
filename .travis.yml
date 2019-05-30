@@ -40,15 +40,34 @@ before_install:
       curl -sS -ostack.zip -L --insecure https://get.haskellstack.org/stable/windows-x86_64.zip
       7z x windows-x86_64.zip stack.exe
     fi
+    stack install hlint
 
 install:
   # Build dependencies
   - stack --no-terminal --install-ghc test --only-dependencies
 
 script:
-  # Build the package, its tests, and its docs and run the tests
-  # - stack --no-terminal test --haddock --no-haddock-deps
-  - stack --no-terminal test # --haddock --no-haddock-deps
+  - hlint .
+  - stack --no-terminal test
+
+jobs:
+  include:
+    - stage: Deploy Haddock
+      os: linux
+      script:
+        - stack --no-terminal test --haddock --no-haddock-deps
+        - mkdir docs
+        - ls
+        - stack path --local-doc-root
+        - ls `stack path --local-doc-root`
+        - mv `stack path --local-doc-root` docs/haddock
+      deploy:
+        provider: pages
+        skip_cleanup: true
+        github_token: $GITHUB_TOKEN
+        on:
+          all_branches: true
+        local_dir: docs/haddock
 
 notifications:
   email:

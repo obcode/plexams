@@ -1,5 +1,5 @@
 name: plexams-cli
-version: '1.0.6.0'
+version: "1.1.0.0"
 synopsis: Command line interface for planning exams
 description: See README at <https://github.com/obcode/plexams#readme>
 license: BSD3
@@ -40,6 +40,7 @@ executables:
       - plexams-core
       - plexams-datamgmt
       - text
+      - directory
   plexams-helper:
     main: Plexams-Helper.hs
     source-dirs: app/plexams-helper
