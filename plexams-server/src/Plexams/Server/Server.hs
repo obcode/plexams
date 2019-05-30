@@ -23,7 +23,9 @@ import           Data.Maybe                     ( listToMaybe )
 import           Data.Text                      ( Text
                                                 , unpack
                                                 )
-import           GHC.Exts                       ( sortWith )
+import           GHC.Exts                       ( groupWith
+                                                , sortWith
+                                                )
 
 import           Network.Wai
 import           Network.Wai.Handler.Warp
@@ -66,7 +68,7 @@ type API
       :<|> "invigilatorsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] ([Invigilator], [Invigilator])
       :<|> "addInvigilator" :> ReqBody '[ JSON] AddInvigilatorToRoomOrSlot :> Post '[ JSON] ()
       :<|> "removeInvigilator" :> ReqBody '[ JSON] RemoveInvigilatorFromRoomOrSlot :> Post '[ JSON] ()
-      :<|> "examsWithNTA" :> Get '[ JSON] [Exam]
+      :<|> "examsWithNTA" :> Get '[ JSON] [[Exam]]
       :<|> "plannedRooms" :> Get '[ JSON] [PlannedRoomWithSlots]
 
 newtype State = State
@@ -162,11 +164,12 @@ server state =
     plan''                 <- liftIO $ readTVarIO planT
     return $ listToMaybe $ filter ((== examid) . anCode) $ allExams plan''
 
-  examsWithNTA' :: StateHandler [Exam]
+  examsWithNTA' :: StateHandler [[Exam]]
   examsWithNTA' = do
     State { plan = planT } <- ask
     plan''                 <- liftIO $ readTVarIO planT
     return
+      $ groupWith (personID . lecturer)
       $ sortWith (personShortName . lecturer)
       $ filter (not . null . handicapStudents)
       $ allExamsPlannedByMe plan''

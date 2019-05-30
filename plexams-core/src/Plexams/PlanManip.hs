@@ -14,6 +14,7 @@ where
 
 import           Data.List                      ( nub
                                                 , partition
+                                                , (\\)
                                                 )
 import qualified Data.Map                      as M
 import           GHC.Exts                       ( groupWith )
@@ -42,20 +43,23 @@ makePlan exams'' semesterConfig' pers constraints' = foldr
   exams' = map (addConstraints . setPerson pers) exams''
   examsWithSameNameAncodes =
     map (map anCode) $ filter ((> 1) . length) $ groupWith name exams''
-  addConstraints exam =
-    let
-      ancode = anCode exam
-      onlyOtherAncodes a as =
-        filter (/= a) $ nub $ concat $ filter (a `elem`) as
-      sameRoom' = onlyOtherAncodes ancode $ inSameRoom constraints'
-      sameSlot' = onlyOtherAncodes
-        ancode
-        (inSameSlot constraints' ++ examsWithSameNameAncodes)
-    in
-      exam { sameRoom  = sameRoom'
-           , sameSlot  = sameSlot'
-           , shareRoom = ancode `notElem` doNotShareRoom constraints'
-           }
+  addConstraints exam
+    = let
+        ancode = anCode exam
+        onlyOtherAncodes a as =
+          filter (/= a) $ nub $ concat $ filter (a `elem`) as
+        sameRoom' = onlyOtherAncodes ancode $ inSameRoom constraints'
+        sameSlot' =
+          onlyOtherAncodes
+              ancode
+              (inSameSlot constraints' ++ examsWithSameNameAncodes)
+
+            \\ onlyOtherAncodes ancode (notOnSameDay constraints')
+      in
+        exam { sameRoom  = sameRoom'
+             , sameSlot  = sameSlot'
+             , shareRoom = ancode `notElem` doNotShareRoom constraints'
+             }
   slots' =
     M.fromList
       $ zip

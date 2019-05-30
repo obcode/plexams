@@ -156,14 +156,14 @@ conflictingSlotsForAncode ancode plan'
         [] -> ([], [])
         (exam : _)
           -> let
+               examAndExamsInSameSlot = exam : concatMap exams (sameSlot exam)
                conflicts' =
-                 sortAndClean
-                   $ concatMap findSlotsForAncode
-                   $ M.keys
-                   $ conflictingAncodes exam
+                 sortAndClean $ concatMap findSlotsForAncode $ concatMap
+                   (M.keys . conflictingAncodes)
+                   examAndExamsInSameSlot
                nextToConflicts = sortAndClean
                  $ concatMap (\(d, s) -> [(d, s - 1), (d, s + 1)]) conflicts'
-               conflicts = if isGOExam exam
+               conflicts = if any isGOExam examAndExamsInSameSlot
                  then sortAndClean
                    (conflicts' ++ nonGOSlots (semesterConfig plan'))
                  else conflicts'
