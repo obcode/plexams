@@ -78,7 +78,7 @@ validate config = stdoutOrFile config . validate'
     let (ok, msgs) = P.validate validateWhat' plan
     in  "\n# " ++ show ok ++ "\n\n" ++ intercalate
           "\n\n"
-          (map (Text.unpack . validationMessage) msgs)
+          (map (Text.unpack . validationRecordText) msgs)
 
 query :: Config -> Plan -> IO ()
 query config plan = stdoutOrFile config $ intercalate "\n" $ query'
@@ -106,7 +106,7 @@ export config plan = case optCommand config of
       Nothing -> return ()
       Just fp -> do
         (valRes, msgs) <- P.validateZPAExport fp plan
-        Text.putStrLn $ Text.intercalate "\n\n" (map validationMessage msgs)
+        Text.putStrLn $ Text.intercalate "\n\n" (map validationRecordText msgs)
         print valRes
   Export Handicaps       -> stdoutOrFile config $ exportHandicaps plan
   Export PlanForStudents -> stdoutOrFileBS config $ planForStudents plan

@@ -18,7 +18,7 @@ import           Plexams.Types
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do
-  tell [Info "## Validating Rooms"]
+  tell [ValidationRecord Info "## Validating Rooms"]
   -- normalRoomsNoHandicap
   -- handicapRoomsAllHandicap
   -- no student left outside of room
@@ -39,7 +39,7 @@ validate plan = do
 validateNoStudentLeftOutsideRoom
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateNoStudentLeftOutsideRoom plan = do
-  tell [Info "### Validation that all students have a seat"]
+  tell [ValidationRecord Info "### Validation that all students have a seat"]
   validationResult <$> mapM validateNoStudentLeftOutsideRoomForExam
                             (filter plannedByMe $ scheduledExams plan)
 
@@ -50,7 +50,7 @@ validateNoStudentLeftOutsideRoomForExam exam =
     then return EverythingOk
     else do
       tell
-        [ HardConstraintBroken
+        [ ValidationRecord HardConstraintBroken
           $        "- exam "
           `append` showt (anCode exam)
           `append` ": no room for "
@@ -61,7 +61,7 @@ validateNoStudentLeftOutsideRoomForExam exam =
 validateEnoughRoomsForExams
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateEnoughRoomsForExams plan = do
-  tell [Info "### Validating enough rooms for exam (hard)"]
+  tell [ValidationRecord Info "### Validating enough rooms for exam (hard)"]
   validationResult <$> mapM validateEnoughRoomsForExam
                             (filter plannedByMe $ scheduledExams plan)
 
@@ -72,7 +72,7 @@ validateEnoughRoomsForExam exam = do
   if regs' > seats
     then do
       tell
-        [ HardConstraintBroken
+        [ ValidationRecord HardConstraintBroken
           $        "- exam "
           `append` showt (anCode exam)
           `append` " not enough rooms planned"
@@ -84,7 +84,7 @@ validationStillReserveForExams
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validationStillReserveForExams plan = do
   tell
-    [ Info
+    [ ValidationRecord Info
         "### Validating if there are at least 2 empty seats left for exam (soft)"
     ]
   validationResult <$> mapM validationStillReserveForExam
@@ -98,7 +98,7 @@ validationStillReserveForExam exam = do
   if regs' + 2 >= seats
     then do
       tell
-        [ SoftConstraintBroken
+        [ ValidationRecord SoftConstraintBroken
           $        "- exam "
           `append` showt (anCode exam)
           `append` " not enough reserve seats left: "
@@ -113,7 +113,7 @@ validationStillReserveForExam exam = do
 validateDifferentRoomsInSlots
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateDifferentRoomsInSlots plan = do
-  tell [Info "### Validating different rooms in slot (hard)"]
+  tell [ValidationRecord Info "### Validating different rooms in slot (hard)"]
   validationResult <$> mapM validateDifferentRoomsInSlot (M.toList (slots plan))
 
 validateDifferentRoomsInSlot
@@ -133,7 +133,7 @@ validateDifferentRoomsInSlot (index, slot') = do
     plannedRoomsWithoutHandicapCompensationDifferent =
       roomsDifferent plannedRoomsWithoutHandicapCompensation
   unless allRoomsDifferent $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- slot "
       `append` showt index
       `append` ": same rooms used more than once"
@@ -159,7 +159,7 @@ validateRoomsAllowedInSlots plan = do
           $ slots plan
       roomSlots' :: M.Map RoomID [(DayIndex, SlotIndex)]
       roomSlots' = roomSlots $ constraints plan
-  tell [Info "### Validating if all rooms in a slot are allowed (hard)"]
+  tell [ValidationRecord Info "### Validating if all rooms in a slot are allowed (hard)"]
   allRoomsInAllowedSlots <- forM slotsAndRooms
     $ validateRoomAllowedInSlot roomSlots'
   return $ validationResult allRoomsInAllowedSlots
@@ -172,13 +172,13 @@ validateRoomAllowedInSlot roomSlots' (slot', roomID') = do
   let slotsForRoom = M.lookup roomID' roomSlots'
   case slotsForRoom of
     Nothing -> do
-      tell [Info $ "No constraint for room " `append` showt roomID']
+      tell [ValidationRecord Info $ "No constraint for room " `append` showt roomID']
       return EverythingOk
     Just slots' -> if slot' `elem` slots'
       then return EverythingOk
       else do
         tell
-          [ HardConstraintBroken
+          [ ValidationRecord HardConstraintBroken
             $        showt roomID'
             `append` " not allowed in slot "
             `append` showt slot'

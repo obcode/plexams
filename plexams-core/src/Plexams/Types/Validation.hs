@@ -4,10 +4,10 @@
 module Plexams.Types.Validation
   ( ValidationResult(..)
   , ValidationRecord(..)
+  , ValidationRecordType(..)
   , Validation(..)
   , ValidateWhat(..)
   , validateWhat
-  , validationMessage
   , validationResult
   ) where
 
@@ -36,18 +36,20 @@ instance Show ValidationResult where
 instance ToJSON ValidationResult
 
 -- data SoftConstraint = SoftConstraint Text
-data ValidationRecord
-  = Info Text
-  | SoftConstraintBroken Text
-  | HardConstraintBroken Text
-  deriving (Eq, Generic)
+data ValidationRecord = ValidationRecord {
+  validationRecordType :: ValidationRecordType,
+  validationRecordText :: Text
+ } deriving (Eq, Generic)
 
 instance ToJSON ValidationRecord
 
-validationMessage :: ValidationRecord -> Text
-validationMessage (Info msg) = msg
-validationMessage (SoftConstraintBroken msg) = msg
-validationMessage (HardConstraintBroken msg) = msg
+data ValidationRecordType
+  = Info 
+  | SoftConstraintBroken 
+  | HardConstraintBroken
+  deriving (Eq, Generic)
+
+instance ToJSON ValidationRecordType
 
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum

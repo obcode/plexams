@@ -24,7 +24,7 @@ validate validateWhat' = runWriter . validate' validateWhat'
 validate' ::
      [ValidateWhat] -> Plan -> Writer [ValidationRecord] ValidationResult
 validate' validateWhat' plan = do
-  tell [Info "# Validation"]
+  tell [ValidationRecord Info "# Validation"]
   scheduledExams' <-
     if ValidateSchedule `elem` validateWhat'
       then do
@@ -42,7 +42,7 @@ validate' validateWhat' plan = do
       then Plexams.Validation.Invigilation.validate plan
       -- tell [Info "no validation of invigilation requested"]
       else return EverythingOk
-  tell [Info "# no more validations implemented yet"]
+  tell [ValidationRecord Info "# no more validations implemented yet"]
   return $ validationResult [scheduledExams', roomsOk, invigilationsOk]
 
 validateLecturersMax3ExamDays ::
@@ -51,12 +51,12 @@ validateLecturersMax3ExamDays plan = do
   let lecturerWithMoreThan3ExamDays =
         filter ((> 3) . length . nub . snd) $ lecturerExamDays plan
       ok = null lecturerWithMoreThan3ExamDays
-  tell [Info "# Checking amount of exam days for each lecturer (hard)"]
+  tell [ValidationRecord Info "# Checking amount of exam days for each lecturer (hard)"]
   unless ok $
     mapM_
       (\(l, d) ->
          tell
-           [ HardConstraintBroken $
+           [ ValidationRecord HardConstraintBroken $
              "- More than 3 days of exams: " `append` showt (personShortName l) `append`
              ": " `append`
              showt d

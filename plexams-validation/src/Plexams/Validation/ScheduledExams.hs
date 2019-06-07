@@ -29,7 +29,7 @@ import           Plexams.Types
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do
-  tell [Info "## Validating Schedule"]
+  tell [ValidationRecord Info "## Validating Schedule"]
   constraintsOk             <- validateScheduleConstraints plan
   goSlotsOk                 <- validateGOSlots plan
   sameNameSameSlot          <- validateSameNameSameSlot plan
@@ -53,7 +53,7 @@ validate plan = do
 
 validateGOSlots :: Plan -> Writer [ValidationRecord] ValidationResult
 validateGOSlots plan = do
-  tell [Info "### Checking GO-Slots! (hard)"]
+  tell [ValidationRecord Info "### Checking GO-Slots! (hard)"]
   let allowedSlots = goSlots $ semesterConfig plan
       examsInOtherSlots =
         filter
@@ -68,7 +68,7 @@ validateGOSlots plan = do
           $ slots plan
       goOk = null examsInOtherSlots
   unless goOk $ forM_ examsInOtherSlots $ \exam -> tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- GO exam "
       `append` showt (anCode exam)
       `append` " in wrong slot"
@@ -84,11 +84,11 @@ validateSameNameSameSlot plan = do
               (not . (`elem` concat (notOnSameDay $ constraints plan)) . anCode)
           $ allExams plan
       ok = null examsGroupedByNameWithDifferentSlots
-  tell [Info "### Checking exams with same name in same slot (hard)"]
+  tell [ValidationRecord Info "### Checking exams with same name in same slot (hard)"]
   unless ok $ mapM_
     ( tell
     . (: [])
-    . HardConstraintBroken
+    . ValidationRecord HardConstraintBroken
     . ("- exams with same name but different slots: " `append`)
     . showt
     . map (anCode &&& slot)
@@ -101,17 +101,17 @@ validateSameNameSameSlot plan = do
 --------------------------------------------------------------------------------
 validateConflicts :: Plan -> Writer [ValidationRecord] ValidationResult
 validateConflicts plan = do
-  tell [Info "### Checking conflicts in same slot (hard)"]
+  tell [ValidationRecord Info "### Checking conflicts in same slot (hard)"]
   sameSlotsOk <- forM (M.toList $ M.map (M.elems . examsInSlot) $ slots plan)
                       (validateConflicts' True . (: []))
-  tell [Info "### Checking conflicts in adjacent slot (hard)"]
+  tell [ValidationRecord Info "### Checking conflicts in adjacent slot (hard)"]
   adjacentSlotsOk <-
     forM
         (map (map (second (M.elems . examsInSlot))) $ adjacentSlotPairs $ slots
           plan
         )
       $ validateConflicts' True
-  tell [Info "### Checking conflicts on same day (soft)"]
+  tell [ValidationRecord Info "### Checking conflicts on same day (soft)"]
   daySlotsOk <-
     forM (map (map (second (M.elems . examsInSlot))) $ slotsByDay $ slots plan)
       $ validateConflicts' False
@@ -129,7 +129,7 @@ validateConflicts' hard [((d, s), es)] = do
     then return EverythingOk
     else do
       tell
-        [ (if hard then HardConstraintBroken else SoftConstraintBroken)
+        [ ValidationRecord (if hard then HardConstraintBroken else SoftConstraintBroken)
           $        "- Conflict in slot ("
           `append` showt d
           `append` ", "
@@ -152,9 +152,9 @@ validateConflicts' hard slotsAndExams = do
   if null conflicts
     then return EverythingOk
     else do
-      tell [Info $ showt $ map fst slotsAndExams]
+      tell [ValidationRecord Info $ showt $ map fst slotsAndExams]
       tell
-        [ (if hard then HardConstraintBroken else SoftConstraintBroken)
+        [ ValidationRecord (if hard then HardConstraintBroken else SoftConstraintBroken)
           $        "- Conflict in slots: "
           `append` showt conflictingAncodesWithSlot
         ]
@@ -269,7 +269,7 @@ validateConflicts' hard slotsAndExams = do
 validateScheduleConstraints
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateScheduleConstraints plan = do
-  tell [Info "## Validate schedule constraints from file"]
+  tell [ValidationRecord Info "## Validate schedule constraints from file"]
   let constraints' = constraints plan
   notOnSameDayOk     <- validateNotOnSameDay plan (notOnSameDay constraints')
   inSameSlotOk       <- validateInSameSlot plan (inSameSlot constraints')
@@ -287,7 +287,7 @@ validateNotOnSameDay
   :: Plan -> [[Ancode]] -> Writer [ValidationRecord] ValidationResult
 validateNotOnSameDay _    []            = return EverythingOk
 validateNotOnSameDay plan listOfAncodes = do
-  tell [Info "### Validate exams not on same day"]
+  tell [ValidationRecord Info "### Validate exams not on same day"]
   validationResult <$> mapM (validateNotOnSameDay' plan) listOfAncodes
 
 validateNotOnSameDay'
@@ -305,7 +305,7 @@ validateNotOnSameDay' plan ancodes = do
       ancodesAndDaysOk =
         (== length ancodesAndDays) $ length $ nub $ map snd ancodesAndDays
   unless ancodesAndDaysOk $ tell
-    [SoftConstraintBroken $ "- not okay for " `append` showt ancodesAndDays]
+    [ValidationRecord SoftConstraintBroken $ "- not okay for " `append` showt ancodesAndDays]
   return $ if ancodesAndDaysOk then EverythingOk else SoftConstraintsBroken
 
 --------------------
@@ -315,7 +315,7 @@ validateOneOfTheseDays
   :: Plan -> [(Ancode, [Int])] -> Writer [ValidationRecord] ValidationResult
 validateOneOfTheseDays _    []             = return EverythingOk
 validateOneOfTheseDays plan ancodesAndDays = do
-  tell [Info "### Validate exams on one of these days"]
+  tell [ValidationRecord Info "### Validate exams on one of these days"]
   validationResult <$> mapM (validateOneOfTheseDays' plan) ancodesAndDays
 
 validateOneOfTheseDays'
@@ -326,11 +326,11 @@ validateOneOfTheseDays' plan (ancode, days) = do
         Nothing     -> True
         Just (d, _) -> d `elem` days
   if null exams'
-    then tell [Info $ "- exam " `append` showt ancode `append` " not found"]
+    then tell [ValidationRecord Info $ "- exam " `append` showt ancode `append` " not found"]
       >> return EverythingOk
     else do
       unless oneOfTheseDaysOk $ tell
-        [ HardConstraintBroken
+        [ ValidationRecord HardConstraintBroken
           $        "- exam "
           `append` showt ancode
           `append` " not on one of "
@@ -347,7 +347,7 @@ validateFixSlot
   -> Writer [ValidationRecord] ValidationResult
 validateFixSlot _    []              = return EverythingOk
 validateFixSlot plan ancodesAndSlots = do
-  tell [Info "### Validate exams in fixed slot"]
+  tell [ValidationRecord Info "### Validate exams in fixed slot"]
   validationResult <$> mapM (validateFixSlot' plan) ancodesAndSlots
 
 validateFixSlot'
@@ -358,11 +358,11 @@ validateFixSlot' plan (ancode, (d, s)) = do
         Nothing       -> True
         Just (d', s') -> d' == d && s' == s
   if null exams'
-    then tell [Info $ "- exam " `append` showt ancode `append` " not found"]
+    then tell [ValidationRecord Info $ "- exam " `append` showt ancode `append` " not found"]
       >> return EverythingOk
     else do
       unless fixedSlotOk $ tell
-        [ HardConstraintBroken
+        [ ValidationRecord HardConstraintBroken
           $        "- exam "
           `append` showt ancode
           `append` " not in slot "
@@ -377,7 +377,7 @@ validateInSameSlot
   :: Plan -> [[Ancode]] -> Writer [ValidationRecord] ValidationResult
 validateInSameSlot _    []      = return EverythingOk
 validateInSameSlot plan ancodes = do
-  tell [Info "### Validate exams that should be in same slot"]
+  tell [ValidationRecord Info "### Validate exams that should be in same slot"]
   validationResult <$> mapM (validateInSameSlot' plan) ancodes
 
 validateInSameSlot'
@@ -389,7 +389,7 @@ validateInSameSlot' plan ancodes = do
     then return EverythingOk
     else do
       tell
-        [ HardConstraintBroken
+        [ ValidationRecord HardConstraintBroken
           $        "- exams "
           `append` showt ancodes
           `append` " not in same slot "
@@ -402,7 +402,7 @@ validateInSameSlot' plan ancodes = do
 validateLecturerMaxOneExamPerSlot
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateLecturerMaxOneExamPerSlot plan = do
-  tell [Info "### Validate numbers of exams per lecturer per slot (soft)"]
+  tell [ValidationRecord Info "### Validate numbers of exams per lecturer per slot (soft)"]
   let
     listsOfLecturers =
       map
@@ -420,7 +420,7 @@ validateLecturerMaxOneExamPerSlot plan = do
         $ slots plan
     slotsWithDuplicates = filter (((/=) <$> nub <*> id) . snd) listsOfLecturers
   forM_ slotsWithDuplicates $ \(_, lecturers) -> tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "-   lecturer has more then one exam in slot: "
       `append` showt lecturers
     ]
@@ -435,7 +435,7 @@ validateLecturerMaxOneExamPerSlot plan = do
 validateStudentsMaxTwoExamsPerDay
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateStudentsMaxTwoExamsPerDay _ = do
-  tell [SoftConstraintBroken "not testing exams for students atm, TODO"]
+  tell [ValidationRecord SoftConstraintBroken "not testing exams for students atm, TODO"]
   return SoftConstraintsBroken
 -- plan
 --   -- TODO: hard/soft okay?

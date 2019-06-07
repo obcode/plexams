@@ -37,7 +37,7 @@ import           Plexams.Types
 
 validate :: Plan -> Writer [ValidationRecord] ValidationResult
 validate plan = do
-  tell [Info "## Validating Invigilations"]
+  tell [ValidationRecord Info "## Validating Invigilations"]
   invigilatorOk            <- validateInvigilator plan
   handicapsOk              <- validateHandicapsInvigilator plan
   allSlotsHaveReserves     <- validateAllSlotsHaveReserves plan
@@ -49,7 +49,7 @@ validate plan = do
 validateAllSlotsHaveReserves
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateAllSlotsHaveReserves plan = do
-  tell [Info "### Validating all slots have a reserve invigilator"]
+  tell [ValidationRecord Info "### Validating all slots have a reserve invigilator"]
   let slotsWithoutReserve =
         filter (isNothing . snd)
           $ map (second reserveInvigilator)
@@ -57,7 +57,7 @@ validateAllSlotsHaveReserves plan = do
           $ M.toList
           $ slots plan
   forM_ slotsWithoutReserve $ \(s, _) -> tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- Slot "
       `append` showt s
       `append` ": no reserve defined"
@@ -68,7 +68,7 @@ validateAllSlotsHaveReserves plan = do
 validateAllRoomsHaveInvigilators
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateAllRoomsHaveInvigilators plan = do
-  tell [Info "### Validating all rooms have an invigilator"]
+  tell [ValidationRecord Info "### Validating all rooms have an invigilator"]
   let
     allRoomsWithoutInvigilator =
       filter (isNothing . snd)
@@ -78,7 +78,7 @@ validateAllRoomsHaveInvigilators plan = do
             )
         $ scheduledExams plan
   forM_ allRoomsWithoutInvigilator $ \((ancode, roomID'), _) -> tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- Exam "
       `append` showt ancode
       `append` ", Room "
@@ -91,7 +91,7 @@ validateAllRoomsHaveInvigilators plan = do
 
 validateInvigilator :: Plan -> Writer [ValidationRecord] ValidationResult
 validateInvigilator plan' = do
-  tell [Info "### Validating invigilators constraints"]
+  tell [ValidationRecord Info "### Validating invigilators constraints"]
   let
     plan   = setSlotsOnExams plan'
     slots' = M.elems $ slots plan
@@ -169,7 +169,7 @@ validateInvigilator' plan invigilatorID' invigilations' examsThatShareRoomsMap
     case maybeInvigilator of
       Nothing -> do
         tell
-          [ SoftConstraintBroken
+          [ ValidationRecord SoftConstraintBroken
             $        "- InvigilatorID "
             `append` showt invigilatorID'
             `append` " not found in invigilators"
@@ -206,7 +206,7 @@ validateMaxThreeDays invigilator' invigilationDays = do
         then EverythingOk
         else SoftConstraintsBroken
   unless (maxThreeDays == EverythingOk) $ tell
-    [ SoftConstraintBroken
+    [ ValidationRecord SoftConstraintBroken
       $        "- "
       `append` invigilatorName invigilator'
       `append` " invigilations on more than three days: "
@@ -228,14 +228,14 @@ validateDaysOk invigilator' invigilationDays = do
         | otherwise
         = HardConstraintsBroken
   when (daysOk == HardConstraintsBroken) $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- "
       `append` invigilatorName invigilator'
       `append` " invigilations on wrong days: "
       `append` showt invigilationDays
     ]
   when (daysOk == SoftConstraintsBroken) $ tell
-    [ SoftConstraintBroken
+    [ ValidationRecord SoftConstraintBroken
       $        "- "
       `append` invigilatorName invigilator'
       `append` " invigilations on can days: "
@@ -251,7 +251,7 @@ validateNumberOfMinutesOk invigilator' = do
       numberOfMinutesOk | minutesLeft > -90 = EverythingOk
                         | otherwise         = SoftConstraintsBroken
   unless (numberOfMinutesOk == EverythingOk) $ tell
-    [ SoftConstraintBroken
+    [ ValidationRecord SoftConstraintBroken
       $        "- "
       `append` invigilatorName invigilator'
       `append` " has too much invigilations "
@@ -276,7 +276,7 @@ validateNotMoreThanOnceInSlotOk invigilator' invigilations' = do
     notMoreThanOnceInSlotOk | null notMoreThanOnceInSlot = EverythingOk
                             | otherwise                  = HardConstraintsBroken
   unless (notMoreThanOnceInSlotOk == EverythingOk) $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- "
       `append` invigilatorName invigilator'
       `append` " has been scheduled more then once in slot  "
@@ -331,7 +331,7 @@ validateNotReserveOrInvigilatorIfExamInSlotOk plan invigilatorID' invigilator'
           then EverythingOk
           else HardConstraintsBroken
     unless (notReserveOrInvigilatorIfExamInSlotOk == EverythingOk) $ tell
-      [ HardConstraintBroken
+      [ ValidationRecord HardConstraintBroken
         $        "- "
         `append` invigilatorName invigilator'
         `append` " has been scheduled as a reserve and invigilator"
@@ -409,7 +409,7 @@ validateAllOwnSelfOk plan invigilator' examsThatShareRoomsMap = do
         $ M.elems
         $ slots plan
   unless (allOwnSelfOk == EverythingOk || twoExamsInTwoRooms) $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- "
       `append` invigilatorName invigilator'
       `append` " is not invigilator of his own exam"
@@ -420,7 +420,7 @@ validateAllOwnSelfOk plan invigilator' examsThatShareRoomsMap = do
 validateHandicapsInvigilator
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateHandicapsInvigilator plan = do
-  tell [Info "### Validating handicap invigilators constraints"]
+  tell [ValidationRecord Info "### Validating handicap invigilators constraints"]
   let days' =
         map slotAndNextSlot $ groupWith (fst . fst) $ M.toList $ slots plan
       slotAndNextSlot day' =
@@ -435,11 +435,11 @@ validateHandicapsInvigilator'
   -> Writer [ValidationRecord] ValidationResult
 validateHandicapsInvigilator' ((si@(d1, s1), slot'), ((d2, s2), nextSlot)) = do
   when (d1 /= d2) $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
         ">>> This should not happen. Validating handicaps on different days"
     ]
   when (s1 + 1 /= s2) $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
         ">>> This should not happen. Validating handicaps on non-following slots"
     ]
   let
@@ -461,7 +461,7 @@ validateHandicapsInvigilator' ((si@(d1, s1), slot'), ((d2, s2), nextSlot)) = do
     handicapInvigilatorInvolvedInNextSlot =
       any (`elem` personsInvolvedInNextSlot) handicapInvigilators
   when handicapInvigilatorInvolvedInNextSlot $ tell
-    [ HardConstraintBroken
+    [ ValidationRecord HardConstraintBroken
       $        "- Handicap invigilator (slot "
       `append` showt si
       `append` ") is involved in next slot"

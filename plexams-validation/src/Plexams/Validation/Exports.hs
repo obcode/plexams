@@ -20,14 +20,14 @@ validateZPAExport fp plan = do
     Nothing ->
       return
         ( HardConstraintsBroken
-        , [ HardConstraintBroken $
+        , [ ValidationRecord HardConstraintBroken $
             "ZPAExams cannot be imported from " `append` showt fp
           ])
     Just zpaExams -> return $ runWriter $ validate zpaExams plan
 
 validate :: [ZPAExam] -> Plan -> Writer [ValidationRecord] ValidationResult
 validate zpaExams plan = do
-  tell [Info "# Validating ZPA export"]
+  tell [ValidationRecord Info "# Validating ZPA export"]
   allOk <- allZPAExamsInExams zpaExams plan
   allExported <- allPlannedExamsInZPAExams zpaExams plan
   return $ validationResult [allOk, allExported]
@@ -47,7 +47,7 @@ allZPAExamsInExams zpaExams plan =
               then return EverythingOk
               else do
                 tell
-                  [ HardConstraintBroken $
+                  [ ValidationRecord HardConstraintBroken $
                     "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
                     " is not planned by me"
                   ]
@@ -57,7 +57,7 @@ allZPAExamsInExams zpaExams plan =
               then return EverythingOk
               else do
                 tell
-                  [ HardConstraintBroken $
+                  [ ValidationRecord HardConstraintBroken $
                     "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
                     " has wrong date"
                   ]
@@ -67,7 +67,7 @@ allZPAExamsInExams zpaExams plan =
               then return EverythingOk
               else do
                 tell
-                  [ HardConstraintBroken $
+                  [ ValidationRecord HardConstraintBroken $
                     "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
                     " has wrong time"
                   ]
@@ -75,7 +75,7 @@ allZPAExamsInExams zpaExams plan =
           return $ validationResult [plannedByMeOk, dayOk, slotOk]
         _ -> do
           tell
-            [ HardConstraintBroken $
+            [ ValidationRecord HardConstraintBroken $
               "Exported exam " `append` showt (zpaExamAnCode zpaExam) `append`
               " does not exist"
             ]
@@ -94,7 +94,7 @@ allPlannedExamsInZPAExams zpaExams plan = do
         then return EverythingOk
         else do
           tell
-            [ HardConstraintBroken $
+            [ ValidationRecord HardConstraintBroken $
               "Exam " `append` showt (anCode exam) `append` " not exported"
             ]
           return HardConstraintsBroken
