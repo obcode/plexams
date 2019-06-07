@@ -124,18 +124,18 @@ queryStudentByName = undefined
 
 queryRoomByID :: String -> Plan -> PlannedRoomWithSlots
 queryRoomByID roomID' plan =
-  let
-    showDay xs =
-      ( examDaysAsStrings' !! fst (head xs)
-      , map ((slotsAsStringsForRoom' !!) . snd) xs
-      )
-    slotsAsStringsForRoom' = slotsAsStringsForRoom $ semesterConfig plan
-    examDaysAsStrings' = map (drop 5) $ examDaysAsStrings $ semesterConfig plan
-  in
-    PlannedRoomWithSlots roomID'
-    $ map (uncurry PlannedRoomSlot . showDay)
-    $ groupWith fst
-    $ queryRoomByID' roomID' plan
+  let showDay xs =
+        ( examDaysAsStrings' !! fst (head xs)
+        , fst (head xs)
+        , map (\(_, slot') -> (slot', slotsAsStringsForRoom' !! slot')) xs
+        )
+      slotsAsStringsForRoom' = slotsAsStringsForRoom $ semesterConfig plan
+      examDaysAsStrings' =
+        map (drop 5) $ examDaysAsStrings $ semesterConfig plan
+  in  PlannedRoomWithSlots roomID'
+      $ map ((\(a, b, c) -> PlannedRoomSlot a b c) . showDay)
+      $ groupWith fst
+      $ queryRoomByID' roomID' plan
 
 queryRoomByID' :: String -> Plan -> [(DayIndex, SlotIndex)]
 queryRoomByID' roomID' plan =
