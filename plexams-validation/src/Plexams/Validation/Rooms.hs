@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
+-- {-# LANGUAGE TupleSections #-}
 
 module Plexams.Validation.Rooms
   ( validate
@@ -8,7 +8,7 @@ where
 
 import           Control.Arrow                  ( second )
 import           Control.Monad.Writer
-import           Data.List                      ( nub )
+-- import           Data.List                      ( nub )
 import qualified Data.Map                      as M
 import           Data.Text                      ( append )
 
@@ -24,14 +24,14 @@ validate plan = do
   -- no student left outside of room
   enoughRoomsForExams      <- validateEnoughRoomsForExams plan
   stillReserveForExams     <- validationStillReserveForExams plan
-  differentRoomsInSlot     <- validateDifferentRoomsInSlots plan
+  -- differentRoomsInSlot     <- validateDifferentRoomsInSlots plan
   noStudentLeftOutsideRoom <- validateNoStudentLeftOutsideRoom plan
   allRoomsAllowedInSlots   <- validateRoomsAllowedInSlots plan
   -- TODO: roomSlots eingehalten, inSameRoom eingehalten?
   return $ validationResult
     [ enoughRoomsForExams
     , stillReserveForExams
-    , differentRoomsInSlot
+    -- , differentRoomsInSlot
     , noStudentLeftOutsideRoom
     , allRoomsAllowedInSlots
     ]
@@ -84,7 +84,8 @@ validationStillReserveForExams
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validationStillReserveForExams plan = do
   tell
-    [ ValidationRecord Info
+    [ ValidationRecord
+        Info
         "### Validating if there are at least 2 empty seats left for exam (soft)"
     ]
   validationResult <$> mapM validationStillReserveForExam
@@ -110,41 +111,41 @@ validationStillReserveForExam exam = do
     else return EverythingOk
 
 -- TODO: sameRoom, ntainnormalroom
-validateDifferentRoomsInSlots
-  :: Plan -> Writer [ValidationRecord] ValidationResult
-validateDifferentRoomsInSlots plan = do
-  tell [ValidationRecord Info "### Validating different rooms in slot (hard)"]
-  validationResult <$> mapM validateDifferentRoomsInSlot (M.toList (slots plan))
+-- validateDifferentRoomsInSlots
+--   :: Plan -> Writer [ValidationRecord] ValidationResult
+-- validateDifferentRoomsInSlots plan = do
+--   tell [ValidationRecord Info "### Validating different rooms in slot (hard)"]
+--   validationResult <$> mapM validateDifferentRoomsInSlot (M.toList (slots plan))
 
-validateDifferentRoomsInSlot
-  :: ((DayIndex, SlotIndex), Slot) -> Writer [ValidationRecord] ValidationResult
-validateDifferentRoomsInSlot (index, slot') = do
-  let
-    exams' = examsInSlot slot'
-    roomsDifferent rs = length rs == length (nub (map (roomID . fst) rs))
-    plannedRooms      = concatMap (\e -> map (, e) $ rooms e) exams'
-    allRoomsDifferent = roomsDifferent plannedRooms
-    plannedRoomsWithoutReserveRooms =
-      filter (not . reserveRoom . fst) plannedRooms
-    plannedRoomsWithoutReserveRoomsDifferent =
-      roomsDifferent plannedRoomsWithoutReserveRooms
-    plannedRoomsWithoutHandicapCompensation =
-      filter (not . handicapCompensation . fst) plannedRooms
-    plannedRoomsWithoutHandicapCompensationDifferent =
-      roomsDifferent plannedRoomsWithoutHandicapCompensation
-  unless allRoomsDifferent $ tell
-    [ ValidationRecord HardConstraintBroken
-      $        "- slot "
-      `append` showt index
-      `append` ": same rooms used more than once"
-    ]
-  return $ if allRoomsDifferent
-    then EverythingOk
-    else
-      if plannedRoomsWithoutReserveRoomsDifferent
-           && plannedRoomsWithoutHandicapCompensationDifferent
-        then SoftConstraintsBroken
-        else HardConstraintsBroken
+-- validateDifferentRoomsInSlot
+--   :: ((DayIndex, SlotIndex), Slot) -> Writer [ValidationRecord] ValidationResult
+-- validateDifferentRoomsInSlot (index, slot') = do
+--   let
+--     exams' = examsInSlot slot'
+--     roomsDifferent rs = length rs == length (nub (map (roomID . fst) rs))
+--     plannedRooms      = concatMap (\e -> map (, e) $ rooms e) exams'
+--     allRoomsDifferent = roomsDifferent plannedRooms
+--     plannedRoomsWithoutReserveRooms =
+--       filter (not . reserveRoom . fst) plannedRooms
+--     plannedRoomsWithoutReserveRoomsDifferent =
+--       roomsDifferent plannedRoomsWithoutReserveRooms
+--     plannedRoomsWithoutHandicapCompensation =
+--       filter (not . handicapCompensation . fst) plannedRooms
+--     plannedRoomsWithoutHandicapCompensationDifferent =
+--       roomsDifferent plannedRoomsWithoutHandicapCompensation
+--   unless allRoomsDifferent $ tell
+--     [ ValidationRecord HardConstraintBroken
+--       $        "- slot "
+--       `append` showt index
+--       `append` ": same rooms used more than once"
+--     ]
+--   return $ if allRoomsDifferent
+--     then EverythingOk
+--     else
+--       if plannedRoomsWithoutReserveRoomsDifferent
+--            && plannedRoomsWithoutHandicapCompensationDifferent
+--         then SoftConstraintsBroken
+--         else HardConstraintsBroken
 
 validateRoomsAllowedInSlots
   :: Plan -> Writer [ValidationRecord] ValidationResult
@@ -159,7 +160,11 @@ validateRoomsAllowedInSlots plan = do
           $ slots plan
       roomSlots' :: M.Map RoomID [(DayIndex, SlotIndex)]
       roomSlots' = roomSlots $ constraints plan
-  tell [ValidationRecord Info "### Validating if all rooms in a slot are allowed (hard)"]
+  tell
+    [ ValidationRecord
+        Info
+        "### Validating if all rooms in a slot are allowed (hard)"
+    ]
   allRoomsInAllowedSlots <- forM slotsAndRooms
     $ validateRoomAllowedInSlot roomSlots'
   return $ validationResult allRoomsInAllowedSlots
@@ -172,7 +177,11 @@ validateRoomAllowedInSlot roomSlots' (slot', roomID') = do
   let slotsForRoom = M.lookup roomID' roomSlots'
   case slotsForRoom of
     Nothing -> do
-      tell [ValidationRecord Info $ "No constraint for room " `append` showt roomID']
+      tell
+        [ ValidationRecord Info
+          $        "No constraint for room "
+          `append` showt roomID'
+        ]
       return EverythingOk
     Just slots' -> if slot' `elem` slots'
       then return EverythingOk

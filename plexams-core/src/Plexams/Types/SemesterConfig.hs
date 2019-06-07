@@ -85,8 +85,8 @@ data SemesterConfig = SemesterConfig
 allSlots :: SemesterConfig -> [(Int, Int)]
 allSlots semesterConfig =
   [ (d, s)
-  | d <- [0 .. length (examDays semesterConfig)]
-  , s <- [0 .. length (slotsPerDay semesterConfig)]
+  | d <- [0 .. length (examDays semesterConfig) - 1]
+  , s <- [0 .. length (slotsPerDay semesterConfig) - 1]
   ]
 
 nonGOSlots :: SemesterConfig -> [(Int, Int)]

@@ -99,12 +99,11 @@ mkAvailableRooms plan rooms'
             (M.alter
               (maybe
                 Nothing
-                (\(nr, nrR, hr) ->
-                  Just
-                    ( filterNotRoomID roomID' nr
-                    , nrR
-                    , filterNotRoomID roomID' hr
-                    )
+                (\(nr, nrR, hr) -> Just
+                  ( filterNotRoomID roomID' nr
+                  , filterNotRoomID roomID' nrR
+                  , filterNotRoomID roomID' hr
+                  )
                 )
               )
             )
