@@ -40,8 +40,6 @@ data ValidationRecord
   = Info Text
   | SoftConstraintBroken Text
   | HardConstraintBroken Text
-  | ValidationListStart Text
-  | ValidationListEnd
   deriving (Eq, Generic)
 
 instance ToJSON ValidationRecord
@@ -50,8 +48,6 @@ validationMessage :: ValidationRecord -> Text
 validationMessage (Info msg) = msg
 validationMessage (SoftConstraintBroken msg) = msg
 validationMessage (HardConstraintBroken msg) = msg
-validationMessage (ValidationListStart msg) = msg
-validationMessage ValidationListEnd = ""
 
 validationResult :: [ValidationResult] -> ValidationResult
 validationResult = maximum
