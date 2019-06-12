@@ -173,8 +173,7 @@ server state =
     return
       $ groupWith (personID . lecturer)
       $ sortWith (personShortName . lecturer)
-      $ filter (not . null . handicapStudents)
-      $ allExamsPlannedByMe plan''
+      $ examsWithNTA plan''
 
   invigilators' :: StateHandler (Invigilations, [Invigilator])
   invigilators' = do

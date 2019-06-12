@@ -10,7 +10,9 @@ import           Control.Arrow                  ( second )
 import           Control.Monad.Writer
 -- import           Data.List                      ( nub )
 import qualified Data.Map                      as M
-import           Data.Text                      ( append )
+import           Data.Text                      ( append
+                                                , pack
+                                                )
 
 import           TextShow                       ( showt )
 
@@ -27,6 +29,7 @@ validate plan = do
   -- differentRoomsInSlot     <- validateDifferentRoomsInSlots plan
   noStudentLeftOutsideRoom <- validateNoStudentLeftOutsideRoom plan
   allRoomsAllowedInSlots   <- validateRoomsAllowedInSlots plan
+  handicapRoomAlone        <- validateHandicapRoomAlone plan
   -- TODO: roomSlots eingehalten, inSameRoom eingehalten?
   return $ validationResult
     [ enoughRoomsForExams
@@ -34,6 +37,7 @@ validate plan = do
     -- , differentRoomsInSlot
     , noStudentLeftOutsideRoom
     , allRoomsAllowedInSlots
+    , handicapRoomAlone
     ]
 
 validateNoStudentLeftOutsideRoom
@@ -147,25 +151,26 @@ validationStillReserveForExam exam = do
 --         then SoftConstraintsBroken
 --         else HardConstraintsBroken
 
+slotsAndRooms :: Plan -> [((DayIndex, SlotIndex), RoomID)]
+slotsAndRooms =
+  concatMap
+      ( (\(s, roomIDs) -> [ (s, roomID') | roomID' <- roomIDs ])
+      . second (map roomID . concatMap rooms . M.elems . examsInSlot)
+      )
+    . M.toList
+    . slots
+
 validateRoomsAllowedInSlots
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateRoomsAllowedInSlots plan = do
-  let slotsAndRooms :: [((DayIndex, SlotIndex), RoomID)]
-      slotsAndRooms =
-        concatMap
-            ( (\(s, roomIDs) -> [ (s, roomID') | roomID' <- roomIDs ])
-            . second (map roomID . concatMap rooms . M.elems . examsInSlot)
-            )
-          $ M.toList
-          $ slots plan
-      roomSlots' :: M.Map RoomID [(DayIndex, SlotIndex)]
+  let roomSlots' :: M.Map RoomID [(DayIndex, SlotIndex)]
       roomSlots' = roomSlots $ constraints plan
   tell
     [ ValidationRecord
         Info
         "### Validating if all rooms in a slot are allowed (hard)"
     ]
-  allRoomsInAllowedSlots <- forM slotsAndRooms
+  allRoomsInAllowedSlots <- forM (slotsAndRooms plan)
     $ validateRoomAllowedInSlot roomSlots'
   return $ validationResult allRoomsInAllowedSlots
 
@@ -193,6 +198,67 @@ validateRoomAllowedInSlot roomSlots' (slot', roomID') = do
             `append` showt slot'
           ]
         return HardConstraintsBroken
+
+
+validateHandicapRoomAlone :: Plan -> Writer [ValidationRecord] ValidationResult
+validateHandicapRoomAlone plan = do
+  let examsWithNTARoomAlone' = examsWithNTARoomAlone plan
+  tell
+    [ ValidationRecord Info
+                       "### Validating if all handicaps in room alone (hard)"
+    ]
+  allHandicapsInRoomAloneOk <- forM examsWithNTARoomAlone'
+    $ validateHandicapRoomAloneForExam plan
+  return $ validationResult allHandicapsInRoomAloneOk
+
+
+validateHandicapRoomAloneForExam
+  :: Plan -> Exam -> Writer [ValidationRecord] ValidationResult
+validateHandicapRoomAloneForExam plan exam = case slot exam of
+  Nothing -> do
+    tell
+      [ ValidationRecord HardConstraintBroken
+                         (pack $ name exam ++ " not planned")
+      ]
+    return HardConstraintsBroken
+  Just slot' -> do
+    let
+      allRoomsInSlot =
+        maybe [] (concatMap rooms . M.elems . examsInSlot)
+          $ M.lookup slot'
+          $ slots plan
+      roomsWithHandicapRoomAlone = filter
+        ( any (maybe False handicapNeedsRoomAlone . studentHandicap)
+        . studentsInRoom
+        )
+        allRoomsInSlot
+    allHandicapsInSlotRoomAloneOk <-
+      forM roomsWithHandicapRoomAlone
+        $ validateAllHandicapsInSlotRoomAloneOk exam allRoomsInSlot
+    return $ validationResult allHandicapsInSlotRoomAloneOk
+
+validateAllHandicapsInSlotRoomAloneOk
+  :: Exam -> [Room] -> Room -> Writer [ValidationRecord] ValidationResult
+validateAllHandicapsInSlotRoomAloneOk exam allRoomsInSlot roomWithHandicap = do
+  let sameRooms = filter ((== roomID roomWithHandicap) . roomID) allRoomsInSlot
+  if length sameRooms /= 1 || length (studentsInRoom roomWithHandicap) /= 1
+    then do
+      tell
+        [ ValidationRecord
+            HardConstraintBroken
+            (  pack
+            $  "Problems with handicap room alone for "
+            ++ roomID roomWithHandicap
+            ++ ", "
+            ++ show (anCode exam)
+            ++ ". "
+            ++ show (name exam)
+            ++ " in Slot "
+            ++ show (slot exam)
+            )
+        ]
+      return HardConstraintsBroken
+    else return EverythingOk
 
 
 
