@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Plexams.Generators.Schedule</span><span>
+</span><a name="line-2"></a><span>  </span><span class="hs-special">(</span><span> </span><a href="Plexams.Generators.Schedule.html#generateSchedule"><span class="hs-identifier hs-var">generateSchedule</span></a><span>
+</span><a name="line-3"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plexams.Generators.Schedule.html#scheduleExamsWithSameName"><span class="hs-identifier hs-var">scheduleExamsWithSameName</span></a><span>
+</span><a name="line-4"></a><span>  </span><span class="hs-special">)</span><span>
+</span><a name="line-5"></a><span class="hs-keyword">where</span><span>
+</span><a name="line-6"></a><span>
+</span><a name="line-7"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control.Arrow</span><span>                  </span><span class="hs-special">(</span><span> </span><span class="hs-special">(</span><span class="hs-operator hs-var">&amp;&amp;&amp;</span><span class="hs-special">)</span><span> </span><span class="hs-special">)</span><span>
+</span><a name="line-8"></a><span class="hs-comment">-- import           Data.List                      ( intercalate</span><span>
+</span><a name="line-9"></a><span class="hs-comment">--                                                   find</span><span>
+</span><a name="line-10"></a><span>                                                </span><span class="hs-comment">-- , nub</span><span>
+</span><a name="line-11"></a><span>                                                </span><span class="hs-comment">-- , (\\)</span><span>
+</span><a name="line-12"></a><span>                                                </span><span class="hs-comment">-- )</span><span>
+</span><a name="line-13"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Maybe</span><span>                     </span><span class="hs-special">(</span><span> </span><span class="hs-identifier hs-var">fromJust</span><span> </span><span class="hs-special">)</span><span>
+</span><a name="line-14"></a><span class="hs-comment">--                                                 , mapMaybe</span><span>
+</span><a name="line-15"></a><span class="hs-comment">--                                                 )</span><span>
+</span><a name="line-16"></a><span class="hs-comment">-- import qualified Data.Map                      as M</span><span>
+</span><a name="line-17"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Plexams.PlanManip</span><span>
+</span><a name="line-18"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Plexams.Query</span><span>
+</span><a name="line-19"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Plexams.Types</span><span>
+</span><a name="line-20"></a><span>
+</span><a name="line-21"></a><span class="hs-comment">{- 
+Schritte:
+- Metrik: e1 &gt;= e2 &lt;=&gt; Anzahl Anmeldungen e1 &gt;= Anzahl Anmeldungen e2
+    - gr&#246;&#223;ere Pr&#252;fungen weiter vorne?
+- bereits feststehende Slots respektieren
+- Trennen: GO und nicht-GO
+- zuerst GO, gr&#246;&#223;te in die Vormittagsslots um 08:30
+- jetzt sind GO festgelegt
+- Rest in Cluster einteilen
+    - Cluster getrennt planen
+- nur Tage festlegen, max 3 Slots pro Tag
+- haben zwei Pr&#252;fungen ...?
+
+andere Idee: f&#252;r jeden Studierenden einen eigenen Plan in dem die Pr&#252;fungen
+immer in der gleichen Reihenfolge sind. =&gt; vermutlich nicht zielf&#252;hrend
+
+- vielleicht Optimierung eines bestehenden Planes.
+-}</span><span>
+</span><a name="line-39"></a><span>
+</span><a name="line-40"></a><span class="hs-identifier">generateSchedule</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Plan</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Plan</span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">AddExamToSlot</span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><a name="line-41"></a><a name="generateSchedule"><a href="Plexams.Generators.Schedule.html#generateSchedule"><span class="hs-identifier">generateSchedule</span></a></a><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">undefined</span><span>
+</span><a name="line-42"></a><span>
+</span><a name="line-43"></a><span class="hs-comment">-- findSlotForUnscheduledExam :: Integer -&gt; Plan -&gt; Maybe AddExamToSlot</span><span>
+</span><a name="line-44"></a><span class="hs-comment">-- findSlotForUnscheduledExam ancode plan =</span><span>
+</span><a name="line-45"></a><span class="hs-comment">--   case M.lookup ancode (unscheduledExams plan) of</span><span>
+</span><a name="line-46"></a><span class="hs-comment">--     Nothing -&gt; Nothing</span><span>
+</span><a name="line-47"></a><span class="hs-comment">--     Just _  -&gt; undefined</span><span>
+</span><a name="line-48"></a><span>
+</span><a name="line-49"></a><span class="hs-comment">-- findDayForExam :: Exam -&gt; Plan -&gt; ([Exam], DayIndex)</span><span>
+</span><a name="line-50"></a><span class="hs-comment">-- findDayForExam exam plan =</span><span>
+</span><a name="line-51"></a><span class="hs-comment">--   let</span><span>
+</span><a name="line-52"></a><span class="hs-comment">--     examGroup = exam : filter ((`elem` sameSlot exam) . anCode) (allExams plan)</span><span>
+</span><a name="line-53"></a><span class="hs-comment">--     conflictingAncodesForGroup =</span><span>
+</span><a name="line-54"></a><span class="hs-comment">--       M.toList $ M.unionsWith (+) $ map conflictingAncodes examGroup</span><span>
+</span><a name="line-55"></a><span class="hs-comment">--     scheduledExams'  = scheduledExams plan</span><span>
+</span><a name="line-56"></a><span class="hs-comment">--     conflictingSlots = mapMaybe</span><span>
+</span><a name="line-57"></a><span class="hs-comment">--       (\(ac, count) -&gt;</span><span>
+</span><a name="line-58"></a><span class="hs-comment">--         maybe</span><span>
+</span><a name="line-59"></a><span class="hs-comment">--             Nothing</span><span>
+</span><a name="line-60"></a><span class="hs-comment">--             (\e -&gt; case slot e of</span><span>
+</span><a name="line-61"></a><span class="hs-comment">--               Nothing    -&gt; Nothing</span><span>
+</span><a name="line-62"></a><span class="hs-comment">--               Just slot' -&gt; Just (slot', count)</span><span>
+</span><a name="line-63"></a><span class="hs-comment">--             )</span><span>
+</span><a name="line-64"></a><span class="hs-comment">--           $ find ((== ac) . anCode) scheduledExams'</span><span>
+</span><a name="line-65"></a><span class="hs-comment">--       )</span><span>
+</span><a name="line-66"></a><span class="hs-comment">--       conflictingAncodesForGroup</span><span>
+</span><a name="line-67"></a><span class="hs-comment">--     allDays         = [0 .. maxDayIndex plan]</span><span>
+</span><a name="line-68"></a><span class="hs-comment">--     conflictingDays = nub $ map (fst . fst) conflictingSlots</span><span>
+</span><a name="line-69"></a><span class="hs-comment">--     impossibleDays  = if any isGOExam examGroup</span><span>
+</span><a name="line-70"></a><span class="hs-comment">--       then nub $ map fst (goSlots $ semesterConfig plan)</span><span>
+</span><a name="line-71"></a><span class="hs-comment">--       else []</span><span>
+</span><a name="line-72"></a><span class="hs-comment">--     possibleDays = allDays \\ impossibleDays</span><span>
+</span><a name="line-73"></a><span class="hs-comment">--     daysWithoutConflict :: [(DayIndex, Bool)]</span><span>
+</span><a name="line-74"></a><span class="hs-comment">--     daysWithoutConflict = map (\i -&gt; (i, i `notElem` conflictingDays)) allDays</span><span>
+</span><a name="line-75"></a><span class="hs-comment">--     daysWithoutConflictsOnAdjacentDays = undefined</span><span>
+</span><a name="line-76"></a><span class="hs-comment">--   in</span><span>
+</span><a name="line-77"></a><span class="hs-comment">--     undefined</span><span>
+</span><a name="line-78"></a><span>
+</span><a name="line-79"></a><span class="hs-comment">-- SlotRating:</span><span>
+</span><a name="line-80"></a><span class="hs-comment">-- F&#252;r jede &#220;berschneidung, die bereits gescheduled ist:</span><span>
+</span><a name="line-81"></a><span class="hs-comment">--    Anzahl Studierende dieser &#220;berschneidung * irgendwas f&#252;r Slot-Abstand * irgendwas f&#252;r Tag-Abstand</span><span>
+</span><a name="line-82"></a><span class="hs-comment">--    Fr&#252;here Slots m&#252;ssen besser bewertet werden</span><span>
+</span><a name="line-83"></a><span class="hs-comment">--    Slots d&#252;rfen nicht zu voll werden! Anzahl der R&#228;ume beachten!!!</span><span>
+</span><a name="line-84"></a><span class="hs-comment">-- gr&#246;&#223;te Zahl gewinnt!</span><span>
+</span><a name="line-85"></a><span class="hs-comment">-- type SlotRating = Int</span><span>
+</span><a name="line-86"></a><span>
+</span><a name="line-87"></a><span class="hs-comment">-- findSlotsForExam</span><span>
+</span><a name="line-88"></a><span class="hs-comment">--   :: Exam -&gt; Plan -&gt; ([Exam], [((DayIndex, SlotIndex), SlotRating)])</span><span>
+</span><a name="line-89"></a><span class="hs-comment">-- findSlotsForExam exam plan</span><span>
+</span><a name="line-90"></a><span class="hs-comment">--   = let</span><span>
+</span><a name="line-91"></a><span class="hs-comment">--       examGroup =</span><span>
+</span><a name="line-92"></a><span class="hs-comment">--         exam : filter ((`elem` sameSlot exam) . anCode) (allExams plan)</span><span>
+</span><a name="line-93"></a><span class="hs-comment">--       alreadyPlannedSlot = mapMaybe slot examGroup</span><span>
+</span><a name="line-94"></a><span class="hs-comment">--       feasibleSlots      = filter slotIsFeasible $ M.toList $ slots plan</span><span>
+</span><a name="line-95"></a><span class="hs-comment">--       slotIsFeasible _ = undefined</span><span>
+</span><a name="line-96"></a><span class="hs-comment">--     in</span><span>
+</span><a name="line-97"></a><span class="hs-comment">--       case alreadyPlannedSlot of</span><span>
+</span><a name="line-98"></a><span class="hs-comment">--         []  -&gt; undefined -- planen</span><span>
+</span><a name="line-99"></a><span class="hs-comment">--         [s] -&gt; (examGroup, [(s, maxBound)])</span><span>
+</span><a name="line-100"></a><span class="hs-comment">--         _ -&gt;</span><span>
+</span><a name="line-101"></a><span class="hs-comment">--           error $ &quot;error: sameSlot exams in different Rooms: \n&quot; ++ intercalate</span><span>
+</span><a name="line-102"></a><span class="hs-comment">--             &quot;\n&quot;</span><span>
+</span><a name="line-103"></a><span class="hs-comment">--             (map show examGroup)</span><span>
+</span><a name="line-104"></a><span>
+</span><a name="line-105"></a><span class="hs-comment">-- | Schedule exams with same name in the same slot.</span><span>
+</span><a name="line-106"></a><span class="hs-comment">--</span><span>
+</span><a name="line-107"></a><span class="hs-comment">-- This only works if one of them is already planned.</span><span>
+</span><a name="line-108"></a><span class="hs-comment">-- Ignores exams with same name that are planned in different slots.</span><span>
+</span><a name="line-109"></a><span class="hs-identifier">scheduleExamsWithSameName</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Plan</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Plan</span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">AddExamToSlot</span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><a name="line-110"></a><a name="scheduleExamsWithSameName"><a href="Plexams.Generators.Schedule.html#scheduleExamsWithSameName"><span class="hs-identifier">scheduleExamsWithSameName</span></a></a><span> </span><a name="local-6989586621679056749"><a href="#local-6989586621679056749"><span class="hs-identifier">plan</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-111"></a><span>  </span><span class="hs-keyword">let</span><span> </span><a name="local-6989586621679056750"><a href="#local-6989586621679056750"><span class="hs-identifier">exams</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-112"></a><span>        </span><span class="hs-identifier hs-var">filter</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><a name="local-6989586621679056755"><a href="#local-6989586621679056755"><span class="hs-identifier">s</span></a></a><span class="hs-special">,</span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">length</span><span> </span><a href="#local-6989586621679056755"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-operator hs-var">==</span><span> </span><span class="hs-number">1</span><span class="hs-special">)</span><span>
+</span><a name="line-113"></a><span>          </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">map</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">filter</span><span> </span><span class="hs-identifier hs-var">isScheduled</span><span> </span><span class="hs-operator hs-var">&amp;&amp;&amp;</span><span> </span><span class="hs-identifier hs-var">filter</span><span> </span><span class="hs-identifier hs-var">isUnscheduled</span><span class="hs-special">)</span><span>
+</span><a name="line-114"></a><span>          </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">examsWithSameName</span><span>
+</span><a name="line-115"></a><span>          </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">setSlotsOnExams</span><span> </span><a href="#local-6989586621679056749"><span class="hs-identifier hs-var">plan</span></a><span>
+</span><a name="line-116"></a><span>      </span><a name="local-6989586621679056751"><a href="#local-6989586621679056751"><span class="hs-identifier">dayScheduled</span></a></a><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">fst</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">fromJust</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier">slot</span><span>
+</span><a name="line-117"></a><span>      </span><a name="local-6989586621679056752"><a href="#local-6989586621679056752"><span class="hs-identifier">slotScheduled</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">snd</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">fromJust</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier">slot</span><span>
+</span><a name="line-118"></a><span>      </span><a name="local-6989586621679056753"><a href="#local-6989586621679056753"><span class="hs-identifier">makePlanManips</span></a></a><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><a name="local-6989586621679056756"><a href="#local-6989586621679056756"><span class="hs-identifier">scheduled</span></a></a><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><a name="local-6989586621679056757"><a href="#local-6989586621679056757"><span class="hs-identifier">unscheduled</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">map</span><span>
+</span><a name="line-119"></a><span>        </span><span class="hs-special">(</span><span class="hs-glyph">\</span><a name="local-6989586621679056758"><a href="#local-6989586621679056758"><span class="hs-identifier">exam</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">AddExamToSlot</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">anCode</span><span> </span><a href="#local-6989586621679056758"><span class="hs-identifier hs-var">exam</span></a><span class="hs-special">)</span><span>
+</span><a name="line-120"></a><span>                                </span><span class="hs-special">(</span><a href="#local-6989586621679056751"><span class="hs-identifier hs-var">dayScheduled</span></a><span> </span><a href="#local-6989586621679056756"><span class="hs-identifier hs-var">scheduled</span></a><span class="hs-special">)</span><span>
+</span><a name="line-121"></a><span>                                </span><span class="hs-special">(</span><a href="#local-6989586621679056752"><span class="hs-identifier hs-var">slotScheduled</span></a><span> </span><a href="#local-6989586621679056756"><span class="hs-identifier hs-var">scheduled</span></a><span class="hs-special">)</span><span>
+</span><a name="line-122"></a><span>        </span><span class="hs-special">)</span><span>
+</span><a name="line-123"></a><span>        </span><a href="#local-6989586621679056757"><span class="hs-identifier hs-var">unscheduled</span></a><span>
+</span><a name="line-124"></a><span>      </span><span class="hs-identifier">makePlanManips</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">error</span><span> </span><span class="hs-string">&quot;the impossible happened&quot;</span><span>
+</span><a name="line-125"></a><span>      </span><a name="local-6989586621679056754"><a href="#local-6989586621679056754"><span class="hs-identifier">planManips</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">concatMap</span><span> </span><a href="#local-6989586621679056753"><span class="hs-identifier hs-var">makePlanManips</span></a><span> </span><a href="#local-6989586621679056750"><span class="hs-identifier hs-var">exams</span></a><span>
+</span><a name="line-126"></a><span>  </span><span class="hs-keyword">in</span><span>  </span><span class="hs-special">(</span><span class="hs-identifier hs-var">applyAddExamToSlotListToPlan</span><span> </span><a href="#local-6989586621679056749"><span class="hs-identifier hs-var">plan</span></a><span> </span><a href="#local-6989586621679056754"><span class="hs-identifier hs-var">planManips</span></a><span class="hs-special">,</span><span> </span><a href="#local-6989586621679056754"><span class="hs-identifier hs-var">planManips</span></a><span class="hs-special">)</span><span>
+</span><a name="line-127"></a></pre></body></html>
