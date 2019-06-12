@@ -24,12 +24,13 @@ validate plan = do
   -- normalRoomsNoHandicap
   -- handicapRoomsAllHandicap
   -- no student left outside of room
-  enoughRoomsForExams      <- validateEnoughRoomsForExams plan
-  stillReserveForExams     <- validationStillReserveForExams plan
+  enoughRoomsForExams       <- validateEnoughRoomsForExams plan
+  stillReserveForExams      <- validationStillReserveForExams plan
   -- differentRoomsInSlot     <- validateDifferentRoomsInSlots plan
-  noStudentLeftOutsideRoom <- validateNoStudentLeftOutsideRoom plan
-  allRoomsAllowedInSlots   <- validateRoomsAllowedInSlots plan
-  handicapRoomAlone        <- validateHandicapRoomAlone plan
+  noStudentLeftOutsideRoom  <- validateNoStudentLeftOutsideRoom plan
+  allRoomsAllowedInSlots    <- validateRoomsAllowedInSlots plan
+  handicapRoomAlone         <- validateHandicapRoomAlone plan
+  handicapRoomNotInNextSlot <- validateHandicapRoomsNotInNextSlot plan
   -- TODO: roomSlots eingehalten, inSameRoom eingehalten?
   return $ validationResult
     [ enoughRoomsForExams
@@ -38,6 +39,7 @@ validate plan = do
     , noStudentLeftOutsideRoom
     , allRoomsAllowedInSlots
     , handicapRoomAlone
+    , handicapRoomNotInNextSlot
     ]
 
 validateNoStudentLeftOutsideRoom
@@ -260,5 +262,56 @@ validateAllHandicapsInSlotRoomAloneOk exam allRoomsInSlot roomWithHandicap = do
       return HardConstraintsBroken
     else return EverythingOk
 
+validateHandicapRoomsNotInNextSlot
+  :: Plan -> Writer [ValidationRecord] ValidationResult
+validateHandicapRoomsNotInNextSlot plan = do
+  tell
+    [ ValidationRecord
+        Info
+        "### Validating if all handicaps rooms are not used in the following slot (hard)"
+    ]
+  allHandicapsRoomsNotInNextSlot <- forM (examsWithNTA plan)
+    $ validateHandicapRoomNotInNextSlot plan
+  return $ validationResult allHandicapsRoomsNotInNextSlot
+
+validateHandicapRoomNotInNextSlot
+  :: Plan -> Exam -> Writer [ValidationRecord] ValidationResult
+validateHandicapRoomNotInNextSlot plan exam = case slot exam of
+  Nothing -> do
+    tell
+      [ ValidationRecord HardConstraintBroken
+        $  pack
+        $  name exam
+        ++ " not planned"
+      ]
+    return HardConstraintsBroken
+  Just (d, s) -> do
+    let roomsWithHandicap = filter handicapCompensation $ rooms exam
+    roomsOk <- forM roomsWithHandicap
+      $ validateHandicapRoomNotInSlot plan (d, s + 1)
+    return $ validationResult roomsOk
+
+validateHandicapRoomNotInSlot
+  :: Plan
+  -> (DayIndex, SlotIndex)
+  -> Room
+  -> Writer [ValidationRecord] ValidationResult
+validateHandicapRoomNotInSlot plan slotIndex room =
+  case M.lookup slotIndex $ slots plan of
+    Nothing    -> return EverythingOk
+    Just slot' -> do
+      let roomsInSlot = concatMap rooms $ M.elems $ examsInSlot slot'
+      if roomID room `elem` map roomID roomsInSlot
+        then do
+          tell
+            [ ValidationRecord HardConstraintBroken
+              $  pack
+              $  "Handicap room "
+              ++ roomID room
+              ++ " used again in slot "
+              ++ show slotIndex
+            ]
+          return HardConstraintsBroken
+        else return EverythingOk
 
 
