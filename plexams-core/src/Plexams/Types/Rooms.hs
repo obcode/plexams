@@ -6,13 +6,14 @@ module Plexams.Types.Rooms
   , seatsPlanned
   , PlannedRoomWithSlots(..)
   , PlannedRoomSlot(..)
-  ) where
+  )
+where
 
-import Data.Aeson
-import Data.Text (unpack)
-import GHC.Generics
-import Plexams.Types.Common
-import Plexams.Types.Persons
+import           Data.Aeson
+import           Data.Text                      ( unpack )
+import           GHC.Generics
+import           Plexams.Types.Common
+import           Plexams.Types.Persons
 
 data Room = Room
   { roomID :: RoomID -- ^ Raum-Nr, z.B. @"R3.014"@
@@ -63,7 +64,8 @@ instance ToJSON PlannedRoomWithSlots
 
 data PlannedRoomSlot = PlannedRoomSlot
   { plannedRoomDay :: String
-  , plannedRoomSlots :: [String]
+  , plannedRoomDayNumber :: Int
+  , plannedRoomSlots :: [(Int, String)]
   } deriving (Generic)
 
 instance FromJSON PlannedRoomSlot

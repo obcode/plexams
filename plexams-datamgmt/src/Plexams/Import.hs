@@ -77,7 +77,9 @@ importPlan' semesterConfig' = do
     maybe
         (tell ["WARNING: constraints file not readable"] >> return noConstraints
         )
-        (importFromFilePath importConstraintsFromYAMLFile noConstraints)
+        (importFromFilePath (importConstraintsFromYAMLFile semesterConfig')
+                            noConstraints
+        )
       $ constraintsFile files'
   -- let planWithConstraints = addConstraints constraints' plan'
   let plan' = makePlan exams' semesterConfig' persons' constraints'

@@ -242,6 +242,7 @@ setRoomOnExam (exam, maxUsableSeats) availableRoom = do
       ]
     )
 
+-- FIXME: Es werden andere mit in einen Room-Alone gesetzt!
 setHandicapRoomsOnSlotNeedsRoomAlone
   :: [AvailableRoom]
   -> [AvailableRoom]

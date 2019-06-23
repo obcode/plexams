@@ -5,6 +5,8 @@ module Plexams.Types.Plan
   , scheduledExams
   , allExams
   , allExamsPlannedByMe
+  , examsWithNTA
+  , examsWithNTARoomAlone
   , isScheduledAncode
   , isUnscheduledAncode
   , isUnknownExamAncode
@@ -31,6 +33,7 @@ import qualified Data.Map                      as M
 import           Data.Ord                       ( Down(Down) )
 import           Data.Time.Calendar
 import           GHC.Generics
+
 import           Plexams.Types.Common
 import           Plexams.Types.Constraints
 import           Plexams.Types.Exam
@@ -62,6 +65,17 @@ allExams plan =
 
 allExamsPlannedByMe :: Plan -> [Exam]
 allExamsPlannedByMe = filter plannedByMe . allExams
+
+examsWithNTA :: Plan -> [Exam]
+examsWithNTA = filter (not . null . handicapStudents) . allExamsPlannedByMe
+
+examsWithNTARoomAlone :: Plan -> [Exam]
+examsWithNTARoomAlone =
+  filter
+      ( any (maybe False handicapNeedsRoomAlone . studentHandicap)
+      . handicapStudents
+      )
+    . examsWithNTA
 
 isScheduledAncode :: Ancode -> Plan -> Bool
 isScheduledAncode ancode =
@@ -99,12 +113,11 @@ mkAvailableRooms plan rooms'
             (M.alter
               (maybe
                 Nothing
-                (\(nr, nrR, hr) ->
-                  Just
-                    ( filterNotRoomID roomID' nr
-                    , nrR
-                    , filterNotRoomID roomID' hr
-                    )
+                (\(nr, nrR, hr) -> Just
+                  ( filterNotRoomID roomID' nr
+                  , filterNotRoomID roomID' nrR
+                  , filterNotRoomID roomID' hr
+                  )
                 )
               )
             )

@@ -11,6 +11,7 @@ module Plexams.Types.SemesterConfig
   , AvailableRooms
       -- * Config
   , showSlot
+  , allSlots
   )
 where
 
@@ -80,6 +81,13 @@ data SemesterConfig = SemesterConfig
   , goOtherExams :: [Ancode]
   , scheduleFrozen :: Bool
   } deriving (Eq, Show, Generic)
+
+allSlots :: SemesterConfig -> [(Int, Int)]
+allSlots semesterConfig =
+  [ (d, s)
+  | d <- [0 .. length (examDays semesterConfig) - 1]
+  , s <- [0 .. length (slotsPerDay semesterConfig) - 1]
+  ]
 
 nonGOSlots :: SemesterConfig -> [(Int, Int)]
 nonGOSlots semesterConfig =

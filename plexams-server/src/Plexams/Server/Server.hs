@@ -49,6 +49,7 @@ type API
       :<|> "examDays" :> Get '[ JSON] [String]
       :<|> "slots" :> Get '[ JSON] Slots
       :<|> "slot" :> ReqBody '[ JSON] (Int, Int) :> Post '[ JSON] [Exam]
+      :<|> "slotByRooms" :> ReqBody '[ JSON] (Int, Int) :> Post '[ JSON] [[(Room, Exam)]]
       :<|> "slotsPerDay" :> Get '[ JSON] [String]
       :<|> "slotsForDay" :> ReqBody '[ JSON] Int :> Post '[ JSON] Slots
       :<|> "conflictingSlots" :> ReqBody '[ JSON] Integer :> Post '[ JSON]
@@ -117,6 +118,7 @@ server state =
     :<|> examDays'
     :<|> slots'
     :<|> slot'
+    :<|> slotByRooms'
     :<|> slotsPerDay'
     :<|> slotsForDay'
     :<|> conflictingSlots'
@@ -171,8 +173,7 @@ server state =
     return
       $ groupWith (personID . lecturer)
       $ sortWith (personShortName . lecturer)
-      $ filter (not . null . handicapStudents)
-      $ allExamsPlannedByMe plan''
+      $ examsWithNTA plan''
 
   invigilators' :: StateHandler (Invigilations, [Invigilator])
   invigilators' = do
@@ -219,6 +220,12 @@ server state =
     State { plan = planT } <- ask
     plan''                 <- liftIO $ readTVarIO planT
     return $ maybe [] (M.elems . examsInSlot) $ M.lookup s $ slots plan''
+
+  slotByRooms' :: (Int, Int) -> StateHandler [[(Room, Exam)]]
+  slotByRooms' s = do
+    State { plan = planT } <- ask
+    plan''                 <- liftIO $ readTVarIO planT
+    return $ maybe [] slotByRooms $ M.lookup s $ slots plan''
 
   slotsPerDay' :: StateHandler [String]
   slotsPerDay' = do

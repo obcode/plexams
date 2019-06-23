@@ -22,6 +22,7 @@ import           Data.Aeson                     ( FromJSON
                                                 )
 import qualified Data.ByteString               as BSI
 import qualified Data.ByteString.Lazy          as BS
+import           Data.List                      ( (\\) )
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe
                                                 , maybe
@@ -126,6 +127,7 @@ data ImportConstraints =
                     (Maybe [[Integer]])
                     (Maybe [ImpossibleInvigilation])
                     (Maybe [RoomOnlyForSlots])
+                    (Maybe [RoomOnlyForSlots])
                     (Maybe [Ancode])
 
 instance Y.FromJSON ImportConstraints where
@@ -139,6 +141,7 @@ instance Y.FromJSON ImportConstraints where
     v Y..:? "invigilatesExam" <*>
     v Y..:? "impossibleInvigilationSlots" <*>
     v Y..:? "roomOnlyForSlots" <*>
+    v Y..:? "roomNotForSlots" <*>
     v Y..:? "doNotShareRoom"
   parseJSON _ = empty
 
@@ -159,13 +162,22 @@ roomOnlyForSlotsToTuple :: RoomOnlyForSlots -> (RoomID, [(DayIndex, SlotIndex)])
 roomOnlyForSlotsToTuple (RoomOnlyForSlots roomID' slots') =
   (roomID', map (\[dayIdx, slotIdx] -> (dayIdx, slotIdx)) slots')
 
+roomNotForSlotsToTuple
+  :: SemesterConfig -> RoomOnlyForSlots -> (RoomID, [(DayIndex, SlotIndex)])
+roomNotForSlotsToTuple semesterConfig' (RoomOnlyForSlots roomID' slots') =
+  ( roomID'
+  , allSlots semesterConfig'
+    \\ map (\[dayIdx, slotIdx] -> (dayIdx, slotIdx)) slots'
+  )
+
 instance Y.FromJSON RoomOnlyForSlots where
   parseJSON (Y.Object v) =
     RoomOnlyForSlots <$> v Y..: "roomNumber" <*> v Y..: "slots"
   parseJSON _ = empty
 
-importConstraintsToConstraints :: ImportConstraints -> Constraints
-importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots icDoNotShareRoom)
+importConstraintsToConstraints
+  :: SemesterConfig -> ImportConstraints -> Constraints
+importConstraintsToConstraints semesterConfig' (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots iCRoomNotForSlots icDoNotShareRoom)
   = Constraints
     { overlaps                    = []
     , notOnSameDay                = fromMaybe [] iCNotOnSameDay
@@ -191,15 +203,20 @@ importConstraintsToConstraints (ImportConstraints iCNotOnSameDay iCInSameSlot iC
     , roomSlots = maybe M.empty
                         (M.fromList . map roomOnlyForSlotsToTuple)
                         iCRoomOnlyForSlots
+      `M.union` maybe
+                  M.empty
+                  (M.fromList . map (roomNotForSlotsToTuple semesterConfig'))
+                  iCRoomNotForSlots
     , doNotShareRoom              = fromMaybe [] icDoNotShareRoom
     }
 
 iIToSlots :: ImpossibleInvigilation -> (PersonID, [(Int, Int)])
 iIToSlots (ImpossibleInvigilation p ss) = (p, map (\[d, s] -> (d, s)) ss)
 
-importConstraintsFromYAMLFile :: FilePath -> IO (Maybe Constraints)
-importConstraintsFromYAMLFile =
-  fmap (fmap importConstraintsToConstraints . Y.decodeThrow) . BSI.readFile
+importConstraintsFromYAMLFile
+  :: SemesterConfig -> FilePath -> IO (Maybe Constraints)
+importConstraintsFromYAMLFile sc =
+  fmap (fmap (importConstraintsToConstraints sc) . Y.decodeThrow) . BSI.readFile
 
 -- }}}
 -- {{{ Invigilator from JSON File
