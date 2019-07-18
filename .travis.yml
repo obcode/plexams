@@ -50,24 +50,24 @@ script:
   - hlint .
   - stack --no-terminal test
 
-jobs:
-  include:
-    - stage: Deploy Haddock
-      os: linux
-      script:
-        - stack --no-terminal test --haddock --no-haddock-deps
-        - mkdir docs
-        - ls
-        - stack path --local-doc-root
-        - ls `stack path --local-doc-root`
-        - mv `stack path --local-doc-root` docs/haddock
-      deploy:
-        provider: pages
-        skip_cleanup: true
-        github_token: $GITHUB_TOKEN
-        on:
-          all_branches: true
-        local_dir: docs/haddock
+# jobs:
+#   include:
+#     - stage: Deploy Haddock
+#       os: linux
+#       script:
+#         - stack --no-terminal test --haddock --no-haddock-deps
+#         - mkdir docs
+#         - ls
+#         - stack path --local-doc-root
+#         - ls `stack path --local-doc-root`
+#         - mv `stack path --local-doc-root` docs/haddock
+#       deploy:
+#         provider: pages
+#         skip_cleanup: true
+#         github_token: $GITHUB_TOKEN
+#         on:
+#           all_branches: true
+#         local_dir: docs/haddock
 
 notifications:
   email:
