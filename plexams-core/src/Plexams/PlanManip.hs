@@ -37,6 +37,7 @@ makePlan exams'' semesterConfig' pers constraints' = foldr
     , invigilators       = M.empty
     , invigilatorsPerDay = M.empty
     , initialPlan        = exams'
+    , students           = M.empty
     }
   (importedExams semesterConfig')
  where

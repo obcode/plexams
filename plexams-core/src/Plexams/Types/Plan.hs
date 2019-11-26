@@ -50,6 +50,7 @@ data Plan = Plan
   , invigilators :: Invigilators
   , invigilatorsPerDay :: M.Map DayIndex ([PersonID], [PersonID])
   , initialPlan :: [Exam]
+  , students :: StudentsWithRegs
   } deriving (Show, Eq, Generic)
 
 instance ToJSON Plan where

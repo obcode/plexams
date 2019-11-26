@@ -71,6 +71,7 @@ type API
       :<|> "removeInvigilator" :> ReqBody '[ JSON] RemoveInvigilatorFromRoomOrSlot :> Post '[ JSON] ()
       :<|> "examsWithNTA" :> Get '[ JSON] [[Exam]]
       :<|> "plannedRooms" :> Get '[ JSON] [PlannedRoomWithSlots]
+      :<|> "student" :> ReqBody '[ JSON] Text :> Post '[ JSON] (Maybe StudentWithRegs)
 
 newtype State = State
   { plan :: TVar Plan
@@ -139,6 +140,7 @@ server state =
     :<|> removeInvigilator
     :<|> examsWithNTA'
     :<|> plannedRooms'
+    :<|> students'
  where
 
   validateWhat' :: StateHandler [ValidateWhat]
@@ -339,6 +341,12 @@ server state =
         let plan''' =
               removeInvigilatorFromExamOrSlot invigID invigSlot invigRoom plan''
         writeTVar planT plan'''
+
+  students' :: Text -> StateHandler (Maybe StudentWithRegs)
+  students' s = do
+    State { plan = planT } <- ask
+    plan''                 <- liftIO $ readTVarIO planT
+    return $ M.lookup s $ students plan''
 
   reloadPlan' :: StateHandler (Bool, [Text])
   reloadPlan' = do
