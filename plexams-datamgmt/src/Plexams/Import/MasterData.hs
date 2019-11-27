@@ -192,9 +192,7 @@ importConstraintsToConstraints semesterConfig' (ImportConstraints iCNotOnSameDay
     , noInvigilations             = fromMaybe [] icNoInvigilations
     , noInvigilationDays          = maybe
       []
-      (concatMap
-        (\xs -> if null xs then [] else [(toInteger (head xs), tail xs)])
-      )
+      (concatMap (\xs -> [ (toInteger (head xs), tail xs) | not (null xs) ]))
       icNoInvigilationDays
     , invigilatesExam = maybe [] (map (\[a, p] -> (a, p))) iCInvigilatesExam
     , impossibleInvigilationSlots = maybe []
