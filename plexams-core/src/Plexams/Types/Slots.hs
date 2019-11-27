@@ -37,9 +37,8 @@ adjacentSlotPairs :: Slots -> [[((DayIndex, SlotIndex), Slot)]]
 adjacentSlotPairs slots =
   let maxSlotIndex = maximum $ map snd $ M.keys slots
       maxDayIndex  = maximum $ map fst $ M.keys slots
-      indexPairs   = map
-        (\(d, s) -> map (d, ) s)
-        [ (d, slotIndexPair)
+      indexPairs =
+        [ (\(d', s) -> map (d', ) s) (d, slotIndexPair)
         | d             <- [0 .. maxDayIndex]
         , slotIndexPair <- [ [x, x + 1] | x <- [0 .. maxSlotIndex - 1] ]
         ]
