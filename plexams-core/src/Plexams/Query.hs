@@ -169,5 +169,21 @@ conflictingSlotsForAncode ancode plan'
                  else conflicts'
                sortAndClean =
                  sort . filter ((`elem` [0 .. maxSlotIndex plan']) . snd) . nub
+               fixedSlot' =
+                 filter ((== ancode) . fst) $ fixedSlot $ constraints plan'
+               conflicts'' = case fixedSlot' of
+                 [] -> conflicts
+                 ((_, fixedSlot'') : _) ->
+                   filter (/= fixedSlot'') (allSlots $ semesterConfig plan')
+                     ++ conflicts
+               onOneOfTheseDays' =
+                 filter ((== ancode) . fst) $ onOneOfTheseDays $ constraints
+                   plan'
+               conflicts''' = case onOneOfTheseDays' of
+                 [] -> conflicts''
+                 ((_, theseDays) : _) ->
+                   filter ((`notElem` theseDays) . fst)
+                          (allSlots $ semesterConfig plan')
+                     ++ conflicts''
              in
-               (conflicts, nextToConflicts)
+               (conflicts''', nextToConflicts)
