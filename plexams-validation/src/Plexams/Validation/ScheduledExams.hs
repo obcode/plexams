@@ -37,7 +37,7 @@ validate plan = do
   -- sameSlotOverlaps <- validateOverlapsInSameSlot plan
   -- adjacentSlotOverlaps <- validateOverlapsInAdjacentSlots plan
   -- sameDayOverlaps <- validateOverlapsSameDay plan
-  lecturerMaxOneExamPerSlot <- validateLecturerMaxOneExamPerSlot plan
+  -- lecturerMaxOneExamPerSlot <- validateLecturerMaxOneExamPerSlot plan
   studentsMaxTwoExamsPerDay <- validateStudentsMaxTwoExamsPerDay plan
   return $ validationResult
     [ constraintsOk
@@ -47,7 +47,7 @@ validate plan = do
             -- , sameSlotOverlaps
             -- , sameDayOverlaps
             -- , adjacentSlotOverlaps
-    , lecturerMaxOneExamPerSlot
+    -- , lecturerMaxOneExamPerSlot
     , studentsMaxTwoExamsPerDay
     ]
 
@@ -84,7 +84,10 @@ validateSameNameSameSlot plan = do
               (not . (`elem` concat (notOnSameDay $ constraints plan)) . anCode)
           $ allExams plan
       ok = null examsGroupedByNameWithDifferentSlots
-  tell [ValidationRecord Info "### Checking exams with same name in same slot (hard)"]
+  tell
+    [ ValidationRecord Info
+                       "### Checking exams with same name in same slot (hard)"
+    ]
   unless ok $ mapM_
     ( tell
     . (: [])
@@ -129,7 +132,8 @@ validateConflicts' hard [((d, s), es)] = do
     then return EverythingOk
     else do
       tell
-        [ ValidationRecord (if hard then HardConstraintBroken else SoftConstraintBroken)
+        [ ValidationRecord
+            (if hard then HardConstraintBroken else SoftConstraintBroken)
           $        "- Conflict in slot ("
           `append` showt d
           `append` ", "
@@ -154,7 +158,8 @@ validateConflicts' hard slotsAndExams = do
     else do
       tell [ValidationRecord Info $ showt $ map fst slotsAndExams]
       tell
-        [ ValidationRecord (if hard then HardConstraintBroken else SoftConstraintBroken)
+        [ ValidationRecord
+            (if hard then HardConstraintBroken else SoftConstraintBroken)
           $        "- Conflict in slots: "
           `append` showt conflictingAncodesWithSlot
         ]
@@ -305,7 +310,10 @@ validateNotOnSameDay' plan ancodes = do
       ancodesAndDaysOk =
         (== length ancodesAndDays) $ length $ nub $ map snd ancodesAndDays
   unless ancodesAndDaysOk $ tell
-    [ValidationRecord SoftConstraintBroken $ "- not okay for " `append` showt ancodesAndDays]
+    [ ValidationRecord SoftConstraintBroken
+      $        "- not okay for "
+      `append` showt ancodesAndDays
+    ]
   return $ if ancodesAndDaysOk then EverythingOk else SoftConstraintsBroken
 
 --------------------
@@ -326,8 +334,14 @@ validateOneOfTheseDays' plan (ancode, days) = do
         Nothing     -> True
         Just (d, _) -> d `elem` days
   if null exams'
-    then tell [ValidationRecord Info $ "- exam " `append` showt ancode `append` " not found"]
-      >> return EverythingOk
+    then
+      tell
+          [ ValidationRecord Info
+            $        "- exam "
+            `append` showt ancode
+            `append` " not found"
+          ]
+        >> return EverythingOk
     else do
       unless oneOfTheseDaysOk $ tell
         [ ValidationRecord HardConstraintBroken
@@ -358,8 +372,14 @@ validateFixSlot' plan (ancode, (d, s)) = do
         Nothing       -> True
         Just (d', s') -> d' == d && s' == s
   if null exams'
-    then tell [ValidationRecord Info $ "- exam " `append` showt ancode `append` " not found"]
-      >> return EverythingOk
+    then
+      tell
+          [ ValidationRecord Info
+            $        "- exam "
+            `append` showt ancode
+            `append` " not found"
+          ]
+        >> return EverythingOk
     else do
       unless fixedSlotOk $ tell
         [ ValidationRecord HardConstraintBroken
@@ -399,33 +419,33 @@ validateInSameSlot' plan ancodes = do
 -------------------------------------------------------
 -- each lecturer should have zero or one exams per slot
 -------------------------------------------------------
-validateLecturerMaxOneExamPerSlot
-  :: Plan -> Writer [ValidationRecord] ValidationResult
-validateLecturerMaxOneExamPerSlot plan = do
-  tell [ValidationRecord Info "### Validate numbers of exams per lecturer per slot (soft)"]
-  let
-    listsOfLecturers =
-      map
-          (\(s, es) ->
-            ( s
-            , map lecturer
-              $ filter
-                  ((`notElem` (concat $ inSameSlot $ constraints plan)) . anCode
-                  )
-              $ M.elems
-              $ examsInSlot es
-            )
-          )
-        $ M.toList
-        $ slots plan
-    slotsWithDuplicates = filter (((/=) <$> nub <*> id) . snd) listsOfLecturers
-  forM_ slotsWithDuplicates $ \(_, lecturers) -> tell
-    [ ValidationRecord HardConstraintBroken
-      $        "-   lecturer has more then one exam in slot: "
-      `append` showt lecturers
-    ]
-  return
-    $ if null slotsWithDuplicates then EverythingOk else HardConstraintsBroken
+-- validateLecturerMaxOneExamPerSlot
+--   :: Plan -> Writer [ValidationRecord] ValidationResult
+-- validateLecturerMaxOneExamPerSlot plan = do
+--   tell [ValidationRecord Info "### Validate numbers of exams per lecturer per slot (soft)"]
+--   let
+--     listsOfLecturers =
+--       map
+--           (\(s, es) ->
+--             ( s
+--             , map lecturer
+--               $ filter
+--                   ((`notElem` (concat $ inSameSlot $ constraints plan)) . anCode
+--                   )
+--               $ M.elems
+--               $ examsInSlot es
+--             )
+--           )
+--         $ M.toList
+--         $ slots plan
+--     slotsWithDuplicates = filter (((/=) <$> nub <*> id) . snd) listsOfLecturers
+--   forM_ slotsWithDuplicates $ \(_, lecturers) -> tell
+--     [ ValidationRecord HardConstraintBroken
+--       $        "-   lecturer has more then one exam in slot: "
+--       `append` showt lecturers
+--     ]
+--   return
+--     $ if null slotsWithDuplicates then EverythingOk else HardConstraintsBroken
 
 -------------------------------------------------
 -- each student should have two exams max per day
@@ -435,7 +455,10 @@ validateLecturerMaxOneExamPerSlot plan = do
 validateStudentsMaxTwoExamsPerDay
   :: Plan -> Writer [ValidationRecord] ValidationResult
 validateStudentsMaxTwoExamsPerDay _ = do
-  tell [ValidationRecord SoftConstraintBroken "not testing exams for students atm, TODO"]
+  tell
+    [ ValidationRecord SoftConstraintBroken
+                       "not testing exams for students atm, TODO"
+    ]
   return SoftConstraintsBroken
 -- plan
 --   -- TODO: hard/soft okay?
