@@ -112,6 +112,9 @@ decodeExamsFromJSON = fmap (map importExamToExam) . decode
     , sameRoom                = []
     , sameSlot                = []
     , shareRoom               = True
+    , unregisteredStudents    = 0
+    , onOtherCampus           = False
+    , stakeholder             = []
     }
 
 -- }}}
@@ -129,6 +132,7 @@ data ImportConstraints =
                     (Maybe [RoomOnlyForSlots])
                     (Maybe [RoomOnlyForSlots])
                     (Maybe [Ancode])
+                    (Maybe [[Integer]])
 
 instance Y.FromJSON ImportConstraints where
   parseJSON (Y.Object v) =
@@ -142,7 +146,8 @@ instance Y.FromJSON ImportConstraints where
     v Y..:? "impossibleInvigilationSlots" <*>
     v Y..:? "roomOnlyForSlots" <*>
     v Y..:? "roomNotForSlots" <*>
-    v Y..:? "doNotShareRoom"
+    v Y..:? "doNotShareRoom" <*>
+    v Y..:? "unregisteredStudents"
   parseJSON _ = empty
 
 data ImpossibleInvigilation =
@@ -177,20 +182,20 @@ instance Y.FromJSON RoomOnlyForSlots where
 
 importConstraintsToConstraints
   :: SemesterConfig -> ImportConstraints -> Constraints
-importConstraintsToConstraints semesterConfig' (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots iCRoomNotForSlots icDoNotShareRoom)
+importConstraintsToConstraints semesterConfig' (ImportConstraints iCNotOnSameDay iCInSameSlot iCInSameRoom iCOnOneOfTheseDays iCFixedSlot icNoInvigilations icNoInvigilationDays iCInvigilatesExam iCImpossibleInvigilationSlots iCRoomOnlyForSlots iCRoomNotForSlots icDoNotShareRoom icUnregisteredStudents)
   = Constraints
-    { overlaps                    = []
-    , notOnSameDay                = fromMaybe [] iCNotOnSameDay
-    , inSameSlot                  = fromMaybe [] iCInSameSlot
-    , inSameRoom                  = fromMaybe [] iCInSameRoom
-    , onOneOfTheseDays            = maybe []
-                                          (map (\(x : xs) -> (toInteger x, xs)))
-                                          iCOnOneOfTheseDays
+    { overlaps = []
+    , notOnSameDay = fromMaybe [] iCNotOnSameDay
+    , inSameSlot = fromMaybe [] iCInSameSlot
+    , inSameRoom = fromMaybe [] iCInSameRoom
+    , onOneOfTheseDays = maybe []
+                               (map (\(x : xs) -> (toInteger x, xs)))
+                               iCOnOneOfTheseDays
     , fixedSlot = maybe []
                         (map (\[a, d, s] -> (toInteger a, (d, s))))
                         iCFixedSlot
-    , noInvigilations             = fromMaybe [] icNoInvigilations
-    , noInvigilationDays          = maybe
+    , noInvigilations = fromMaybe [] icNoInvigilations
+    , noInvigilationDays = maybe
       []
       (concatMap (\xs -> [ (toInteger (head xs), tail xs) | not (null xs) ]))
       icNoInvigilationDays
@@ -205,7 +210,11 @@ importConstraintsToConstraints semesterConfig' (ImportConstraints iCNotOnSameDay
                   M.empty
                   (M.fromList . map (roomNotForSlotsToTuple semesterConfig'))
                   iCRoomNotForSlots
-    , doNotShareRoom              = fromMaybe [] icDoNotShareRoom
+    , doNotShareRoom = fromMaybe [] icDoNotShareRoom
+    , examsWithUnregisteredStudents = maybe
+      []
+      (map (\[ac, count] -> (ac, count)))
+      icUnregisteredStudents
     }
 
 iIToSlots :: ImpossibleInvigilation -> (PersonID, [(Int, Int)])

@@ -4,13 +4,14 @@ module Plexams.Types.Constraints
   ( Constraints(..)
   , noConstraints
   , Overlaps(..)
-  ) where
+  )
+where
 
-import Data.Aeson
-import qualified Data.Map as M
-import GHC.Generics
-import Plexams.Types.Common
-import Plexams.Types.Groups
+import           Data.Aeson
+import qualified Data.Map                      as M
+import           GHC.Generics
+import           Plexams.Types.Common
+import           Plexams.Types.Groups
 
 data Constraints = Constraints
   { overlaps :: [Overlaps]
@@ -27,13 +28,14 @@ data Constraints = Constraints
   , noInvigilationDays :: [(PersonID, [DayIndex])]
   , invigilatesExam :: [(Ancode, PersonID)]
   , impossibleInvigilationSlots :: [(PersonID, [(Int, Int)])]
+  , examsWithUnregisteredStudents :: [(Ancode, Integer)]
   } deriving (Show, Eq, Generic)
 
 instance ToJSON Constraints where
   toEncoding = genericToEncoding defaultOptions
 
 noConstraints :: Constraints
-noConstraints = Constraints [] [] [] [] [] [] M.empty [] [] [] [] []
+noConstraints = Constraints [] [] [] [] [] [] M.empty [] [] [] [] [] []
 
 data Overlaps = Overlaps
   { olGroup :: Group

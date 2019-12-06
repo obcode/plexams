@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Plexams.PlanManip.StudentRegs
   ( addStudentRegistrationsToPlan
   )
@@ -50,16 +51,36 @@ addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
         , registeredGroups   = sumRegisteredGroups $ registeredGroups e
         }
       )
-    $ foldr insertStudentReg examsMap
+    $ foldr insertStudentReg examsMap'
     $ M.elems studentsWithRegs
  where
+  examsMap' = M.map
+    (\e -> case unregisteredStudents e of
+      0     -> e
+      count -> e
+        { registeredStudents =
+          registeredStudents e ++ replicate
+            (fromInteger count)
+            (StudentWithRegs "_______"
+                             "Anmeldedaten"
+                             "keine"
+                             "UN"
+                             [anCode e]
+                             Nothing
+            )
+        , registeredStudentsCount = count + registeredStudentsCount e
+        , registeredGroups = RegisteredGroup "UN" count : registeredGroups e
+        }
+    )
+    examsMap
+
   sumRegisteredGroups regGroups =
     map
         (\(RegisteredGroup gName i : gs) ->
           RegisteredGroup gName (i + sum (map registeredGroupStudents gs))
         )
       $ groupWith registeredGroupDegree regGroups
-  insertStudentReg studentWithReg examsMap' =
+  insertStudentReg studentWithReg examsMap'' =
     foldr
         (M.alter $ fmap $ \e -> e
           { registeredStudents      = studentWithReg' : registeredStudents e
@@ -75,7 +96,7 @@ addStudentRegistrationsToExamsMap studentsWithRegs allAncodes examsMap =
                                         (studentHandicap studentWithReg')
           }
         )
-        examsMap'
+        examsMap''
       $ studentAncodes studentWithReg
    where
     studentWithReg' = studentWithReg

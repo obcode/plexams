@@ -20,7 +20,9 @@ import           Data.Aeson
 import           Data.List                      ( intercalate )
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( isJust )
-import           Data.Text                      ( unpack )
+import           Data.Text                      ( Text
+                                                , unpack
+                                                )
 import           GHC.Generics
 
 import           Plexams.Types.Common
@@ -48,6 +50,10 @@ data Exam = Exam
   , sameRoom :: [Ancode]
   , sameSlot :: [Ancode]
   , shareRoom :: Bool
+  , unregisteredStudents :: Integer -- TODO: für Raumplanung zusätzliche Studierende anderer Fakultäten, die ich nicht in Sammellisten habe
+  -- Besser: Fakestudenten mit Fakeidentität hinzufügen...
+  , onOtherCampus :: Bool -- TODO: for conflicts more slots, e.g., FK10
+  , stakeholder :: [Text] -- TODO: inform about exam, e.g., FK13, ...
   } deriving (Eq, Generic)
 
 instance FromJSON Exam

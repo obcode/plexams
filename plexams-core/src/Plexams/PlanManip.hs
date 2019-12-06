@@ -56,10 +56,18 @@ makePlan exams'' semesterConfig' pers constraints' = foldr
               (inSameSlot constraints' ++ examsWithSameNameAncodes)
 
             \\ onlyOtherAncodes ancode (notOnSameDay constraints')
+        unregisteredStudents' =
+          case
+              filter ((== ancode) . fst)
+                $ examsWithUnregisteredStudents constraints'
+            of
+              []         -> 0
+              (_, c) : _ -> c
       in
-        exam { sameRoom  = sameRoom'
-             , sameSlot  = sameSlot'
+        exam { sameRoom             = sameRoom'
+             , sameSlot             = sameSlot'
              , shareRoom = ancode `notElem` doNotShareRoom constraints'
+             , unregisteredStudents = unregisteredStudents'
              }
   slots' =
     M.fromList
