@@ -50,8 +50,7 @@ data Exam = Exam
   , sameRoom :: [Ancode]
   , sameSlot :: [Ancode]
   , shareRoom :: Bool
-  , unregisteredStudents :: Integer -- TODO: für Raumplanung zusätzliche Studierende anderer Fakultäten, die ich nicht in Sammellisten habe
-  -- Besser: Fakestudenten mit Fakeidentität hinzufügen...
+  , unregisteredStudents :: Integer -- für Raumplanung zusätzliche Studierende anderer Fakultäten, die ich nicht in Sammellisten habe
   , onOtherCampus :: Bool -- TODO: for conflicts more slots, e.g., FK10
   , stakeholder :: [Text] -- TODO: inform about exam, e.g., FK13, ...
   } deriving (Eq, Generic)
