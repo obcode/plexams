@@ -17,6 +17,7 @@ import           Plexams.Validation.Exports
 import qualified Plexams.Validation.Invigilation
 import qualified Plexams.Validation.Rooms
 import qualified Plexams.Validation.ScheduledExams
+import qualified Plexams.Validation.Sources
 
 validate :: [ValidateWhat] -> Plan -> (ValidationResult, [ValidationRecord])
 validate validateWhat' = runWriter . validate' validateWhat'
@@ -25,6 +26,7 @@ validate'
   :: [ValidateWhat] -> Plan -> Writer [ValidationRecord] ValidationResult
 validate' validateWhat' plan = do
   tell [ValidationRecord Info "# Validation"]
+  sourcesOk       <- Plexams.Validation.Sources.validate plan
   scheduledExams' <- if ValidateSchedule `elem` validateWhat'
     then do
       scheduledExams'' <- Plexams.Validation.ScheduledExams.validate plan
@@ -40,7 +42,8 @@ validate' validateWhat' plan = do
 -- tell [Info "no validation of invigilation requested"]
     else return EverythingOk
   tell [ValidationRecord Info "# no more validations implemented yet"]
-  return $ validationResult [scheduledExams', roomsOk, invigilationsOk]
+  return
+    $ validationResult [sourcesOk, scheduledExams', roomsOk, invigilationsOk]
 
 -- validateLecturersMax3ExamDays ::
 --      Plan -> Writer [ValidationRecord] ValidationResult
