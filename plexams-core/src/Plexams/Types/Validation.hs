@@ -9,11 +9,12 @@ module Plexams.Types.Validation
   , ValidateWhat(..)
   , validateWhat
   , validationResult
-  ) where
+  )
+where
 
-import Data.Aeson
-import Data.Text (Text)
-import GHC.Generics
+import           Data.Aeson
+import           Data.Text                      ( Text )
+import           GHC.Generics
 
 data Validation = Validation
   { result :: ValidationResult
@@ -44,15 +45,16 @@ data ValidationRecord = ValidationRecord {
 instance ToJSON ValidationRecord
 
 data ValidationRecordType
-  = Info 
-  | SoftConstraintBroken 
+  = Info
+  | SoftConstraintBroken
   | HardConstraintBroken
   deriving (Eq, Generic)
 
 instance ToJSON ValidationRecordType
 
 validationResult :: [ValidationResult] -> ValidationResult
-validationResult = maximum
+validationResult [] = EverythingOk
+validationResult xs = maximum xs
 
 data ValidateWhat
   = ValidateSources
