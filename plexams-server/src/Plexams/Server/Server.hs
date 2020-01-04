@@ -229,7 +229,7 @@ server state =
   reserveForSlot' s = do
     State { plan = planT } <- ask
     plan''                 <- liftIO $ readTVarIO planT
-    return $ reserveInvigilator =<< (M.lookup s $ slots plan'')
+    return $ reserveInvigilator =<< M.lookup s (slots plan'')
 
   slotByRooms' :: (Int, Int) -> StateHandler [[(Room, Exam)]]
   slotByRooms' s = do
