@@ -72,6 +72,7 @@ type API
       :<|> "examsWithNTA" :> Get '[ JSON] [[Exam]]
       :<|> "plannedRooms" :> Get '[ JSON] [PlannedRoomWithSlots]
       :<|> "student" :> ReqBody '[ JSON] Text :> Post '[ JSON] (Maybe StudentWithRegs)
+      :<|> "reserveForSlot" :> ReqBody '[ JSON] (Int, Int) :> Post '[ JSON] (Maybe Invigilator)
 
 newtype State = State
   { plan :: TVar Plan
@@ -141,6 +142,7 @@ server state =
     :<|> examsWithNTA'
     :<|> plannedRooms'
     :<|> students'
+    :<|> reserveForSlot'
  where
 
   validateWhat' :: StateHandler [ValidateWhat]
@@ -222,6 +224,12 @@ server state =
     State { plan = planT } <- ask
     plan''                 <- liftIO $ readTVarIO planT
     return $ maybe [] (M.elems . examsInSlot) $ M.lookup s $ slots plan''
+
+  reserveForSlot' :: (Int, Int) -> StateHandler (Maybe Invigilator)
+  reserveForSlot' s = do
+    State { plan = planT } <- ask
+    plan''                 <- liftIO $ readTVarIO planT
+    return $ reserveInvigilator =<< (M.lookup s $ slots plan'')
 
   slotByRooms' :: (Int, Int) -> StateHandler [[(Room, Exam)]]
   slotByRooms' s = do
