@@ -54,13 +54,17 @@ instance TextShow Group where
     maybe "" (("(" <>) . (<> ")") . showb) mReg
 
 data Degree
-  = IB
+  = DC
+  | DE
+  | IB
   | IC
+  | ID
   | IF
   | GO
   | IG
   | IN
   | IS
+  | IT
   | ALL
   deriving (Show, Eq, Ord, Read, Enum, Generic)
 
@@ -69,16 +73,20 @@ instance FromJSON Degree
 instance ToJSON Degree
 
 allDegrees :: [Degree]
-allDegrees = [IB .. IS]
+allDegrees = [DC .. IT]
 
 instance TextShow Degree where
+  showb DC = "DC"
+  showb DE = "DE"
   showb IB = "IB"
   showb IC = "IC"
+  showb ID = "ID"
   showb IF = "IF"
   showb GO = "GO"
   showb IG = "IG"
   showb IN = "IN"
   showb IS = "IS"
+  showb IT = "IT"
   showb ALL = "ALL"
 
 data Subgroup
@@ -116,13 +124,17 @@ parseGroup str =
   where
     str2Degree str' =
       case str' of
+        "DC" -> DC
+        "DE" -> DE
         "IB" -> IB
         "IC" -> IC
+        "ID" -> ID
         "IF" -> IF
         "GO" -> GO
         "IG" -> IG
         "IN" -> IN
         "IS" -> IS
+        "IT" -> IT
         _ -> error $ "unknown group: " ++ str
     char2Subgroup c =
       case c of
