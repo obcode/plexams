@@ -32,7 +32,7 @@ runCommand config@(Config PrepareStudentRegs (Just g) iPath _) = do
  where
   get fieldname = snd . head . filter (isSuffixOf fieldname . fst)
   getName studentTupel =
-    let (family, first) = span (/= ',') $ get "NAME" studentTupel
+    let (family, first) = span (/= ',') $ get "name" studentTupel
     in  (family, dropWhile (== ' ') $ tail first)
   mkStudentsYaml studentTupel =
     "  - mtknr: '"
@@ -42,9 +42,9 @@ runCommand config@(Config PrepareStudentRegs (Just g) iPath _) = do
       ++ "\n    firstname: "
       ++ snd (getName studentTupel)
       ++ "\n    stg: "
-      ++ get "STG" studentTupel
+      ++ get "Stg" studentTupel
       ++ "\n    ancode: "
-      ++ get "ANCODE" studentTupel
+      ++ get "AnCode" studentTupel
       ++ "\n"
 runCommand config@(Config PrepareAncodes _ iPath _) = do
   contents <- getContents' iPath
