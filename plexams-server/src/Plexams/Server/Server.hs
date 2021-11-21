@@ -45,6 +45,7 @@ import           Plexams.Validation
 
 type API
    = "exams" :> Get '[ JSON] [Exam]
+      :<|> "examsGroupedBySameSlot" :> Get '[ JSON] [(Integer, [Exam])]
       :<|> "exam" :> ReqBody '[ JSON] Integer :> Post '[ JSON] (Maybe Exam)
       :<|> "examDays" :> Get '[ JSON] [String]
       :<|> "slots" :> Get '[ JSON] Slots
@@ -116,6 +117,7 @@ server :: State -> Server API
 server state =
   hoistServer (Proxy :: Proxy API) (stateHandlerToHandler state)
     $    exams'
+    :<|> examsGroupedBySameSlot'
     :<|> exam'
     :<|> examDays'
     :<|> slots'
@@ -163,6 +165,12 @@ server state =
     State { plan = planT } <- ask
     plan''                 <- liftIO $ readTVarIO planT
     return $ allExams plan''
+
+  examsGroupedBySameSlot' :: StateHandler [(Integer, [Exam])]
+  examsGroupedBySameSlot' = do
+    State { plan = planT } <- ask
+    plan''                 <- liftIO $ readTVarIO planT
+    return $ allExamsGroupedBySameSlot plan''
 
   exam' :: Integer -> StateHandler (Maybe Exam)
   exam' examid = do

@@ -4,6 +4,7 @@ module Plexams.Types.Plan
   ( Plan(..)
   , scheduledExams
   , allExams
+  , allExamsGroupedBySameSlot
   , allExamsPlannedByMe
   , examsWithNTA
   , examsWithNTARoomAlone
@@ -23,11 +24,11 @@ where
 import           Data.Aeson                     ( ToJSON
                                                 , defaultOptions
                                                 , genericToEncoding
-                                                , toEncoding
+                                                , toEncoding,
                                                 )
 import           Data.List                      ( (\\)
                                                 , partition
-                                                , sortOn
+                                                , sortOn, sortBy
                                                 )
 import qualified Data.Map                      as M
 import           Data.Ord                       ( Down(Down) )
@@ -63,6 +64,33 @@ allExams :: Plan -> [Exam]
 allExams plan =
   let plan' = setSlotsOnExams plan
   in  M.elems (unscheduledExams plan') ++ scheduledExams plan'
+
+allExamsGroupedBySameSlot :: Plan -> [(Integer, [Exam])]
+allExamsGroupedBySameSlot plan =
+  sortBy byCounts $ 
+  map sumOfRegs $
+  foldr insert' [] $ M.elems (unscheduledExams plan)
+  where
+    byCounts :: (Integer, [Exam]) -> (Integer, [Exam]) -> Ordering
+    byCounts (i, _) (j, _) = compare j i
+
+    sumOfRegs :: [Exam] -> (Integer, [Exam])
+    sumOfRegs [] = (0, [])
+    sumOfRegs es = (foldr ((+) . registeredStudentsCount) 0 es, es)
+
+    insert' :: Exam -> [[Exam]] -> [[Exam]]
+    insert' e es =
+      if null $ sameSlot e
+        then [e] : es
+        else insert'' e es
+    
+    insert'' :: Exam -> [[Exam]] -> [[Exam]]
+    insert'' e [] = [[e]]
+    insert'' e ([]:es) = insert'' e es
+    insert'' e1 (es@(e2:_):ess) =
+      if anCode e2 `elem` sameSlot e1
+        then (e1 : es) : ess
+        else es : insert'' e1 ess
 
 allExamsPlannedByMe :: Plan -> [Exam]
 allExamsPlannedByMe = filter plannedByMe . allExams
