@@ -72,6 +72,7 @@ data SemesterConfig = SemesterConfig
   { semester :: Text -- ^ Semester
   , firstDay :: Day -- ^ Erster Tag des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 10@
   , lastDay :: Day -- ^ Letzter Tag  des Prüfungszeitraumes, z.B. @fromGregorian 2017 7 21@
+  , examsOnSaturdays :: Bool
   , examDays :: [Day] -- ^ vom ersten bis letzten Tag OHNE Wochenende
   , goSlots :: [(Int, Int)]
   , slotsPerDay :: [String] -- ^ Liste von Slots als Zeitstrings in der Form @HH:MM@. Ein Slot ist IMMER 120 Minuten lang
@@ -130,6 +131,7 @@ instance Y.FromJSON SemesterConfig where
   parseJSON (Y.Object v) =
     makeSemesterConfig <$> v Y..: "semester" <*> v Y..: "firstDay" <*>
     v Y..: "lastDay" <*>
+    v Y..:? "examsOnSaturdays" Y..!= False <*>
     v Y..: "goDay0" <*>
     v Y..:? "goNotOnDays" Y..!= [] <*>
     v Y..: "slotsPerDay" <*>
@@ -147,6 +149,7 @@ makeSemesterConfig
   :: Text
   -> String
   -> String
+  -> Bool
   -> String
   -> [Int]
   -> [String]
@@ -156,11 +159,8 @@ makeSemesterConfig
   -> [Ancode]
   -> Bool
   -> SemesterConfig
-makeSemesterConfig s f l goDay0 goNotOnDays = SemesterConfig s
-                                                             firstDay'
-                                                             lastDay'
-                                                             realExamDays
-                                                             goSlots'
+makeSemesterConfig s f l examsOnSaturdays' goDay0 goNotOnDays =
+  SemesterConfig s firstDay' lastDay' examsOnSaturdays' realExamDays goSlots'
  where
   makeDay :: String -> Day
   makeDay str = fromMaybe (error $ "cannot parse date: " ++ str)
@@ -168,7 +168,7 @@ makeSemesterConfig s f l goDay0 goNotOnDays = SemesterConfig s
   firstDay'    = makeDay f
   lastDay'     = makeDay l
   realExamDays = filter (notWeekend . toWeekDate) [firstDay' .. lastDay']
-  notWeekend (_, _, weekday) = weekday <= 5
+  notWeekend (_, _, weekday) = weekday <= if examsOnSaturdays' then 6 else 5
   goDay0Index = fromMaybe 0 $ elemIndex (makeDay goDay0) realExamDays -- BUG
   goSlots' =
     filter ((>= 0) . fst) $ map (\(d, t) -> (d + goDay0Index, t)) $ filter
